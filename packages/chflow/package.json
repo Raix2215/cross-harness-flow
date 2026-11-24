@@ -1,0 +1,17 @@
+{
+  "name": "chflow",
+  "version": "3.3.0",
+  "license": "MIT",
+  "description": "Local cross-harness task mailbox and Herdr orchestration",
+  "type": "module",
+  "engines": { "node": ">=22.13.0" },
+  "bin": { "chflow": "./dist/cli.js" },
+  "dependencies": {},
+  "devDependencies": { "@types/node": "^22.13.0", "typescript": "^5.8.3" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc && node -e \"require('node:fs').chmodSync('dist/cli.js',0o755)\"",
+    "test:e2e": "npm run build && node --test e2e/*.e2e.mjs",
+    "pack:check": "npm run build && node e2e/pack.mjs"
+  }
+}

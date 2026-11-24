@@ -1,0 +1,79 @@
+# 多 Harness 订阅与逻辑渠道矩阵模板（严禁写入任何明文 Key / Token / Cookie / 真实邮箱）
+# 用法示例：
+#   cp templates/matrix.template.yaml matrix.local.yaml   # 按本机实际可用渠道裁剪（已被 .gitignore 忽略）
+#   chflow send reviewer --brief-file review-brief.md --matrix ./matrix.local.yaml --channel codex-sub
+
+version: 2
+
+channels:
+  - id: pi-api-pool
+    harness: pi
+    auth_type: api-key               # api-key | service-account | team-api | oauth-personal | team-sub
+    status: active                   # active | backup | unavailable
+    automation_safe: true            # 仅 api-key / service-account / team-api 且 true 允许 --unattended
+    provider: api-pool               # Pi 可选指定 provider
+    model: fast-model                # 替换为本机实际可用模型名
+    effort: high                     # off | minimal | low | medium | high | xhigh | max
+    models:
+      - fast-model
+      - reasoning-model
+    quota_profile: "按量计费或高吞吐 API 池，适合确定性脚本、无头检查与兜底回退"
+    preferred_stages:
+      - quick-review
+      - fallback-worker
+
+  - id: codex-sub
+    harness: codex
+    auth_type: oauth-personal
+    status: active
+    automation_safe: false
+    model: codex-model               # 替换为本机 Codex CLI 实际可用模型名
+    effort: high
+    models:
+      - codex-model
+    quota_profile: "Codex 订阅窗口额度，擅长复杂后端逻辑、并发边界与代码审查"
+    preferred_stages:
+      - implement
+      - complex-logic
+      - diff-review
+
+  - id: claude-sub
+    harness: claude
+    auth_type: oauth-personal
+    status: active
+    automation_safe: false
+    model: sonnet                    # 替换为本机 Claude Code 实际可用模型名
+    effort: high
+    models:
+      - opus
+      - sonnet
+    quota_profile: "Claude 订阅窗口额度，适合架构推演与异构交叉审查"
+    preferred_stages:
+      - architecture-plan
+      - complex-review
+
+  - id: agy-personal-oauth
+    harness: agy
+    auth_type: oauth-personal
+    status: active
+    automation_safe: false           # 严禁 --unattended / --bg / 自动重试 / 自动回退目标
+    model: primary-interactive       # 替换为本机 Antigravity 实际可用模型名
+    effort: high
+    models:
+      - primary-interactive
+    quota_profile: "个人订阅，严格仅限人在场交互（--attended）主导规划、界面设计与验收"
+    preferred_stages:
+      - interactive-lead
+      - ui-design
+      - interactive-review
+
+routing_rules:
+  plan_lead: agy-personal-oauth
+  implement_workers:
+    - codex-sub
+  cross_review_pair: "codex-sub <-> claude-sub"
+  # 注意：agy 严禁进入 fallback_chain；chflow 会自动过滤与当前主渠道相同的回退项
+  fallback_chain:
+    - codex-sub
+    - claude-sub
+    - pi-api-pool

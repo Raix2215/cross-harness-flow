@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tgz
+.chflow/
+.DS_Store
+Thumbs.db
+matrix.local.yaml
+*.local.yaml

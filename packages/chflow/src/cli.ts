@@ -65,6 +65,7 @@ async function top(peer:Peer,inv:Invocation,signal:AbortSignal){
     runAction:async(action,target,opts)=>{
       if(!operator)return failure(operatorError());
       try{
+        if(action==='daemon.stop')return await peer.call('daemon.stop',{opts},5000,signal);
         const requested=await invocation(action,ctx,target,opts);
         return await peer.call(action,requested,requestTimeout(action,requested.opts),signal);
       }catch(e){return failure(e);}
@@ -82,15 +83,21 @@ try{
       const snap=data<UiSnapshotData>(await peer.call('ui.snapshot',{ctx:context(),opts:{}},45000,signal));
       process.stdout.write(renderStatusSnapshot(snap,{tty:true,uiUrl:snap.daemon?.ui_url}));
     });
+  }else if(method==='stop'||method==='quit'){
+    if(args.some(a=>a!=='--force'))syntax('Usage: chflow stop [--force]');
+    const force=args.includes('--force');
+    const peer=await openPeer(false);
+    try{render(peer?await peer.call('daemon.stop',{opts:{check_active:true,force}}):success({running:false}),method);}finally{peer?.close();}
   }else if(method==='daemon'){
     const action=args[0];
-    if(args.length!==1)syntax('Usage: chflow daemon start|stop|status|logs');
+    const rest=args.slice(1);
+    if(!action||(action!=='stop'&&rest.length)||(action==='stop'&&rest.some(a=>a!=='--force')))syntax('Usage: chflow daemon start|stop [--force]|status|logs');
     if(action==='_serve')await (await import('./daemon.js')).serve();
     else{
       const api=action==='stop'?'daemon.stop':action==='logs'?'daemon.logs':['start','status'].includes(action)?'ping':undefined;
-      if(!api)syntax('Usage: chflow daemon start|stop|status|logs');
+      if(!api)syntax('Usage: chflow daemon start|stop [--force]|status|logs');
       const peer=await openPeer(action==='start');
-      try{render(peer?await peer.call(api!):success({running:false}),method);}finally{peer?.close();}
+      try{render(peer?await peer.call(api!,action==='stop'?{opts:{force:rest.includes('--force')}}:undefined):success({running:false}),method);}finally{peer?.close();}
     }
   }else if(method==='mcp'){
     if(args.some(a=>!['--enable-respond','--no-respond'].includes(a)))syntax('Usage: chflow mcp [--enable-respond | --no-respond]');

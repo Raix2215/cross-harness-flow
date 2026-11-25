@@ -6,2617 +6,1633 @@ export interface UiBootConfig {
   authError?: string;
 }
 
-const CSS = [
-  ':root {',
-  '  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Noto Sans CJK SC", "Helvetica Neue", sans-serif;',
-  '  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "Sarasa Mono SC", Menlo, Monaco, Consolas, monospace;',
-  '  --desktop-bg: radial-gradient(1280px 760px at 14% 8%, #dbe7f8 0%, #e8edf6 44%, #e2e5ee 100%);',
-  '  --win-bg: #ffffff;',
-  '  --win-border: rgba(15, 23, 42, 0.13);',
-  '  --win-shadow: 0 26px 68px rgba(15, 23, 42, 0.16), 0 2px 10px rgba(15, 23, 42, 0.07), 0 0 0 0.5px rgba(15, 23, 42, 0.12);',
-  '  --toolbar-bg: rgba(246, 247, 250, 0.90);',
-  '  --sidebar-bg: rgba(241, 243, 248, 0.88);',
-  '  --inspector-bg: rgba(247, 248, 251, 0.94);',
-  '  --canvas-bg: #fafbfe;',
-  '  --surface: #ffffff;',
-  '  --surface-2: #f3f4f8;',
-  '  --surface-3: #ebedf3;',
-  '  --surface-hover: rgba(15, 23, 42, 0.05);',
-  '  --code-bg: #f6f7fb;',
-  '  --code-fg: #1b2232;',
-  '  --hairline: rgba(15, 23, 42, 0.085);',
-  '  --hairline-strong: rgba(15, 23, 42, 0.15);',
-  '  --grid-dot: rgba(15, 23, 42, 0.072);',
-  '  --text-0: #1b1c1f;',
-  '  --text-1: #475063;',
-  '  --text-2: #7e8494;',
-  '  --blue: #007aff;',
-  '  --blue-bg: rgba(0, 122, 255, 0.11);',
-  '  --blue-sel: rgba(0, 122, 255, 0.14);',
-  '  --green: #1e9e44;',
-  '  --green-dot: #34c759;',
-  '  --green-bg: rgba(52, 199, 89, 0.14);',
-  '  --orange: #c96a04;',
-  '  --orange-dot: #ff9500;',
-  '  --orange-bg: rgba(255, 149, 0, 0.15);',
-  '  --purple: #8931df;',
-  '  --purple-dot: #af52de;',
-  '  --purple-bg: rgba(175, 82, 222, 0.14);',
-  '  --red: #d72626;',
-  '  --red-dot: #ff3b30;',
-  '  --red-bg: rgba(255, 59, 48, 0.13);',
-  '  --gray-dot: #8e8e93;',
-  '  --seg-track: rgba(118, 118, 128, 0.13);',
-  '  --seg-pill: #ffffff;',
-  '  --seg-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);',
-  '  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.045), 0 4px 12px rgba(15, 23, 42, 0.03);',
-  '  --notif-bg: rgba(255, 255, 255, 0.93);',
-  '  --menu-bg: rgba(252, 252, 254, 0.94);',
-  '  --svg-card: #ffffff;',
-  '  --svg-chip: #f3f4f7;',
-  '  --svg-edge-bg: #ffffff;',
-  '}',
-  '[data-theme="dark"] {',
-  '  --desktop-bg: radial-gradient(1200px 720px at 18% 12%, #1d2638 0%, #121620 50%, #0b0d12 100%);',
-  '  --win-bg: #1c1d21;',
-  '  --win-border: rgba(255, 255, 255, 0.14);',
-  '  --win-shadow: 0 28px 72px rgba(0, 0, 0, 0.58), 0 0 0 0.5px rgba(255, 255, 255, 0.14);',
-  '  --toolbar-bg: rgba(38, 39, 44, 0.88);',
-  '  --sidebar-bg: rgba(28, 29, 34, 0.90);',
-  '  --inspector-bg: rgba(30, 31, 36, 0.94);',
-  '  --canvas-bg: #15161a;',
-  '  --surface: #23242a;',
-  '  --surface-2: #2b2d34;',
-  '  --surface-3: #343741;',
-  '  --surface-hover: rgba(255, 255, 255, 0.068);',
-  '  --code-bg: #131418;',
-  '  --code-fg: #e5e8f0;',
-  '  --hairline: rgba(255, 255, 255, 0.09);',
-  '  --hairline-strong: rgba(255, 255, 255, 0.16);',
-  '  --grid-dot: rgba(255, 255, 255, 0.078);',
-  '  --text-0: #f4f5f8;',
-  '  --text-1: #b6bac6;',
-  '  --text-2: #868b98;',
-  '  --blue: #0a84ff;',
-  '  --blue-bg: rgba(10, 132, 255, 0.18);',
-  '  --blue-sel: rgba(10, 132, 255, 0.23);',
-  '  --green: #30d158;',
-  '  --green-dot: #30d158;',
-  '  --green-bg: rgba(48, 209, 88, 0.17);',
-  '  --orange: #ff9f0a;',
-  '  --orange-dot: #ff9f0a;',
-  '  --orange-bg: rgba(255, 159, 10, 0.18);',
-  '  --purple: #bf5af2;',
-  '  --purple-dot: #bf5af2;',
-  '  --purple-bg: rgba(191, 90, 242, 0.18);',
-  '  --red: #ff453a;',
-  '  --red-dot: #ff453a;',
-  '  --red-bg: rgba(255, 69, 58, 0.18);',
-  '  --gray-dot: #8e8e93;',
-  '  --seg-track: rgba(118, 118, 128, 0.28);',
-  '  --seg-pill: #44464e;',
-  '  --seg-shadow: 0 1px 3px rgba(0, 0, 0, 0.36), 0 0 0 0.5px rgba(255, 255, 255, 0.08);',
-  '  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);',
-  '  --notif-bg: rgba(42, 44, 50, 0.94);',
-  '  --menu-bg: rgba(38, 40, 46, 0.95);',
-  '  --svg-card: #23242a;',
-  '  --svg-chip: #18191e;',
-  '  --svg-edge-bg: #1c1d21;',
-  '}',
-  '* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }',
-  'html, body { margin: 0; padding: 0; height: 100%; background: var(--desktop-bg); color: var(--text-0); font-family: var(--font-sans); font-size: 13px; line-height: 1.45; overflow: hidden; }',
-  '.viewport { height: 100vh; padding: 10px; display: flex; }',
-  '.window { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--win-bg); border-radius: 13px; border: 1px solid var(--win-border); box-shadow: var(--win-shadow); overflow: hidden; position: relative; }',
-  '.toolbar { min-height: 50px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 6px 14px; gap: 10px; background: var(--toolbar-bg); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--hairline); user-select: none; flex-shrink: 0; }',
-  '.tb-left { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; }',
-  '.tb-right { display: flex; align-items: center; justify-content: flex-end; gap: 5px; flex-wrap: nowrap; }',
-  '.brand-dot { width: 10px; height: 10px; border-radius: 3px; background: linear-gradient(135deg, #38bdf8, #007aff); flex-shrink: 0; }',
-  '.win-title { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; letter-spacing: -0.15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  '.win-sub { color: var(--text-2); font-weight: 400; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; }',
-  '.project-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 14px; background: var(--surface); border-bottom: 1px solid var(--hairline); flex-shrink: 0; overflow-x: auto; }',
-  '.project-tabs { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }',
-  '.proj-tab { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; border: 0.5px solid var(--hairline-strong); background: var(--surface-2); color: var(--text-1); font-family: var(--font-sans); font-size: 11.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: 0.12s; }',
-  '.proj-tab:hover { background: var(--surface-3); color: var(--text-0); }',
-  '.proj-tab.active { background: var(--blue-sel); color: var(--blue); border-color: color-mix(in srgb, var(--blue) 45%, transparent); font-weight: 600; }',
-  '.proj-cnt { font-family: var(--font-mono); font-size: 10px; padding: 0 5px; border-radius: 999px; background: var(--surface); color: var(--text-2); }',
-  '.proj-tab.active .proj-cnt { background: var(--blue); color: #fff; }',
-  '.proj-cnt.warn { background: var(--orange-dot); color: #fff; }',
-  '.alert-banner { display: none; flex-direction: column; gap: 6px; padding: 7px 14px; background: color-mix(in srgb, var(--orange-bg) 72%, var(--surface) 28%); border-bottom: 1px solid color-mix(in srgb, var(--orange-dot) 32%, transparent); flex-shrink: 0; }',
-  '.alert-banner.show { display: flex; }',
-  '.alert-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12px; }',
-  '.alert-text { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }',
-  '.alert-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }',
-  '.segmented { display: inline-flex; padding: 2px; gap: 2px; background: var(--seg-track); border-radius: 8px; }',
-  '.segmented.full { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }',
-  '.seg-btn { border: none; background: transparent; color: var(--text-1); font-family: var(--font-sans); font-size: 12px; font-weight: 500; padding: 5px 11px; border-radius: 6px; cursor: pointer; transition: background 0.14s, color 0.14s, box-shadow 0.14s; white-space: nowrap; }',
-  '.seg-btn:hover { color: var(--text-0); }',
-  '.seg-btn.active { background: var(--seg-pill); color: var(--text-0); font-weight: 600; box-shadow: var(--seg-shadow); }',
-  '.ui-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 27px; padding: 0 10px; border-radius: 6px; border: 0.5px solid var(--hairline-strong); background: var(--surface); color: var(--text-0); font-family: var(--font-sans); font-size: 12px; font-weight: 500; cursor: pointer; box-shadow: 0 0.5px 1px rgba(0,0,0,0.06); transition: 0.12s ease; white-space: nowrap; }',
-  '.ui-btn:hover:not(:disabled) { background: var(--surface-2); }',
-  '.ui-btn:active:not(:disabled) { transform: scale(0.98); }',
-  '.ui-btn:disabled { opacity: 0.45; cursor: not-allowed; }',
-  '.ui-btn.sm { height: 24px; padding: 0 8px; font-size: 11.5px; }',
-  '.ui-btn.xs { height: 21px; padding: 0 6px; font-size: 10.5px; border-radius: 5px; }',
-  '.ui-btn.primary { background: linear-gradient(180deg, color-mix(in srgb, var(--blue) 90%, #ffffff 10%), var(--blue)); border-color: rgba(0,0,0,0.12); color: #ffffff; box-shadow: 0 1px 2px rgba(0,122,255,0.28); }',
-  '.ui-btn.primary:hover:not(:disabled) { filter: brightness(1.06); }',
-  '.ui-btn.success { background: var(--green-bg); color: var(--green); border-color: rgba(52,199,89,0.35); font-weight: 600; }',
-  '.ui-btn.warn { background: var(--orange-bg); color: var(--orange); border-color: rgba(255,149,0,0.35); font-weight: 600; }',
-  '.ui-btn.danger { color: var(--red); border-color: rgba(255,59,48,0.35); background: var(--red-bg); }',
-  '.ui-btn.ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--text-1); }',
-  '.ui-btn.ghost:hover:not(:disabled) { background: var(--surface-hover); color: var(--text-0); }',
-  '.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; background: var(--surface-2); color: var(--text-1); border: 0.5px solid var(--hairline); }',
-  '.badge.mono { font-family: var(--font-mono); font-size: 10.5px; }',
-  '.badge.blue { background: var(--blue-bg); color: var(--blue); border-color: transparent; }',
-  '.badge.green { background: var(--green-bg); color: var(--green); border-color: transparent; }',
-  '.badge.orange { background: var(--orange-bg); color: var(--orange); border-color: transparent; }',
-  '.badge.purple { background: var(--purple-bg); color: var(--purple); border-color: transparent; }',
-  '.badge.red { background: var(--red-bg); color: var(--red); border-color: transparent; }',
-  '.dot { width: 7.5px; height: 7.5px; border-radius: 50%; flex-shrink: 0; display: inline-block; }',
-  '.dot.working, .dot.submitted, .dot.dispatching { background: var(--blue); box-shadow: 0 0 0 2.5px var(--blue-bg); animation: pulse 1.8s infinite; }',
-  '.dot.idle, .dot.done, .dot.succeeded, .dot.headless { background: var(--green-dot); }',
-  '.dot.blocked { background: var(--orange-dot); box-shadow: 0 0 0 2.5px var(--orange-bg); }',
-  '.dot.retrying, .dot.scheduled_retry { background: var(--purple-dot); box-shadow: 0 0 0 2.5px var(--purple-bg); }',
-  '.dot.failed, .dot.cancelled { background: var(--red-dot); }',
-  '.dot.unmanaged, .dot.offline, .dot.unbound { background: var(--gray-dot); }',
-  '@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: 0.78; } }',
-  '.split { flex: 1; display: grid; grid-template-columns: var(--left-w, 282px) 1fr var(--right-w, 408px); min-height: 0; transition: grid-template-columns 0.16s ease; position: relative; }',
-  '.split.hide-left { --left-w: 0px; }',
-  '.split.hide-right { --right-w: 0px; }',
-  '.scroll { overflow-y: auto; flex: 1; min-height: 0; }',
-  '.scroll::-webkit-scrollbar { width: 7px; height: 7px; }',
-  '.scroll::-webkit-scrollbar-thumb { background: rgba(134, 134, 139, 0.34); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }',
-  '.sidebar { background: var(--sidebar-bg); backdrop-filter: blur(22px) saturate(160%); -webkit-backdrop-filter: blur(22px) saturate(160%); border-right: 1px solid var(--hairline); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }',
-  '.split.hide-left .sidebar { border-right: none; }',
-  '.sb-quick { padding: 9px 10px 4px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }',
-  '.search-wrap { padding: 5px 10px 6px; }',
-  '.search-input { width: 100%; height: 28px; padding: 0 10px 0 27px; border-radius: 7px; border: 0.5px solid var(--hairline-strong); background: var(--surface); color: var(--text-0); font-family: var(--font-sans); font-size: 12px; outline: none; background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'13\' height=\'13\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2386868b\' stroke-width=\'2.2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'11\' cy=\'11\' r=\'8\'/%3E%3Cpath d=\'m21 21-4.3-4.3\'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 8px center; }',
-  '.search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }',
-  '.sl-section { padding: 7px 10px 3px; }',
-  '.sl-title { padding: 0 8px 5px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-2); display: flex; align-items: center; justify-content: space-between; }',
-  '.wt-group { margin-bottom: 6px; }',
-  '.wt-label { padding: 3px 8px; font-size: 11px; font-weight: 600; color: var(--text-2); font-family: var(--font-mono); display: flex; align-items: center; gap: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
-  '.sl-item { display: flex; flex-direction: column; gap: 4px; padding: 7px 9px; margin: 1px 0; border-radius: 8px; cursor: pointer; transition: background 0.12s; }',
-  '.sl-item:hover { background: var(--surface-hover); }',
-  '.sl-item.active { background: var(--blue-sel); }',
-  '.sl-item.active .sl-name { color: var(--blue); }',
-  '.sl-row1 { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }',
-  '.sl-name { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
-  '.sl-pane { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-2); flex-shrink: 0; }',
-  '.sl-row2 { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; padding-left: 15px; }',
-  '.center { background: var(--canvas-bg); display: flex; flex-direction: column; min-width: 0; min-height: 0; }',
-  '.view { display: none; flex: 1; min-height: 0; flex-direction: column; overflow: hidden; }',
-  '.view.active { display: flex; }',
-  '.summary-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; padding: 11px 14px 5px; flex-shrink: 0; }',
-  '.stat-card { background: var(--surface); border: 0.5px solid var(--hairline); border-radius: 11px; padding: 8px 11px; box-shadow: var(--card-shadow); min-width: 0; }',
-  '.stat-k { font-size: 11px; color: var(--text-2); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  '.stat-v { font-size: 19px; font-weight: 700; letter-spacing: -0.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }',
-  '.stat-s { font-size: 10.5px; color: var(--text-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  '.canvas-card { flex: 1; min-height: 0; margin: 5px 14px 12px; border-radius: 12px; border: 0.5px solid var(--hairline); background-color: var(--surface); background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 1.1px, transparent 0); background-size: 22px 22px; box-shadow: var(--card-shadow); position: relative; overflow: hidden; user-select: none; touch-action: none; cursor: grab; }',
-  '.canvas-card.panning { cursor: grabbing; }',
-  '.canvas-float { position: absolute; top: 10px; left: 10px; z-index: 4; display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 5px 11px; border-radius: 999px; background: var(--toolbar-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 0.5px solid var(--hairline-strong); font-size: 11px; color: var(--text-1); pointer-events: auto; }',
-  '.canvas-float span { display: inline-flex; align-items: center; gap: 5px; }',
-  '.canvas-hint { position: absolute; bottom: 12px; left: 12px; z-index: 4; padding: 4px 10px; border-radius: 999px; background: var(--toolbar-bg); backdrop-filter: blur(14px); border: 0.5px solid var(--hairline); font-size: 10.5px; color: var(--text-2); pointer-events: none; }',
-  '.canvas-zoom { position: absolute; bottom: 12px; right: 12px; z-index: 4; display: inline-flex; align-items: center; gap: 3px; padding: 3px; border-radius: 8px; background: var(--toolbar-bg); backdrop-filter: blur(16px); border: 0.5px solid var(--hairline-strong); }',
-  'svg.dag { width: 100%; height: 100%; display: block; }',
-  '.dag-node { cursor: grab; transition: opacity 0.16s ease; }',
-  '.dag-node.dragging { cursor: grabbing; }',
-  '.dag-node:hover .node-rect { filter: drop-shadow(0 8px 18px rgba(0, 122, 255, 0.20)); }',
-  '.dag-node.dimmed, .dag-edge.dimmed { opacity: 0.24; }',
-  '.dag-edge { transition: opacity 0.16s ease; }',
-  '.empty-state { position: absolute; inset: 0; padding: 44px 24px; text-align: center; color: var(--text-2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; pointer-events: auto; }',
-  '.subbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 15px; border-bottom: 1px solid var(--hairline); background: var(--surface); flex-wrap: wrap; flex-shrink: 0; }',
-  '.ev-list { padding: 12px 15px; display: flex; flex-direction: column; gap: 7px; }',
-  '.ev-card { display: grid; grid-template-columns: 74px 186px 1fr; gap: 11px; align-items: baseline; padding: 9px 12px; border-radius: 10px; background: var(--surface); border: 0.5px solid var(--hairline); box-shadow: var(--card-shadow); font-size: 12.5px; }',
-  '.ev-ts { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }',
-  '.ev-body { color: var(--text-1); word-break: break-word; }',
-  '.ev-body code { font-family: var(--font-mono); font-size: 11px; padding: 1px 5px; border-radius: 5px; background: var(--surface-2); color: var(--text-0); }',
-  '.board-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 13px; padding: 13px 15px; }',
-  '.panel-group { background: var(--surface); border: 0.5px solid var(--hairline); border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; display: flex; flex-direction: column; }',
-  '.panel-group-hd { padding: 10px 13px; border-bottom: 1px solid var(--hairline); display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; font-size: 12.5px; flex-wrap: wrap; }',
-  '.panel-group-bd { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }',
-  '.inset-row { padding: 9px 11px; border-radius: 9px; background: var(--surface-2); border: 0.5px solid var(--hairline); display: flex; flex-direction: column; gap: 6px; }',
-  '.row-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 2px; }',
-  '.inspector { background: var(--inspector-bg); backdrop-filter: blur(22px) saturate(160%); -webkit-backdrop-filter: blur(22px) saturate(160%); border-left: 1px solid var(--hairline); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }',
-  '.split.hide-right .inspector { border-left: none; }',
-  '.insp-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--hairline); display: flex; flex-direction: column; gap: 8px; }',
-  '.insp-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }',
-  '.insp-name { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.25px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
-  '.insp-note { font-size: 12px; color: var(--text-1); word-break: break-word; }',
-  '.insp-actions { display: flex; gap: 5px; flex-wrap: wrap; }',
-  '.insp-seg-wrap { padding: 8px 14px; border-bottom: 1px solid var(--hairline); }',
-  '.insp-pane { display: none; padding: 11px 14px 18px; flex-direction: column; gap: 11px; }',
-  '.insp-pane.active { display: flex; }',
-  '.settings-group { background: var(--surface); border: 0.5px solid var(--hairline); border-radius: 10px; overflow: hidden; box-shadow: var(--card-shadow); }',
-  '.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 11px; font-size: 12px; border-bottom: 0.5px solid var(--hairline); }',
-  '.settings-row:last-child { border-bottom: none; }',
-  '.settings-k { color: var(--text-2); flex-shrink: 0; }',
-  '.settings-v { font-family: var(--font-mono); font-size: 11px; color: var(--text-0); text-align: right; word-break: break-all; display: flex; align-items: center; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }',
-  '.perm-pills, .turn-pills { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }',
-  '.perm-pill, .turn-pill { border: 0.5px solid var(--hairline-strong); background: var(--surface); color: var(--text-1); border-radius: 999px; padding: 2px 8px; font-size: 10.5px; font-family: var(--font-mono); cursor: pointer; transition: 0.12s; }',
-  '.perm-pill:hover, .turn-pill:hover { background: var(--surface-2); color: var(--text-0); }',
-  '.perm-pill.active, .turn-pill.active { background: var(--blue); color: #fff; border-color: transparent; font-weight: 600; }',
-  '.perm-pill.yolo.active { background: var(--red); }',
-  '.perm-pill.auto.active { background: var(--green); }',
-  '.doc-card { background: var(--surface); border: 0.5px solid var(--hairline); border-radius: 10px; overflow: hidden; box-shadow: var(--card-shadow); }',
-  '.doc-bar { padding: 6px 10px; background: var(--surface-2); border-bottom: 0.5px solid var(--hairline); display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-2); }',
-  '.doc-bar span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
-  '.doc-pre { margin: 0; padding: 10px 11px; max-height: 250px; overflow: auto; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.52; background: var(--code-bg); color: var(--code-fg); white-space: pre-wrap; word-break: break-word; }',
-  '.callout { padding: 9px 11px; border-radius: 9px; font-size: 12px; border: 0.5px solid var(--hairline); background: var(--surface); color: var(--text-1); }',
-  '.callout.warn { background: var(--orange-bg); color: var(--orange); border-color: transparent; }',
-  '.callout.ok { background: var(--green-bg); color: var(--green); border-color: transparent; }',
-  '.ui-input, .ui-select, .ui-textarea { width: 100%; padding: 6px 9px; border-radius: 6px; border: 0.5px solid var(--hairline-strong); background: var(--surface); color: var(--text-0); font-family: var(--font-mono); font-size: 11.5px; outline: none; }',
-  '.ui-input, .ui-select { height: 29px; padding: 0 9px; }',
-  '.ui-textarea { min-height: 108px; resize: vertical; line-height: 1.48; font-family: var(--font-sans); font-size: 12.5px; }',
-  '.ui-input:focus, .ui-select:focus, .ui-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }',
-  '.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }',
-  '.form-label { font-size: 11px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; display: block; }',
-  '.key-chips { display: flex; gap: 4px; flex-wrap: wrap; }',
-  '.key-chip { padding: 2.5px 8px; border-radius: 5px; border: 0.5px solid var(--hairline-strong); background: var(--surface-2); color: var(--text-0); font-family: var(--font-mono); font-size: 11px; cursor: pointer; }',
-  '.key-chip:hover { background: var(--blue-bg); color: var(--blue); }',
-  '.statusbar { height: 27px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 14px; font-size: 11px; color: var(--text-2); background: var(--toolbar-bg); border-top: 1px solid var(--hairline); font-family: var(--font-mono); overflow: hidden; white-space: nowrap; }',
-  '.notif { position: fixed; top: 20px; right: 22px; z-index: 220; width: 350px; max-width: calc(100vw - 24px); padding: 11px 13px; border-radius: 14px; background: var(--notif-bg); backdrop-filter: blur(26px) saturate(180%); -webkit-backdrop-filter: blur(26px) saturate(180%); border: 0.5px solid var(--hairline-strong); box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22); display: flex; gap: 10px; align-items: flex-start; opacity: 0; pointer-events: none; transform: translateX(24px) scale(0.98); transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1); }',
-  '.notif.show { opacity: 1; pointer-events: auto; transform: translateX(0) scale(1); }',
-  '.notif-icon { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; background: linear-gradient(145deg, #38bdf8, #007aff); color: #fff; font-weight: 700; font-size: 13px; font-family: var(--font-mono); display: flex; align-items: center; justify-content: center; }',
-  '.notif-title { font-weight: 600; font-size: 12.5px; color: var(--text-0); }',
-  '.notif-body { font-size: 11.5px; color: var(--text-1); margin-top: 2px; word-break: break-word; }',
-  '.ctx-menu { position: fixed; z-index: 210; min-width: 220px; padding: 5px; border-radius: 11px; background: var(--menu-bg); backdrop-filter: blur(26px) saturate(190%); -webkit-backdrop-filter: blur(26px) saturate(190%); border: 0.5px solid var(--hairline-strong); box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24), 0 0 0 0.5px rgba(0,0,0,0.06); display: none; flex-direction: column; gap: 2px; }',
-  '.ctx-menu.open { display: flex; }',
-  '.ctx-head { padding: 4px 9px 5px; font-size: 10.5px; font-weight: 700; color: var(--text-2); font-family: var(--font-mono); border-bottom: 0.5px solid var(--hairline); margin-bottom: 2px; }',
-  '.ctx-sep { height: 0.5px; background: var(--hairline); margin: 3px 6px; }',
-  '.ctx-item { border: none; background: transparent; color: var(--text-0); font-family: var(--font-sans); font-size: 12px; text-align: left; padding: 6px 9px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; }',
-  '.ctx-item:hover { background: var(--blue); color: #ffffff; }',
-  '.ctx-item.danger { color: var(--red); }',
-  '.ctx-item.danger:hover { background: var(--red); color: #ffffff; }',
-  '.ctx-perms { display: flex; gap: 4px; padding: 4px 8px; }',
-  '.sheet-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(0, 0, 0, 0.34); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; padding: 16px; }',
-  '.sheet-backdrop.open { display: flex; }',
-  '.sheet { width: 500px; max-width: 100%; max-height: 90vh; overflow-y: auto; padding: 18px 20px; border-radius: 14px; background: var(--surface); border: 0.5px solid var(--hairline-strong); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32); display: flex; flex-direction: column; gap: 11px; }',
-  '.sheet h3 { margin: 0; font-size: 15px; font-weight: 700; }',
-  '.sheet p { margin: 0; font-size: 12px; color: var(--text-1); }',
-  '.sheet-body { display: flex; flex-direction: column; gap: 9px; }',
-  '.sheet-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }',
-  '.palette-list { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }',
-  '.palette-item { padding: 7px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; }',
-  '.palette-item:hover { background: var(--blue-sel); color: var(--blue); }',
-  '.mobile-backdrop { display: none; position: absolute; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.28); }',
-  '.mobile-backdrop.show { display: block; }',
-  '.mobile-close { display: none; }',
-  '.auth-wrap { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }',
-  '.auth-card { width: 410px; max-width: 100%; padding: 26px 24px; border-radius: 16px; background: var(--notif-bg); backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); border: 0.5px solid var(--hairline-strong); box-shadow: var(--win-shadow); display: flex; flex-direction: column; gap: 14px; }',
-  '@media (max-width: 1240px) {',
-  '  .viewport { padding: 0; } .window { border-radius: 0; border: none; }',
-  '  .split { --left-w: 244px; --right-w: 356px; }',
-  '  .board-grid { grid-template-columns: 1fr; }',
-  '}',
-  '@media (max-width: 960px) {',
-  '  .toolbar { grid-template-columns: 1fr auto; row-gap: 6px; padding: 8px 10px; }',
-  '  .toolbar > .segmented { grid-column: 1 / -1; justify-self: center; }',
-  '  .win-sub, .canvas-hint { display: none; }',
-  '  .summary-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px 10px 4px; }',
-  '  .stat-v { font-size: 16px; }',
-  '  .canvas-card { margin: 4px 10px 10px; }',
-  '  .split { grid-template-columns: 1fr !important; }',
-  '  .sidebar { position: absolute; top: 0; bottom: 0; left: 0; width: min(300px, 86vw); z-index: 30; transform: translateX(-105%); transition: transform 0.2s ease; box-shadow: 12px 0 36px rgba(0,0,0,0.22); }',
-  '  .sidebar.mobile-open { transform: translateX(0); }',
-  '  .inspector { position: absolute; left: 0; right: 0; bottom: 0; height: min(76vh, 560px); z-index: 30; border-left: none; border-top: 1px solid var(--hairline-strong); border-radius: 16px 16px 0 0; transform: translateY(105%); transition: transform 0.22s ease; box-shadow: 0 -14px 40px rgba(0,0,0,0.26); }',
-  '  .inspector.mobile-open { transform: translateY(0); }',
-  '  .mobile-close { display: inline-flex; }',
-  '  .ev-card { grid-template-columns: 1fr; gap: 4px; }',
-  '  .form-grid { grid-template-columns: 1fr; }',
-  '}',
-].join('\n');
+const CSS = `
+:root{
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, "Liberation Mono", monospace;
+}
+[data-theme=light]{
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#f2f4f7; --surface-3:#e8ebf0;
+  --canvas-bg:#fafbfd; --canvas-dot:rgba(23,26,31,.09); --lane-bg:rgba(255,255,255,.78); --lane-border:#dfe3ea;
+  --border:#e3e6eb; --border-strong:#c9cfd8;
+  --text:#171a1f; --text-2:#4c5361; --text-3:#737b8b;
+  --accent:#3451d1; --accent-soft:#eef1fd; --accent-text:#2a43b3;
+  --ok:#13864a; --ok-soft:#e7f5ed; --ok-border:#b7e3ca;
+  --warn:#b45309; --warn-soft:#fdf4e6; --warn-border:#f0cf9d;
+  --danger:#c62f2f; --danger-soft:#fdeded; --danger-border:#f4bcbc;
+  --retry:#6a3ccf; --retry-soft:#f2edfd; --retry-border:#d7c7f8;
+  --head:#0e7681; --head-soft:#e5f4f5;
+  --idle:#646c7c; --idle-soft:#f0f1f4;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 2px 6px rgba(16,24,40,.04);
+  --shadow-hover:0 6px 18px rgba(16,24,40,.10);
+  --shadow-lg:0 24px 56px rgba(16,24,40,.18),0 4px 12px rgba(16,24,40,.08);
+  --scrim:rgba(20,23,28,.30);
+  --term-bg:#15181d; --term-text:#d9dee7;
+  --toast:#1c2027;
+}
+[data-theme=dark]{
+  --bg:#0e1013; --surface:#16191e; --surface-2:#1d2128; --surface-3:#262b34;
+  --canvas-bg:#111419; --canvas-dot:rgba(255,255,255,.08); --lane-bg:rgba(22,25,30,.74); --lane-border:#282e38;
+  --border:#272c34; --border-strong:#39404d;
+  --text:#eceef2; --text-2:#b0b7c4; --text-3:#808897;
+  --accent:#7d95ff; --accent-soft:#1c2340; --accent-text:#a9b7ff;
+  --ok:#41c882; --ok-soft:#13271c; --ok-border:#24523a;
+  --warn:#f0a63c; --warn-soft:#2a2013; --warn-border:#5a4219;
+  --danger:#ff6b6b; --danger-soft:#331a1c; --danger-border:#5c292d;
+  --retry:#ab8eff; --retry-soft:#231c3b; --retry-border:#42326e;
+  --head:#3fc5cf; --head-soft:#11292c;
+  --idle:#9aa1ad; --idle-soft:#1f232a;
+  --shadow:0 2px 6px rgba(0,0,0,.35);
+  --shadow-hover:0 8px 22px rgba(0,0,0,.48);
+  --shadow-lg:0 24px 56px rgba(0,0,0,.60);
+  --scrim:rgba(0,0,0,.55);
+  --term-bg:#0a0c0f; --term-text:#d9dee7;
+  --toast:#2b3039;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--font);font-size:14.5px;line-height:1.55;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+code,.mono{font-family:var(--mono)}
+.ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
+.ic.sm{width:14px;height:14px}
+.ic.lg{width:19px;height:19px}
 
-const BODY = [
-  '<div class="viewport">',
-  '  <div class="window">',
-  '    <header class="toolbar">',
-  '      <div class="tb-left">',
-  '        <span class="brand-dot" aria-hidden="true"></span>',
-  '        <button class="ui-btn sm ghost" onclick="togglePanel(\'left\')" title="项目与角色侧栏 (Ctrl/Cmd+B)">☰</button>',
-  '        <div class="win-title"><span>chflow</span><span class="win-sub">/ cross-harness orchestrator</span></div>',
-  '        <span class="badge mono" id="tb-conn">● 初始化</span>',
-  '        <span class="badge green" id="tb-typing">✓ 队列空闲</span>',
-  '      </div>',
-  '      <div class="segmented" role="tablist" aria-label="主视图切换">',
-  '        <button class="seg-btn active" id="tab-dag" onclick="switchView(\'dag\')">角色拓扑图</button>',
-  '        <button class="seg-btn" id="tab-queues" onclick="switchView(\'queues\')">投递控制 &amp; 重试</button>',
-  '        <button class="seg-btn" id="tab-events" onclick="switchView(\'events\')">事件与审计流</button>',
-  '      </div>',
-  '      <div class="tb-right">',
-  '        <span id="demo-controls" style="display:none;gap:5px;align-items:center;">',
-  '          <button class="ui-btn sm" onclick="simHumanUnblock()">演示人工解阻</button>',
-  '          <button class="ui-btn sm" onclick="simTypingToggle()">演示打字暂缓</button>',
-  '        </span>',
-  '        <button class="ui-btn sm" onclick="openRoleSetSheet()" title="新建或配置项目角色 (role set)">＋ 角色</button>',
-  '        <button class="ui-btn sm primary" onclick="openSendSheet()" title="按角色或窗格派发任务 (send)">✦ 派发</button>',
-  '        <button class="ui-btn sm" onclick="openPalette()" title="全局命令与节点跳转 (Ctrl/Cmd+K)">⌘K</button>',
-  '        <button class="ui-btn sm ghost" onclick="triggerPrune()" title="清理离线残留与已结单归档 (prune)">🧹</button>',
-  '        <button class="ui-btn sm ghost" onclick="refreshNow()" title="立即同步全局快照">↻</button>',
-  '        <button class="ui-btn sm ghost" id="theme-btn" onclick="toggleTheme()" title="切换浅色 / 深色外观">☾</button>',
-  '        <button class="ui-btn sm ghost" onclick="togglePanel(\'right\')" title="检视器面板 (Ctrl/Cmd+I)">◫</button>',
-  '      </div>',
-  '    </header>',
-  '    <div class="project-bar">',
-  '      <div class="project-tabs" id="project-tabs"></div>',
-  '      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">',
-  '        <button class="ui-btn xs" onclick="openStartSheet()">＋ 交互工位</button>',
-  '        <button class="ui-btn xs" onclick="openRunSheet()">⚡ 无头 Run</button>',
-  '      </div>',
-  '    </div>',
-  '    <div class="alert-banner" id="alert-banner"></div>',
-  '    <div class="split" id="main-split">',
-  '      <div class="mobile-backdrop" id="mobile-backdrop" onclick="closeMobileDrawers()"></div>',
-  '      <aside class="sidebar" id="sidebar-panel">',
-  '        <div class="sb-quick">',
-  '          <button class="ui-btn xs" onclick="openRoleSetSheet()">＋ 角色槽位</button>',
-  '          <button class="ui-btn xs" onclick="openStartSheet()">＋ 交互工位</button>',
-  '          <button class="ui-btn xs" onclick="openSendSheet()">✦ 派发任务</button>',
-  '        </div>',
-  '        <div class="search-wrap">',
-  '          <input class="search-input" id="search-input" placeholder="过滤项目、角色、窗格、任务或 Harness…" oninput="renderSidebar()" />',
-  '        </div>',
-  '        <div class="scroll" id="sidebar-tree"></div>',
-  '      </aside>',
-  '      <main class="center">',
-  '        <section class="view active" id="view-dag">',
-  '          <div class="summary-row">',
-  '            <div class="stat-card"><div class="stat-k">项目角色</div><div class="stat-v" style="color:var(--blue);" id="kpi-roles">0</div><div class="stat-s" id="kpi-roles-sub">0 已绑定 · 0 待命</div></div>',
-  '            <div class="stat-card"><div class="stat-k">活跃任务</div><div class="stat-v" style="color:var(--green);" id="kpi-active">0</div><div class="stat-s" id="kpi-active-sub">0 交互 · 0 无头</div></div>',
-  '            <div class="stat-card"><div class="stat-k">待授权 / Q&amp;A</div><div class="stat-v" style="color:var(--orange);" id="kpi-blocked">0</div><div class="stat-s">右键或顶部条一键放行</div></div>',
-  '            <div class="stat-card"><div class="stat-k">候投队列控制</div><div class="stat-v" style="color:var(--red);" id="kpi-deferred">0</div><div class="stat-s" id="kpi-deferred-sub">支持强推 / 暂停 / 改派</div></div>',
-  '            <div class="stat-card"><div class="stat-k">未纳管在线</div><div class="stat-v" id="kpi-unmanaged">0</div><div class="stat-s">右键纳管或绑定到角色</div></div>',
-  '          </div>',
-  '          <div class="canvas-card" id="dag-canvas">',
-  '            <div class="canvas-float">',
-  '              <span><i class="dot working"></i>运行中</span>',
-  '              <span><i class="dot blocked"></i>待授权</span>',
-  '              <span><i class="dot retrying"></i>重试/回退</span>',
-  '              <span><i class="dot idle"></i>空闲/就绪</span>',
-  '              <span><i class="dot unbound"></i>待命角色 / 未纳管</span>',
-  '            </div>',
-  '            <div id="dag-empty" class="empty-state" style="display:none;"></div>',
-  '            <svg class="dag" id="dag-svg"></svg>',
-  '            <div class="canvas-hint">拖拽空白平移 · 滚轮指针缩放 · 拖动节点自由排布 · 右键角色热换绑会话</div>',
-  '            <div class="canvas-zoom">',
-  '              <button class="ui-btn sm ghost" onclick="zoomStep(-0.15)" title="缩小">−</button>',
-  '              <button class="ui-btn sm ghost" id="zoom-label" onclick="fitCanvas()" title="适配全图视口">100%</button>',
-  '              <button class="ui-btn sm ghost" onclick="zoomStep(0.15)" title="放大">+</button>',
-  '              <button class="ui-btn sm ghost" onclick="fitCanvas()" title="适配视口">适配</button>',
-  '              <button class="ui-btn sm ghost" onclick="resetDagLayout()" title="重置全部节点自定义坐标">重置</button>',
-  '            </div>',
-  '          </div>',
-  '        </section>',
-  '        <section class="view" id="view-queues">',
-  '          <div class="subbar">',
-  '            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;" id="recipient-controls"></div>',
-  '            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">',
-  '              <button class="ui-btn sm warn" onclick="deliverNowPane()">⚡ 全部强制推入终端</button>',
-  '              <button class="ui-btn sm primary" onclick="triggerFlush()">✓ 仅在 Web 阅读消费 (Flush)</button>',
-  '            </div>',
-  '          </div>',
-  '          <div class="scroll">',
-  '            <div class="board-grid">',
-  '              <div class="panel-group">',
-  '                <div class="panel-group-hd"><span>投递队列精细操控 (单条强推 / 免打扰冻结 / 改派 / 撤回)</span><span class="badge mono">Operator Override</span></div>',
-  '                <div class="panel-group-bd" id="queue-board"></div>',
-  '              </div>',
-  '              <div class="panel-group">',
-  '                <div class="panel-group-hd"><span>退避 / 定时重试与备选回退链</span><span class="badge purple mono">SQLite WAL</span></div>',
-  '                <div class="panel-group-bd" id="retry-board"></div>',
-  '              </div>',
-  '            </div>',
-  '          </div>',
-  '        </section>',
-  '        <section class="view" id="view-events">',
-  '          <div class="subbar">',
-  '            <div class="segmented">',
-  '              <button class="seg-btn active" onclick="setEventFilter(\'all\', this)">全部</button>',
-  '              <button class="seg-btn" onclick="setEventFilter(\'human\', this)">人工干预 / 角色</button>',
-  '              <button class="seg-btn" onclick="setEventFilter(\'queue\', this)">投递与免打扰</button>',
-  '              <button class="seg-btn" onclick="setEventFilter(\'retry\', this)">重试 / 回退链</button>',
-  '              <button class="seg-btn" onclick="setEventFilter(\'blocked\', this)">阻塞与代答</button>',
-  '            </div>',
-  '            <span class="badge mono">直连 Daemon · 零 Agent Token 占用</span>',
-  '          </div>',
-  '          <div class="scroll"><div class="ev-list" id="event-list"></div></div>',
-  '        </section>',
-  '      </main>',
-  '      <aside class="inspector" id="inspector-panel">',
-  '        <div class="insp-head" id="insp-head"></div>',
-  '        <div class="insp-seg-wrap">',
-  '          <div class="segmented full">',
-  '            <button class="seg-btn active" id="subtab-qa" onclick="switchSubtab(\'qa\')">授权 &amp; 终端直控</button>',
-  '            <button class="seg-btn" id="subtab-mailbox" onclick="switchSubtab(\'mailbox\')">信箱与轮次</button>',
-  '            <button class="seg-btn" id="subtab-wire" onclick="switchSubtab(\'wire\')">唤醒协议</button>',
-  '          </div>',
-  '        </div>',
-  '        <div class="scroll">',
-  '          <div class="insp-pane active" id="pane-qa"></div>',
-  '          <div class="insp-pane" id="pane-mailbox"></div>',
-  '          <div class="insp-pane" id="pane-wire"></div>',
-  '        </div>',
-  '      </aside>',
-  '    </div>',
-  '    <footer class="statusbar">',
-  '      <span id="sb-left">● chflow daemon</span>',
-  '      <span id="sb-right">Cross-Harness Orchestrator · Host/Origin/CSRF Protected</span>',
-  '    </footer>',
-  '  </div>',
-  '</div>',
-  '<div class="ctx-menu" id="ctx-menu" onclick="event.stopPropagation()"></div>',
-  '<div class="notif" id="notif"><div class="notif-icon">cf</div><div><div class="notif-title" id="notif-title">chflow</div><div class="notif-body" id="notif-body"></div></div></div>',
-  '<div class="sheet-backdrop" id="sheet-backdrop" onclick="if(event.target===this)closeSheet()">',
-  '  <div class="sheet">',
-  '    <h3 id="sheet-title">操作面板</h3>',
-  '    <p id="sheet-desc"></p>',
-  '    <div class="sheet-body" id="sheet-body"></div>',
-  '    <div class="sheet-foot" id="sheet-foot">',
-  '      <button class="ui-btn" onclick="closeSheet()">取消</button>',
-  '      <button class="ui-btn primary" id="sheet-confirm">确认执行</button>',
-  '    </div>',
-  '  </div>',
-  '</div>',
-].join('\n');
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,filter .14s,color .14s}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.warn{background:var(--warn);border-color:var(--warn);color:#fff}
+.btn.warn:hover{filter:brightness(1.07)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.danger:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger-ghost{background:transparent;border-color:transparent;color:var(--danger)}
+.btn.danger-ghost:hover{background:var(--danger-soft)}
+.btn.sm{height:30px;padding:0 11px;font-size:13px;border-radius:8px;gap:5px}
+.btn.icon{width:36px;padding:0}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 
-const SCRIPT = [
-  '(function(){',
-  'const BOOT = window.__CHFLOW_BOOT__ || { mode: "preview", version: "3.3.0" };',
-  'const IS_LIVE = BOOT.mode === "live" && typeof location !== "undefined" && /^https?:$/.test(location.protocol);',
-  '',
-  'function makeDemoSnapshot() {',
-  '  const now = Date.now();',
-  '  return {',
-  '    seq: 42,',
-  '    now: now,',
-  '    daemon: { pid: 41820, version: BOOT.version || "3.3.0", ui_url: "http://127.0.0.1:4317" },',
-  '    route: { socket: "~/.config/herdr/herdr.sock" },',
-  '    herdr: "reachable",',
-  '    paused_recipients: [],',
-  '    projects: [',
-  '      { project_id: "acme-api", name: "acme-api", root: "~/workspace/acme-api", source: "config", controllers: ["w1:p1", "w1:p2"], roles_count: 3, live_panes: 2, active_tasks: 2, blocked_count: 1 },',
-  '      { project_id: "web-portal", name: "web-portal", root: "~/workspace/web-portal", source: "folder", controllers: ["w3:p1"], roles_count: 1, live_panes: 0, active_tasks: 1, blocked_count: 0 }',
-  '    ],',
-  '    roles: [',
-  '      { project_id: "acme-api", role: "backend", description: "核心业务接口与回归测试", source: "config", default_kind: "codex", default_model: "codex-model", default_effort: "high", default_perm: "auto-workspace", worktree: true, binding_mode: "pane", pane_id: "w2:p1", kind: "codex", model: "codex-model", effort: "high", perm: "auto-workspace", controller: { pane: "w1:p1", label: "lead-agy", kind: "agy", route: { socket: "local" } }, live: true, agent_status: "working", active_task: "feat-orders" },',
-  '      { project_id: "acme-api", role: "reviewer", description: "异构安全与 Diff 审查", source: "config", default_kind: "claude", default_model: "sonnet", default_perm: "ask", binding_mode: "pane", pane_id: "w2:p2", kind: "codex", model: "review-model", effort: "high", perm: "ask", controller: { pane: "w1:p2", label: "arch-claude", kind: "claude", route: { socket: "local" } }, live: true, agent_status: "blocked", active_task: "rev-auth" },',
-  '      { project_id: "acme-api", role: "docs", description: "接口文档与变更日志（按需启动）", source: "config", default_kind: "pi", default_model: "pi-model", default_perm: "auto-workspace", binding_mode: "unbound", live: false, agent_status: "unbound" },',
-  '      { project_id: "web-portal", role: "auditor", description: "静态检查与无头依赖扫描", source: "manual", default_kind: "codex", default_perm: "readonly", binding_mode: "headless", kind: "codex", model: "codex-model", perm: "readonly", controller: { pane: "w3:p1", label: "web-lead", kind: "agy", route: { socket: "local" } }, live: true, agent_status: "headless", active_task: "bg-audit" }',
-  '    ],',
-  '    managed_panes: [',
-  '      { pane_id: "w2:p1", alias: "backend", name: "backend", role: "backend", project_id: "acme-api", kind: "codex", model: "codex-model", effort: "high", perm: "auto-workspace", native_perm: "auto-workspace", adopted: false, live: true, agent_status: "working", workspace_id: "w2", cwd: "~/workspace/acme-api/.worktrees/feat-orders", state_change_seq: 214, controller: { pane: "w1:p1", label: "lead-agy", kind: "agy" }, route: { socket: "local" } },',
-  '      { pane_id: "w2:p2", alias: "reviewer", name: "reviewer", role: "reviewer", project_id: "acme-api", kind: "codex", model: "review-model", effort: "high", perm: "ask", native_perm: "unknown", adopted: true, live: true, agent_status: "blocked", workspace_id: "w2", cwd: "~/workspace/acme-api/.worktrees/review", state_change_seq: 42, controller: { pane: "w1:p2", label: "arch-claude", kind: "claude" }, route: { socket: "local" } }',
-  '    ],',
-  '    unmanaged_live_agents: [',
-  '      { pane_id: "w1:p1", project_id: "acme-api", name: "lead-agy", kind: "agy", terminal_id: "term_m1", agent_status: "idle", cwd: "~/workspace/acme-api", state_change_seq: 198 },',
-  '      { pane_id: "w1:p2", project_id: "acme-api", name: "arch-claude", kind: "claude", terminal_id: "term_m2", agent_status: "idle", cwd: "~/workspace/acme-api", state_change_seq: 120 },',
-  '      { pane_id: "w2:p3", project_id: "acme-api", name: "scratch-pi", kind: "pi", terminal_id: "term_u1", agent_status: "idle", cwd: "~/workspace/acme-api", state_change_seq: 19 },',
-  '      { pane_id: "w3:p1", project_id: "web-portal", name: "web-lead", kind: "agy", terminal_id: "term_m3", agent_status: "idle", cwd: "~/workspace/web-portal", state_change_seq: 84 }',
-  '    ],',
-  '    tasks: [',
-  '      { task: "feat-orders", project_id: "acme-api", role: "backend", attempt: "9f41bc08e12a4d00912bc00192837465", turn: 1, state: "submitted", mode: "interactive", kind: "codex", name: "backend", pane: "w2:p1", pane_id: "w2:p1", perm: "auto-workspace", launch: { kind: "codex", perm: "auto-workspace", model: "codex-model", effort: "high", channel: "codex-default" }, cwd: "~/workspace/acme-api/.worktrees/feat-orders", brief: ".chflow/tasks/feat-orders/t1-brief.md", out: ".chflow/tasks/feat-orders/t1-reply.md", retries: 0, delays: [5000,15000,45000,120000], fallback: [{ kind: "pi", provider: "pi-provider", model: "pi-model", effort: "high", perm: "auto-workspace" }], controller: { pane: "w1:p1", label: "lead-agy", kind: "agy", route: { socket: "local" } }, caller: { pane: "w1:p1", label: "lead-agy", route: { socket: "local" } }, startedAt: now - 185000, activityAt: now - 4000, seq: 214, note: "在独立 worktree 实现订单导出接口与分页测试" },',
-  '      { task: "rev-auth", project_id: "acme-api", role: "reviewer", attempt: "32ab91cd004248ef991a00bc77123490", turn: 2, state: "blocked", mode: "interactive", kind: "codex", name: "reviewer", pane: "w2:p2", pane_id: "w2:p2", perm: "ask", launch: { kind: "codex", perm: "ask", model: "review-model", effort: "high" }, cwd: "~/workspace/acme-api/.worktrees/review", brief: ".chflow/tasks/rev-auth/t2-brief.md", out: ".chflow/tasks/rev-auth/t2-reply.md", diag: ".chflow/tasks/rev-auth/diag-42-blocked.txt", block: { seq: 42, kind: "permission", reason: "approval_required", diag: ".chflow/tasks/rev-auth/diag-42-blocked.txt", since: now - 45000 }, retries: 0, delays: [5000,15000,45000,120000], fallback: [], controller: { pane: "w1:p2", label: "arch-claude", kind: "claude", route: { socket: "local" } }, caller: { pane: "w1:p2", label: "arch-claude", route: { socket: "local" } }, startedAt: now - 240000, activityAt: now - 45000, seq: 42 },',
-  '      { task: "bg-audit", project_id: "web-portal", role: "auditor", attempt: "77dd1209aa8144bc8100ff1290ab3412", turn: 1, state: "scheduled_retry", mode: "headless", transport: "exec", kind: "codex", name: "auditor", perm: "readonly", launch: { kind: "codex", perm: "readonly", model: "codex-model", effort: "medium" }, cwd: "~/workspace/web-portal", brief: ".chflow/tasks/bg-audit/t1-brief.md", out: ".chflow/tasks/bg-audit/t1-reply.md", diag: ".chflow/tasks/bg-audit/diag-1-headless.txt", reason: "quota_exhausted", nextAt: now + 900000, retries: 1, delays: [5000,15000,45000,120000], fallback: [{ kind: "pi", provider: "pi-provider", model: "pi-model", effort: "high", perm: "readonly" }, { kind: "claude", model: "sonnet", effort: "high", perm: "readonly" }], controller: { pane: "w3:p1", label: "web-lead", kind: "agy", route: { socket: "local" } }, startedAt: now - 320000, activityAt: now - 60000 }',
-  '    ],',
-  '    queue: [',
-  '      { event_id: "ev-901", task: "rev-auth", attempt: "32ab91cd004248ef991a00bc77123490", turn: 2, recipient: { pane: "w1:p2", label: "arch-claude", route: { socket: "local" } }, worker: "reviewer(w2:p2)", perm: "ask", type: "blocked", status: "blocked(permission)", diag: ".chflow/tasks/rev-auth/diag-42-blocked.txt", note: "approval_required", seq: 42, created: now - 40000, state: "deferred_user_typing", failures: 0 },',
-  '      { event_id: "ev-899", task: "feat-orders", attempt: "9f41bc08e12a4d00912bc00192837465", turn: 1, recipient: { pane: "w1:p1", label: "lead-agy", route: { socket: "local" } }, worker: "backend(w2:p1)", perm: "auto-workspace", type: "progress", status: "progress", note: "已完成分页查询逻辑，正在运行接口测试", created: now - 80000, state: "queued", failures: 0 }',
-  '    ],',
-  '    scheduled_retries: [',
-  '      { task: "bg-audit", attempt: "77dd1209aa8144bc8100ff1290ab3412", at: now + 900000, state: "pending" }',
-  '    ],',
-  '    audit: [',
-  '      { id: 7, at: now - 38000, task: "rev-auth", event: "deferred_user_typing", detail: "w1:p2 聚焦且存在未提交草稿，可在顶部提醒条直接放行或强推回执" },',
-  '      { id: 6, at: now - 95000, task: "feat-orders", event: "role_bound", detail: "acme-api/backend -> codex(w2:p1)" },',
-  '      { id: 5, at: now - 120000, task: "bg-audit", event: "scheduled_retry", detail: "quota_exhausted -> 支持右键节点直接切往 pi 备选链" }',
-  '    ]',
-  '  };',
-  '}',
-  '',
-  'const DEMO_FILES = {',
-  '  "feat-orders:brief:1": "# 实现订单导出接口与分页过滤\\n\\n- 新增 GET /api/orders/export 分页查询与 CSV 流式输出\\n- 补齐边界参数校验与端到端回归测试",',
-  '  "feat-orders:out:1": "(Worker 正在执行中；可右键角色卡片热切权限、更换底层会话或按需读屏)",',
-  '  "rev-auth:brief:1": "# 第 1 轮：审查权限中间件与输入校验",',
-  '  "rev-auth:out:1": "第 1 轮静态审查通过。",',
-  '  "rev-auth:brief:2": "# 第 2 轮：运行权限边界回归测试\\n\\n需要执行 npm test -- auth-boundary 验证跨租户拦截。",',
-  '  "rev-auth:out:2": "(等待授权放行后继续执行)",',
-  '  "rev-auth:diag:2": "[blocked_kind=permission | state_change_seq=42]\\nWould you like to run the following command?\\n  $ npm test -- auth-boundary\\n\\n› 1. Yes, proceed (Enter)\\n  2. Yes, and don\'t ask again for this workspace\\n  3. No, cancel (Esc)",',
-  '  "bg-audit:brief:1": "# 无头只读扫描：依赖许可与静态安全检查",',
-  '  "bg-audit:out:1": "",',
-  '  "bg-audit:diag:1": "attempt #1 codex exec: quota_exhausted (429 usage window)\\n可右键该节点或在重试看板一键切往 pi 备选链"',
-  '};',
-  '',
-  'const DAG_STORE_KEY = "chflow-dag-pos-v3";',
-  'const PROJ_STORE_KEY = "chflow-active-project";',
-  'function loadSavedPositions() {',
-  '  try { const raw = localStorage.getItem(DAG_STORE_KEY); return raw ? JSON.parse(raw) : {}; } catch (e) { return {}; }',
-  '}',
-  'function savePositions(map) {',
-  '  try { localStorage.setItem(DAG_STORE_KEY, JSON.stringify(map)); } catch (e) {}',
-  '}',
-  'function loadActiveProject() {',
-  '  try { return localStorage.getItem(PROJ_STORE_KEY) || "all"; } catch (e) { return "all"; }',
-  '}',
-  '',
-  'const app = {',
-  '  snap: IS_LIVE ? { seq: 0, now: Date.now(), daemon: { pid: null, version: BOOT.version }, herdr: "connecting", projects: [], roles: [], paused_recipients: [], tasks: [], managed_panes: [], unmanaged_live_agents: [], queue: [], scheduled_retries: [], audit: [] } : makeDemoSnapshot(),',
-  '  activeProject: loadActiveProject(),',
-  '  nodes: {},',
-  '  edges: [],',
-  '  nodePos: loadSavedPositions(),',
-  '  computedPos: {},',
-  '  cam: { x: 24, y: 20, zoom: 1, initialized: false },',
-  '  hoverId: null,',
-  '  drag: null,',
-  '  selectedId: null,',
-  '  selectedTurn: {},',
-  '  fileCache: {},',
-  '  screenCache: {},',
-  '  view: "dag",',
-  '  subtab: "qa",',
-  '  eventFilter: "all",',
-  '  sseConnected: false,',
-  '  sheetConfirmFn: null,',
-  '  typingSim: true',
-  '};',
-  '',
-  'function esc(v) {',
-  '  return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/\'/g, "&#39;");',
-  '}',
-  '',
-  'function shortPath(p) {',
-  '  if (!p) return "—";',
-  '  const s = String(p);',
-  '  const idx = s.indexOf(".chflow/");',
-  '  if (idx >= 0) return s.slice(idx);',
-  '  const parts = s.split("/").filter(Boolean);',
-  '  return parts.length > 3 ? "…/" + parts.slice(-3).join("/") : s;',
-  '}',
-  '',
-  'function worktreeLabel(cwd) {',
-  '  if (!cwd) return "default";',
-  '  const s = String(cwd);',
-  '  const m = /\\.worktrees\\/([^/]+)/.exec(s) || /\\/wt\\/([^/]+)/.exec(s);',
-  '  if (m) return "wt:" + m[1];',
-  '  const base = s.split("/").filter(Boolean).pop();',
-  '  return base || "workspace";',
-  '}',
-  '',
-  'function fmtTime(ts) {',
-  '  if (!ts) return "—";',
-  '  const d = new Date(Number(ts));',
-  '  return Number.isNaN(d.getTime()) ? String(ts) : d.toTimeString().slice(0, 8);',
-  '}',
-  '',
-  'function fmtRel(ts) {',
-  '  if (!ts) return "—";',
-  '  const diff = Math.round((Number(ts) - Date.now()) / 1000);',
-  '  if (Math.abs(diff) < 3) return "刚刚";',
-  '  if (diff > 0) return diff < 60 ? diff + "s 后" : Math.round(diff / 60) + "m 后";',
-  '  const ago = -diff;',
-  '  return ago < 60 ? ago + "s 前" : ago < 3600 ? Math.round(ago / 60) + "m 前" : Math.round(ago / 3600) + "h 前";',
-  '}',
-  '',
-  'function fmtElapsed(startAt, endAt) {',
-  '  if (!startAt) return "";',
-  '  const sec = Math.max(0, Math.round(((endAt || Date.now()) - Number(startAt)) / 1000));',
-  '  if (sec < 60) return sec + "s";',
-  '  const m = Math.floor(sec / 60), r = sec % 60;',
-  '  return m < 60 ? (m + "m" + (r < 10 ? "0" : "") + r + "s") : (Math.floor(m / 60) + "h" + (m % 60) + "m");',
-  '}',
-  '',
-  'function notify(title, body) {',
-  '  document.getElementById("notif-title").textContent = title;',
-  '  document.getElementById("notif-body").textContent = body;',
-  '  const el = document.getElementById("notif");',
-  '  el.classList.add("show");',
-  '  clearTimeout(window.__cfNt);',
-  '  window.__cfNt = setTimeout(function(){ el.classList.remove("show"); }, 3800);',
-  '}',
-  '',
-  'function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }',
-  'function isMobile() { return window.innerWidth <= 960; }',
-  '',
-  'function permBadge(p) {',
-  '  if (p === "yolo") return "<span class=\\"badge red mono\\">yolo</span>";',
-  '  if (p === "auto-workspace") return "<span class=\\"badge green mono\\">auto-ws</span>";',
-  '  if (p === "readonly") return "<span class=\\"badge blue mono\\">readonly</span>";',
-  '  if (p === "unmanaged") return "<span class=\\"badge mono\\">unmanaged</span>";',
-  '  return "<span class=\\"badge mono\\">" + esc(p || "ask") + "</span>";',
-  '}',
-  '',
-  'function statusTone(st) {',
-  '  if (st === "blocked") return "orange";',
-  '  if (st === "retrying" || st === "scheduled_retry") return "purple";',
-  '  if (st === "working" || st === "submitted" || st === "dispatching") return "blue";',
-  '  if (st === "idle" || st === "done" || st === "succeeded" || st === "headless") return "green";',
-  '  if (st === "failed" || st === "cancelled") return "red";',
-  '  return "";',
-  '}',
-  '',
-  'function statusStroke(st) {',
-  '  if (st === "blocked") return cssVar("--orange-dot");',
-  '  if (st === "retrying" || st === "scheduled_retry") return cssVar("--purple-dot");',
-  '  if (st === "working" || st === "submitted" || st === "dispatching") return cssVar("--blue");',
-  '  if (st === "idle" || st === "done" || st === "succeeded" || st === "headless") return cssVar("--green-dot");',
-  '  if (st === "failed" || st === "cancelled") return cssVar("--red-dot");',
-  '  return cssVar("--gray-dot");',
-  '}',
-  '',
-  'function isPaused(pane) {',
-  '  const arr = Array.isArray(app.snap.paused_recipients) ? app.snap.paused_recipients : [];',
-  '  return arr.some(function(x){ return x === pane || String(x).endsWith(":" + pane); });',
-  '}',
-  '',
-  'function matchesProject(pid) {',
-  '  return app.activeProject === "all" || !pid || pid === app.activeProject;',
-  '}',
-  '',
-  'function currentProjectObj() {',
-  '  if (app.activeProject === "all") return null;',
-  '  return (app.snap.projects || []).find(function(p){ return p.project_id === app.activeProject; }) || null;',
-  '}',
-  '',
-  'function renderProjectBar() {',
-  '  const el = document.getElementById("project-tabs");',
-  '  const projects = Array.isArray(app.snap.projects) ? app.snap.projects : [];',
-  '  if (app.activeProject !== "all" && projects.length && !projects.some(function(p){ return p.project_id === app.activeProject; })) {',
-  '    app.activeProject = "all";',
-  '  }',
-  '  const totalTasks = (app.snap.tasks || []).filter(function(t){ return !["succeeded","failed","cancelled"].includes(t.state); }).length;',
-  '  const totalBlocked = (app.snap.tasks || []).filter(function(t){ return t.state === "blocked"; }).length;',
-  '  const tabs = ["<button class=\\"proj-tab" + (app.activeProject === "all" ? " active" : "") + "\\" onclick=\\"selectProject(\'all\')\\"><span>全部项目</span><span class=\\"proj-cnt" + (totalBlocked ? " warn" : "") + "\\">" + (totalBlocked ? ("⚡" + totalBlocked) : totalTasks) + "</span></button>"];',
-  '  projects.forEach(function(p){',
-  '    const active = app.activeProject === p.project_id;',
-  '    const ctrls = Array.isArray(p.controllers) ? p.controllers.length : 0;',
-  '    const cntText = p.blocked_count > 0 ? ("⚡" + p.blocked_count) : String(p.active_tasks || 0);',
-  '    tabs.push("<button class=\\"proj-tab" + (active ? " active" : "") + "\\" onclick=\\"selectProject(\'" + esc(p.project_id) + "\')\\" title=\\"" + esc((p.root || p.project_id) + (ctrls ? (" · " + ctrls + " 主控") : "")) + "\\"><span>" + esc(p.name || p.project_id) + "</span>" + (ctrls > 1 ? "<span class=\\"badge mono\\" style=\\"padding:0 5px;font-size:9.5px;\\">" + ctrls + "主控</span>" : "") + "<span class=\\"proj-cnt" + (p.blocked_count > 0 ? " warn" : "") + "\\">" + cntText + "</span></button>");',
-  '  });',
-  '  el.innerHTML = tabs.join("");',
-  '}',
-  '',
-  'window.selectProject = function(pid) {',
-  '  app.activeProject = pid || "all";',
-  '  try { localStorage.setItem(PROJ_STORE_KEY, app.activeProject); } catch (e) {}',
-  '  app.cam.initialized = false;',
-  '  renderAll();',
-  '};',
-  '',
-  'function buildGraph() {',
-  '  const snap = app.snap || {};',
-  '  const nodes = {};',
-  '  const edges = [];',
-  '  const allTasks = Array.isArray(snap.tasks) ? snap.tasks : [];',
-  '  const allManaged = Array.isArray(snap.managed_panes) ? snap.managed_panes : [];',
-  '  const allUnmanaged = Array.isArray(snap.unmanaged_live_agents) ? snap.unmanaged_live_agents : [];',
-  '  const allRoles = Array.isArray(snap.roles) ? snap.roles : [];',
-  '  const allQueue = Array.isArray(snap.queue) ? snap.queue : [];',
-  '',
-  '  const tasks = allTasks.filter(function(t){ return matchesProject(t.project_id); });',
-  '  const managed = allManaged.filter(function(p){ return matchesProject(p.project_id) && (p.live !== false || tasks.some(function(t){ return (t.pane || t.pane_id) === p.pane_id && !["succeeded","failed","cancelled"].includes(t.state); })); });',
-  '  const unmanaged = allUnmanaged.filter(function(u){ return matchesProject(u.project_id); });',
-  '  const roles = allRoles.filter(function(r){ return matchesProject(r.project_id); });',
-  '  const taskIds = new Set(tasks.map(function(t){ return t.task; }));',
-  '  const queue = allQueue.filter(function(q){ return app.activeProject === "all" || taskIds.has(q.task); });',
-  '  const controllerPanes = {};',
-  '',
-  '  roles.forEach(function(r){ if (r.controller && r.controller.pane) controllerPanes[r.controller.pane] = Object.assign({ project_id: r.project_id }, r.controller); });',
-  '  managed.forEach(function(p){ if (p.controller && p.controller.pane) controllerPanes[p.controller.pane] = Object.assign({ project_id: p.project_id }, p.controller); });',
-  '  tasks.forEach(function(t){ if (t.controller && t.controller.pane) controllerPanes[t.controller.pane] = Object.assign({ project_id: t.project_id }, t.controller); });',
-  '  queue.forEach(function(q){ if (q.recipient && q.recipient.pane) controllerPanes[q.recipient.pane] = Object.assign({}, controllerPanes[q.recipient.pane] || {}, q.recipient); });',
-  '',
-  '  Object.keys(controllerPanes).forEach(function(paneId){',
-  '    const c = controllerPanes[paneId];',
-  '    const liveU = allUnmanaged.find(function(u){ return u.pane_id === paneId; });',
-  '    const liveM = allManaged.find(function(m){ return m.pane_id === paneId; });',
-  '    const deferredCount = queue.filter(function(q){ return q.recipient && q.recipient.pane === paneId && (q.state === "deferred_user_typing" || q.state === "paused_by_operator"); }).length;',
-  '    const queuedCount = queue.filter(function(q){ return q.recipient && q.recipient.pane === paneId && ["queued","deferred_user_typing","paused_by_operator","delivering","pending_unreachable"].includes(q.state); }).length;',
-  '    const paused = isPaused(paneId);',
-  '    const id = "ctrl:" + paneId;',
-  '    nodes[id] = {',
-  '      id: id, role: "controller", col: 0,',
-  '      projectId: c.project_id || (liveU && liveU.project_id) || (liveM && liveM.project_id) || "",',
-  '      label: (c.label && c.label !== paneId ? c.label : (liveU && liveU.name) || (liveM && liveM.alias) || "主控会话") + " (主控)",',
-  '      pane: paneId,',
-  '      harness: c.kind || (liveU && liveU.kind) || (liveM && liveM.kind) || "agy",',
-  '      model: (paused ? "🔕 免打扰已暂停投递" : ("待收 " + queuedCount + (deferredCount ? " · 暂缓 " + deferredCount : ""))),',
-  '      perm: (c.kind === "agy" || (liveU && liveU.kind === "agy")) ? "attended" : "controller",',
-  '      nativePerm: "controller",',
-  '      status: (liveU && liveU.agent_status) || (liveM && liveM.agent_status) || "idle",',
-  '      worktree: worktreeLabel((liveU && liveU.cwd) || (liveM && liveM.cwd)),',
-  '      cwd: (liveU && liveU.cwd) || (liveM && liveM.cwd) || "—",',
-  '      host: c.route && c.route.machine ? ("ssh:" + c.route.machine) : "local",',
-  '      controller: "self",',
-  '      paused: paused,',
-  '      deferredCount: deferredCount,',
-  '      queuedCount: queuedCount,',
-  '      note: paused ? "已开启免打扰暂停投递：回执仅保留在 Web 队列，不注入终端" : (deferredCount > 0 ? ("存在 " + deferredCount + " 条暂缓回执，可一键强制推入终端或直接阅读") : "项目主控收信窗格（同项目支持多主控独立收发）")',
-  '    };',
-  '  });',
-  '',
-  '  const taskByPane = {}, taskByRole = {};',
-  '  tasks.forEach(function(t){',
-  '    const pid = t.pane || t.pane_id;',
-  '    const isTerm = ["succeeded","failed","cancelled"].includes(t.state);',
-  '    if (pid && (!taskByPane[pid] || !isTerm)) taskByPane[pid] = t;',
-  '    if (t.role) {',
-  '      const rk = (t.project_id || "") + ":" + t.role;',
-  '      if (!taskByRole[rk] || !isTerm) taskByRole[rk] = t;',
-  '    }',
-  '  });',
-  '',
-  '  const paneCoveredByRole = new Set();',
-  '  const taskCoveredByRole = new Set();',
-  '',
-  '  roles.forEach(function(r){',
-  '    const rk = (r.project_id || "") + ":" + r.role;',
-  '    const p = r.pane_id ? managed.find(function(m){ return m.pane_id === r.pane_id; }) : null;',
-  '    const t = taskByRole[rk] || (r.pane_id ? taskByPane[r.pane_id] : null) || (r.active_task ? tasks.find(function(x){ return x.task === r.active_task; }) : null);',
-  '    if (r.pane_id) paneCoveredByRole.add(r.pane_id);',
-  '    if (t) taskCoveredByRole.add(t.task);',
-  '    const id = "role:" + r.project_id + ":" + r.role;',
-  '    const isUnbound = r.binding_mode === "unbound" || (!r.live && r.binding_mode === "pane" && !t);',
-  '    const st = t && t.state === "blocked" ? "blocked"',
-  '      : t && (t.state === "retrying" || t.state === "scheduled_retry") ? t.state',
-  '      : isUnbound ? "unbound"',
-  '      : r.binding_mode === "headless" ? (t ? t.state : "headless")',
-  '      : (p && p.live === false ? "offline" : ((p && p.agent_status) || r.agent_status || (t && t.state) || "idle"));',
-  '    const kind = (p && p.kind) || r.kind || r.default_kind || "any";',
-  '    const modelDesc = isUnbound',
-  '      ? ("待命角色 · 默认 " + (r.default_kind || "任意 Harness") + (r.default_model ? (" / " + r.default_model) : ""))',
-  '      : ([r.provider || (p && p.provider), r.model || (p && p.model) || (t && t.launch && t.launch.model), r.effort || (p && p.effort) || (t && t.launch && t.launch.effort)].filter(Boolean).join(" · ") || (kind + " · " + r.binding_mode));',
-  '    const paneDisp = r.binding_mode === "pane" && r.pane_id ? r.pane_id : (r.binding_mode === "headless" ? ("headless:" + kind) : "unbound");',
-  '    const ctrlPane = (t && t.controller && t.controller.pane) || (r.controller && r.controller.pane) || (p && p.controller && p.controller.pane);',
-  '    nodes[id] = {',
-  '      id: id, role: "role_slot", col: 1,',
-  '      projectId: r.project_id || "",',
-  '      roleName: r.role,',
-  '      roleObj: r,',
-  '      label: "@" + r.role,',
-  '      pane: paneDisp,',
-  '      harness: kind,',
-  '      model: modelDesc,',
-  '      perm: (t && t.perm) || r.perm || (p && p.perm) || r.default_perm || "ask",',
-  '      nativePerm: (p && p.native_perm) || r.binding_mode,',
-  '      status: st,',
-  '      unbound: isUnbound,',
-  '      worktree: worktreeLabel((t && t.cwd) || (p && p.cwd) || r.cwd || r.project_id),',
-  '      cwd: (t && t.cwd) || (p && p.cwd) || r.cwd || "—",',
-  '      host: r.route && r.route.machine ? ("ssh:" + r.route.machine) : "local",',
-  '      controller: ctrlPane || "—",',
-  '      taskObj: t || null,',
-  '      paneObj: p || null,',
-  '      note: r.description || (t && (t.note || t.reason)) || (isUnbound ? "固定角色待命槽位：右键可绑定在线窗格或按默认配置一键启动" : "项目固定角色：右键可随时热更换底层 Harness 或会话")',
-  '    };',
-  '    if (ctrlPane && nodes["ctrl:" + ctrlPane]) {',
-  '      edges.push({ from: "ctrl:" + ctrlPane, to: id, label: (nodes[id].perm || "ask") + (t ? (" · #" + t.turn) : (isUnbound ? " · standby" : "")), status: st, dash: isUnbound || r.binding_mode === "headless" ? "4,3" : "" });',
-  '    }',
-  '    if (t && (t.state === "retrying" || t.state === "scheduled_retry") && Array.isArray(t.fallback) && t.fallback.length) {',
-  '      addFallbackNode(nodes, edges, id, t, ctrlPane);',
-  '    }',
-  '  });',
-  '',
-  '  managed.forEach(function(p){',
-  '    if (paneCoveredByRole.has(p.pane_id)) return;',
-  '    if (nodes["ctrl:" + p.pane_id] && !taskByPane[p.pane_id]) return;',
-  '    const t = taskByPane[p.pane_id];',
-  '    const id = "pane:" + p.pane_id;',
-  '    const st = t && t.state === "blocked" ? "blocked" : (t && (t.state === "retrying" || t.state === "scheduled_retry")) ? t.state : (p.live === false ? "offline" : (p.agent_status || (t && t.state) || "idle"));',
-  '    const modelDesc = [p.provider, p.model || (t && t.launch && t.launch.model), p.effort || (t && t.launch && t.launch.effort)].filter(Boolean).join(" · ") || (p.kind + " interactive");',
-  '    nodes[id] = {',
-  '      id: id, role: "worker", col: 1,',
-  '      projectId: p.project_id || (t && t.project_id) || "",',
-  '      label: p.alias || p.name || p.pane_id,',
-  '      pane: p.pane_id,',
-  '      harness: p.kind,',
-  '      model: modelDesc,',
-  '      perm: (t && t.perm) || p.perm || "ask",',
-  '      nativePerm: p.native_perm || "native",',
-  '      adopted: !!p.adopted,',
-  '      status: st,',
-  '      worktree: worktreeLabel((t && t.cwd) || p.cwd),',
-  '      cwd: (t && t.cwd) || p.cwd || "—",',
-  '      host: p.route && p.route.machine ? ("ssh:" + p.route.machine) : "local",',
-  '      controller: (t && t.controller && t.controller.pane) || (p.controller && p.controller.pane) || "—",',
-  '      taskObj: t || null,',
-  '      paneObj: p,',
-  '      note: (t && (t.note || (t.block && ("待授权/提问: " + t.block.kind + " (" + t.block.reason + ")")) || t.reason)) || (p.adopted ? "已纳管工位，右键支持绑定为固定角色、热切权限或读屏" : "临时交互工位")',
-  '    };',
-  '    const ctrlPane = (t && t.controller && t.controller.pane) || (p.controller && p.controller.pane);',
-  '    if (ctrlPane && nodes["ctrl:" + ctrlPane]) {',
-  '      edges.push({ from: "ctrl:" + ctrlPane, to: id, label: ((t && t.perm) || p.perm || "ask") + (t ? (" · #" + t.turn) : (p.adopted ? " · adopted" : "")), status: st, dash: p.adopted && !t ? "4,3" : "" });',
-  '    }',
-  '    if (t && (t.state === "retrying" || t.state === "scheduled_retry") && Array.isArray(t.fallback) && t.fallback.length) {',
-  '      addFallbackNode(nodes, edges, id, t, ctrlPane);',
-  '    }',
-  '  });',
-  '',
-  '  tasks.forEach(function(t){',
-  '    if (taskCoveredByRole.has(t.task)) return;',
-  '    const pid = t.pane || t.pane_id;',
-  '    const isTerm = ["succeeded","failed","cancelled"].includes(t.state);',
-  '    if (pid && nodes["pane:" + pid] && (!isTerm || (nodes["pane:" + pid].taskObj && nodes["pane:" + pid].taskObj.task === t.task))) return;',
-  '    const id = "task:" + t.task;',
-  '    const modelDesc = [t.launch && t.launch.provider, t.launch && t.launch.model, t.launch && t.launch.effort, t.transport].filter(Boolean).join(" · ") || (t.mode || "headless");',
-  '    nodes[id] = {',
-  '      id: id, role: isTerm ? "archived" : "task", col: isTerm ? 2 : 1,',
-  '      projectId: t.project_id || "",',
-  '      label: t.task + (t.mode === "headless" ? " (headless)" : isTerm ? (" (" + t.state + ")") : ""),',
-  '      pane: pid || ("headless:" + (t.kind || (t.launch && t.launch.kind) || "worker")),',
-  '      harness: t.kind || (t.launch && t.launch.kind) || "codex",',
-  '      model: modelDesc,',
-  '      perm: t.perm || (t.launch && t.launch.perm) || "ask",',
-  '      nativePerm: t.mode === "headless" ? "headless" : "native",',
-  '      status: t.state,',
-  '      worktree: worktreeLabel(t.cwd),',
-  '      cwd: t.cwd || "—",',
-  '      host: t.route && t.route.machine ? ("ssh:" + t.route.machine) : "local",',
-  '      controller: (t.controller && t.controller.pane) || "—",',
-  '      taskObj: t,',
-  '      note: t.note || (t.reason ? ("原因: " + t.reason) : "由 Daemon 托管任务与信箱")',
-  '    };',
-  '    const ctrlPane = t.controller && t.controller.pane;',
-  '    if (!isTerm && ctrlPane && nodes["ctrl:" + ctrlPane]) {',
-  '      edges.push({ from: "ctrl:" + ctrlPane, to: id, label: (t.perm || "ask") + " · #" + t.turn, status: t.state, dash: t.mode === "headless" ? "5,3" : "" });',
-  '    }',
-  '    if (!isTerm && (t.state === "retrying" || t.state === "scheduled_retry") && Array.isArray(t.fallback) && t.fallback.length) {',
-  '      addFallbackNode(nodes, edges, id, t, ctrlPane);',
-  '    }',
-  '  });',
-  '',
-  '  unmanaged.forEach(function(u){',
-  '    if (nodes["ctrl:" + u.pane_id] || nodes["pane:" + u.pane_id] || paneCoveredByRole.has(u.pane_id)) return;',
-  '    const id = "unmanaged:" + u.pane_id;',
-  '    nodes[id] = {',
-  '      id: id, role: "unmanaged", col: 2,',
-  '      projectId: u.project_id || "",',
-  '      label: (u.name || u.pane_id) + " (未纳管)",',
-  '      pane: u.pane_id,',
-  '      harness: u.kind || "unknown",',
-  '      model: "在线窗格 · " + (u.agent_status || "live") + " · seq=" + (u.state_change_seq != null ? u.state_change_seq : "—"),',
-  '      perm: "unmanaged",',
-  '      nativePerm: "unknown",',
-  '      status: "unmanaged",',
-  '      liveStatus: u.agent_status,',
-  '      worktree: worktreeLabel(u.cwd),',
-  '      cwd: u.cwd || "—",',
-  '      host: "local",',
-  '      controller: "none",',
-  '      unmanagedObj: u,',
-  '      note: "右键可一键纳管、绑定到项目角色或归入指定项目"',
-  '    };',
-  '  });',
-  '',
-  '  app.nodes = nodes;',
-  '  app.edges = edges;',
-  '  const ids = Object.keys(nodes);',
-  '  if (!app.selectedId || !nodes[app.selectedId]) {',
-  '    const blockedNode = ids.find(function(k){ return nodes[k].status === "blocked"; });',
-  '    const roleNode = ids.find(function(k){ return nodes[k].role === "role_slot" || nodes[k].role === "worker" || nodes[k].role === "task"; });',
-  '    app.selectedId = blockedNode || roleNode || ids[0] || null;',
-  '  }',
-  '}',
-  '',
-  'function addFallbackNode(nodes, edges, fromId, t, ctrlPane) {',
-  '  const fbId = "fb:" + t.task;',
-  '  const fb0 = t.fallback[0];',
-  '  nodes[fbId] = {',
-  '    id: fbId, role: "fallback", col: 2,',
-  '    projectId: t.project_id || "",',
-  '    label: "Fallback → " + fb0.kind,',
-  '    pane: "chain(" + t.fallback.length + ")",',
-  '    harness: fb0.kind,',
-  '    model: [fb0.provider, fb0.model, fb0.effort].filter(Boolean).join(" · ") || "备选通道",',
-  '    perm: fb0.perm || t.perm || "ask",',
-  '    nativePerm: "fallback",',
-  '    status: "retrying",',
-  '    worktree: worktreeLabel(t.cwd),',
-  '    cwd: t.cwd || "—",',
-  '    host: "local",',
-  '    controller: ctrlPane || "—",',
-  '    taskObj: t,',
-  '    note: "回退链：" + t.fallback.map(function(f){ return f.kind + (f.model ? ":" + f.model : ""); }).join(" → ")',
-  '  };',
-  '  edges.push({ from: fromId, to: fbId, label: "fallback", status: "retrying", dash: "5,4" });',
-  '}',
-  '',
-  'async function apiGet(path) {',
-  '  const res = await fetch(path, { headers: { "Accept": "application/json" }, cache: "no-store" });',
-  '  if (res.status === 401) { location.reload(); throw new Error("需要访问令牌验证"); }',
-  '  const body = await res.json().catch(function(){ return null; });',
-  '  if (!res.ok || !body || body.ok === false) {',
-  '    throw new Error((body && body.error && body.error.message) || ("HTTP " + res.status));',
-  '  }',
-  '  return body.data;',
-  '}',
-  '',
-  'async function apiAction(action, target, opts) {',
-  '  if (!IS_LIVE) return runDemoAction(action, target, opts || {});',
-  '  const headers = { "Content-Type": "application/json", "Accept": "application/json" };',
-  '  if (BOOT.csrfToken) headers["X-Chflow-Token"] = BOOT.csrfToken;',
-  '  const res = await fetch("/api/action", {',
-  '    method: "POST",',
-  '    headers: headers,',
-  '    body: JSON.stringify({ action: action, target: target, opts: opts || {} })',
-  '  });',
-  '  if (res.status === 401) { location.reload(); throw new Error("会话已失效，请重新输入访问令牌"); }',
-  '  const body = await res.json().catch(function(){ return null; });',
-  '  if (!body || (body.ok === false && body.exit_code !== 2)) {',
-  '    const code = (body && body.error && body.error.code) || ("http_" + res.status);',
-  '    const msg = (body && body.error && body.error.message) || "请求失败";',
-  '    throw new Error(code + ": " + msg);',
-  '  }',
-  '  await refreshNow(true);',
-  '  return body.data;',
-  '}',
-  '',
-  'async function ensureTaskFiles(taskObj, turn) {',
-  '  if (!taskObj) return;',
-  '  const t = turn || taskObj.turn || 1;',
-  '  const seqTag = app.snap.seq || 0;',
-  '  const kinds = ["brief", "out"];',
-  '  if (taskObj.diag || (taskObj.block && taskObj.block.diag)) kinds.push("diag");',
-  '  if (!IS_LIVE) {',
-  '    kinds.forEach(function(k){',
-  '      const ck = taskObj.task + ":" + k + ":" + t;',
-  '      if (!app.fileCache[ck]) {',
-  '        const content = DEMO_FILES[ck] || DEMO_FILES[taskObj.task + ":" + k + ":1"] || "";',
-  '        app.fileCache[ck] = { exists: !!content, content: content, path: k === "brief" ? taskObj.brief : k === "out" ? taskObj.out : (taskObj.diag || ""), seq: seqTag };',
-  '      }',
-  '    });',
-  '    return;',
-  '  }',
-  '  let changed = false;',
-  '  await Promise.all(kinds.map(async function(k){',
-  '    const ck = taskObj.task + ":" + k + ":" + t;',
-  '    const prev = app.fileCache[ck];',
-  '    if (prev && prev.seq === seqTag) return;',
-  '    app.fileCache[ck] = Object.assign({}, prev || {}, { loading: true, seq: seqTag });',
-  '    try {',
-  '      const data = await apiGet("/api/tasks/" + encodeURIComponent(taskObj.task) + "/file?kind=" + k + "&turn=" + t);',
-  '      app.fileCache[ck] = { exists: !!data.exists, content: data.content || "", path: data.path || "", seq: seqTag, loading: false };',
-  '      changed = true;',
-  '    } catch (err) {',
-  '      app.fileCache[ck] = { exists: false, content: "", error: err.message, path: "", seq: seqTag, loading: false };',
-  '      changed = true;',
-  '    }',
-  '  }));',
-  '  if (changed) renderInspector();',
-  '}',
-  '',
-  'function renderAlertBanner() {',
-  '  const el = document.getElementById("alert-banner");',
-  '  const tasks = (Array.isArray(app.snap.tasks) ? app.snap.tasks : []).filter(function(t){ return matchesProject(t.project_id); });',
-  '  const taskIds = new Set(tasks.map(function(t){ return t.task; }));',
-  '  const queue = (Array.isArray(app.snap.queue) ? app.snap.queue : []).filter(function(q){ return app.activeProject === "all" || taskIds.has(q.task); });',
-  '  const blocked = tasks.filter(function(t){ return t.state === "blocked"; });',
-  '  const deferred = queue.filter(function(q){ return q.state === "deferred_user_typing" || q.state === "paused_by_operator" || q.state === "pending_unreachable"; });',
-  '  const urgentCount = blocked.length + deferred.length;',
-  '  const proj = currentProjectObj();',
-  '  const baseTitle = proj ? ((proj.name || proj.project_id) + " · chflow") : "chflow — Cross-Harness Orchestrator";',
-  '  document.title = (urgentCount > 0 ? "(" + urgentCount + ") " : "") + baseTitle;',
-  '  if (!urgentCount) { el.classList.remove("show"); el.innerHTML = ""; return; }',
-  '  const rows = [];',
-  '  blocked.slice(0, 2).forEach(function(t){',
-  '    const roleKey = t.role && app.nodes["role:" + (t.project_id || "") + ":" + t.role] ? ("role:" + (t.project_id || "") + ":" + t.role) : null;',
-  '    const nodeId = roleKey || (t.pane && app.nodes["pane:" + t.pane] ? ("pane:" + t.pane) : ("task:" + t.task));',
-  '    const reason = (t.block && (t.block.reason || t.block.kind)) || t.reason || "approval_required";',
-  '    rows.push("<div class=\\"alert-item\\">" +',
-  '      "<div class=\\"alert-text\\"><span class=\\"badge orange mono\\">⚡ 待授权</span><strong>" + esc((t.role ? ("@" + t.role + " · ") : "") + t.task + "#" + t.turn) + "</strong><span style=\\"color:var(--text-1);\\">" + esc((t.name || t.kind) + " · " + reason) + "</span></div>" +',
-  '      "<div class=\\"alert-actions\\">" +',
-  '        "<button class=\\"ui-btn xs success\\" onclick=\\"quickTerminal(\'" + esc(t.task) + "\',[\'enter\'])\\">✓ 一键批准 (Enter)</button>" +',
-  '        "<button class=\\"ui-btn xs primary\\" onclick=\\"hotSetPerm(\'" + esc(t.task) + "\',\'yolo\')\\">⚡ 升为 yolo</button>" +',
-  '        "<button class=\\"ui-btn xs\\" onclick=\\"focusNodeQa(\'" + esc(nodeId) + "\')\\">查看现场</button>" +',
-  '      "</div></div>");',
-  '  });',
-  '  if (deferred.length) {',
-  '    rows.push("<div class=\\"alert-item\\">" +',
-  '      "<div class=\\"alert-text\\"><span class=\\"badge blue mono\\">⏸ 队列待投</span><span>当前有 <strong>" + deferred.length + "</strong> 条回执处于暂缓或免打扰冻结状态</span></div>" +',
-  '      "<div class=\\"alert-actions\\">" +',
-  '        "<button class=\\"ui-btn xs warn\\" onclick=\\"deliverNowPane()\\">⚡ 全部强推入终端</button>" +',
-  '        "<button class=\\"ui-btn xs\\" onclick=\\"triggerFlush()\\">✓ Flush 仅阅</button>" +',
-  '        "<button class=\\"ui-btn xs ghost\\" onclick=\\"switchView(\'queues\')\\">打开队列看板 →</button>" +',
-  '      "</div></div>");',
-  '  }',
-  '  el.innerHTML = rows.join("");',
-  '  el.classList.add("show");',
-  '}',
-  '',
-  'function renderSidebar() {',
-  '  const q = (document.getElementById("search-input").value || "").trim().toLowerCase();',
-  '  const tree = document.getElementById("sidebar-tree");',
-  '  const all = Object.values(app.nodes).filter(function(n){ return n.role !== "fallback"; });',
-  '  const groups = [',
-  '    { title: "项目主控 (Controllers)", match: function(n){ return n.role === "controller"; } },',
-  '    { title: "稳定角色槽位 (Roles)", match: function(n){ return n.role === "role_slot"; } },',
-  '    { title: "临时工位与独立任务", match: function(n){ return n.role === "worker" || n.role === "task"; } },',
-  '    { title: "未纳管在线窗格 (Unmanaged)", match: function(n){ return n.role === "unmanaged"; } },',
-  '    { title: "已结单归档任务", match: function(n){ return n.role === "archived"; } }',
-  '  ];',
-  '  let html = "";',
-  '  groups.forEach(function(g){',
-  '    const items = all.filter(function(n){',
-  '      if (!g.match(n)) return false;',
-  '      if (!q) return true;',
-  '      const hay = [n.label, n.projectId, n.roleName, n.pane, n.harness, n.worktree, n.status, n.taskObj && n.taskObj.task].filter(Boolean).join(" ").toLowerCase();',
-  '      return hay.indexOf(q) >= 0;',
-  '    });',
-  '    if (!items.length) return;',
-  '    html += "<div class=\\"sl-section\\"><div class=\\"sl-title\\"><span>" + esc(g.title) + "</span><span>" + items.length + "</span></div>";',
-  '    const byProj = {};',
-  '    items.forEach(function(it){ const pk = it.projectId || it.worktree || "default"; (byProj[pk] = byProj[pk] || []).push(it); });',
-  '    Object.keys(byProj).forEach(function(pk){',
-  '      html += "<div class=\\"wt-group\\">" + (app.activeProject === "all" ? ("<div class=\\"wt-label\\">◈ " + esc(pk) + "</div>") : "");',
-  '      byProj[pk].forEach(function(n){',
-  '        const active = n.id === app.selectedId ? " active" : "";',
-  '        html += "<div class=\\"sl-item" + active + "\\" onclick=\\"selectNode(\'" + esc(n.id) + "\', true)\\">" +',
-  '          "<div class=\\"sl-row1\\">" +',
-  '            "<div class=\\"sl-name\\"><span class=\\"dot " + esc(n.status) + "\\"></span><span>" + esc(n.label) + "</span></div>" +',
-  '            (n.role === "unmanaged"',
-  '              ? "<button class=\\"ui-btn xs primary\\" onclick=\\"event.stopPropagation();openAdoptSheet(\'" + esc(n.pane) + "\',\'" + esc(n.harness) + "\')\\">纳管</button>"',
-  '              : n.unbound',
-  '                ? "<button class=\\"ui-btn xs\\" onclick=\\"event.stopPropagation();openRoleBindSheet(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\">绑定</button>"',
-  '                : "<span class=\\"sl-pane\\">" + esc(n.pane) + "</span>") +',
-  '          "</div>" +',
-  '          "<div class=\\"sl-row2\\"><span class=\\"badge mono\\">" + esc(n.harness) + "</span>" + permBadge(n.perm) +',
-  '            (n.taskObj ? "<span class=\\"badge mono\\">#" + n.taskObj.turn + "</span>" : "") +',
-  '            (n.paused ? "<span class=\\"badge orange mono\\">DND</span>" : "") +',
-  '            (n.unbound ? "<span class=\\"badge mono\\">待命</span>" : "") +',
-  '          "</div></div>";',
-  '      });',
-  '      html += "</div>";',
-  '    });',
-  '    html += "</div>";',
-  '  });',
-  '  tree.innerHTML = html || "<div style=\\"padding:20px;text-align:center;color:var(--text-2);font-size:12px;\\">当前项目视图暂无节点，可点击上方「＋ 角色槽位」或「＋ 交互工位」创建</div>";',
-  '}',
-  '',
-  '/* === Interactive Mouse & Touch DAG Engine === */',
-  'function computeDagPositions(list) {',
-  '  const cols = [[], [], []];',
-  '  list.forEach(function(n){ cols[Math.min(2, Math.max(0, n.col || 0))].push(n); });',
-  '  const colX = [42, 342, 650], colW = [232, 242, 214], cardH = 100, gapY = 24, topPad = 56;',
-  '  const maxRows = Math.max(cols[0].length, cols[1].length, cols[2].length, 1);',
-  '  const totalSpan = topPad + maxRows * (cardH + gapY) + 36;',
-  '  const pos = {};',
-  '  const scopePrefix = app.activeProject + "::";',
-  '  cols.forEach(function(arr, ci){',
-  '    const totalH = arr.length * cardH + Math.max(0, arr.length - 1) * gapY;',
-  '    const startY = Math.max(topPad, Math.round((totalSpan - totalH) / 2));',
-  '    arr.forEach(function(n, idx){',
-  '      const saved = app.nodePos[scopePrefix + n.id] || app.nodePos[n.id];',
-  '      const x = saved && Number.isFinite(saved.x) ? saved.x : colX[ci];',
-  '      const y = saved && Number.isFinite(saved.y) ? saved.y : (startY + idx * (cardH + gapY));',
-  '      pos[n.id] = { x: x, y: y, w: colW[ci], h: cardH };',
-  '    });',
-  '  });',
-  '  app.computedPos = pos;',
-  '  return pos;',
-  '}',
-  '',
-  'function applyCamTransform() {',
-  '  const vp = document.getElementById("dag-viewport");',
-  '  const canvas = document.getElementById("dag-canvas");',
-  '  if (vp) vp.setAttribute("transform", "translate(" + app.cam.x.toFixed(1) + "," + app.cam.y.toFixed(1) + ") scale(" + app.cam.zoom.toFixed(3) + ")");',
-  '  if (canvas) {',
-  '    const step = Math.max(10, 22 * app.cam.zoom);',
-  '    canvas.style.backgroundSize = step.toFixed(1) + "px " + step.toFixed(1) + "px";',
-  '    canvas.style.backgroundPosition = (app.cam.x % step).toFixed(1) + "px " + (app.cam.y % step).toFixed(1) + "px";',
-  '  }',
-  '  const zl = document.getElementById("zoom-label");',
-  '  if (zl) zl.textContent = Math.round(app.cam.zoom * 100) + "%";',
-  '}',
-  '',
-  'window.fitCanvas = function() {',
-  '  const canvas = document.getElementById("dag-canvas");',
-  '  const ids = Object.keys(app.computedPos);',
-  '  if (!canvas || !ids.length) return;',
-  '  const rect = canvas.getBoundingClientRect();',
-  '  if (rect.width < 40 || rect.height < 40) return;',
-  '  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;',
-  '  ids.forEach(function(id){',
-  '    const p = app.computedPos[id];',
-  '    if (p.x < minX) minX = p.x;',
-  '    if (p.y < minY) minY = p.y;',
-  '    if (p.x + p.w > maxX) maxX = p.x + p.w;',
-  '    if (p.y + p.h > maxY) maxY = p.y + p.h;',
-  '  });',
-  '  const padX = 48, padY = 54;',
-  '  const bw = Math.max(1, maxX - minX), bh = Math.max(1, maxY - minY);',
-  '  const scale = Math.min(1.12, Math.max(0.45, Math.min((rect.width - padX * 2) / bw, (rect.height - padY * 2) / bh)));',
-  '  app.cam.zoom = Math.round(scale * 1000) / 1000;',
-  '  app.cam.x = Math.round((rect.width - bw * app.cam.zoom) / 2 - minX * app.cam.zoom);',
-  '  app.cam.y = Math.round((rect.height - bh * app.cam.zoom) / 2 - minY * app.cam.zoom + 8);',
-  '  app.cam.initialized = true;',
-  '  applyCamTransform();',
-  '};',
-  '',
-  'window.zoomStep = function(delta) {',
-  '  const canvas = document.getElementById("dag-canvas");',
-  '  const rect = canvas ? canvas.getBoundingClientRect() : { width: 800, height: 480 };',
-  '  zoomAt(rect.width / 2, rect.height / 2, app.cam.zoom + delta);',
-  '};',
-  '',
-  'function zoomAt(clientLocalX, clientLocalY, nextZoom) {',
-  '  const clamped = Math.min(2.2, Math.max(0.42, Math.round(nextZoom * 1000) / 1000));',
-  '  const worldX = (clientLocalX - app.cam.x) / app.cam.zoom;',
-  '  const worldY = (clientLocalY - app.cam.y) / app.cam.zoom;',
-  '  app.cam.zoom = clamped;',
-  '  app.cam.x = clientLocalX - worldX * clamped;',
-  '  app.cam.y = clientLocalY - worldY * clamped;',
-  '  applyCamTransform();',
-  '}',
-  '',
-  'window.resetDagLayout = function() {',
-  '  app.nodePos = {};',
-  '  savePositions({});',
-  '  app.cam.initialized = false;',
-  '  renderDAG();',
-  '  fitCanvas();',
-  '  notify("已重置拓扑排布", "全部节点已恢复自动三栏布局并适配视口");',
-  '};',
-  '',
-  'function edgePathCoords(a, b) {',
-  '  const leftToRight = (a.x + a.w / 2) <= (b.x + b.w / 2);',
-  '  const x1 = leftToRight ? (a.x + a.w) : a.x;',
-  '  const x2 = leftToRight ? b.x : (b.x + b.w);',
-  '  const y1 = a.y + a.h / 2;',
-  '  const y2 = b.y + b.h / 2;',
-  '  const dx = Math.max(46, Math.abs(x2 - x1) * 0.48);',
-  '  const c1x = leftToRight ? (x1 + dx) : (x1 - dx);',
-  '  const c2x = leftToRight ? (x2 - dx) : (x2 + dx);',
-  '  const tx = leftToRight ? (x2 - 5) : (x2 + 5);',
-  '  return { d: "M " + x1 + " " + y1 + " C " + c1x + " " + y1 + ", " + c2x + " " + y2 + ", " + tx + " " + y2, mx: (x1 + x2) / 2, my: (y1 + y2) / 2 };',
-  '}',
-  '',
-  'function updateConnectedEdgesDom(nodeId) {',
-  '  app.edges.forEach(function(e, idx){',
-  '    if (e.from !== nodeId && e.to !== nodeId) return;',
-  '    const a = app.computedPos[e.from], b = app.computedPos[e.to];',
-  '    if (!a || !b) return;',
-  '    const c = edgePathCoords(a, b);',
-  '    const pathEl = document.getElementById("edge-p-" + idx);',
-  '    const rectEl = document.getElementById("edge-r-" + idx);',
-  '    const textEl = document.getElementById("edge-t-" + idx);',
-  '    if (pathEl) pathEl.setAttribute("d", c.d);',
-  '    if (rectEl) { const w = Number(rectEl.getAttribute("width") || 80); rectEl.setAttribute("x", String(c.mx - w / 2)); rectEl.setAttribute("y", String(c.my - 9)); }',
-  '    if (textEl) { textEl.setAttribute("x", String(c.mx)); textEl.setAttribute("y", String(c.my + 3)); }',
-  '  });',
-  '}',
-  '',
-  'function applyHoverHighlight(hoverId) {',
-  '  app.hoverId = hoverId;',
-  '  const svg = document.getElementById("dag-svg");',
-  '  if (!svg) return;',
-  '  const related = new Set();',
-  '  if (hoverId) {',
-  '    related.add(hoverId);',
-  '    app.edges.forEach(function(e){',
-  '      if (e.from === hoverId || e.to === hoverId) { related.add(e.from); related.add(e.to); }',
-  '    });',
-  '  }',
-  '  svg.querySelectorAll(".dag-node").forEach(function(el){',
-  '    const id = el.getAttribute("data-id");',
-  '    el.classList.toggle("dimmed", !!hoverId && !related.has(id));',
-  '  });',
-  '  svg.querySelectorAll(".dag-edge").forEach(function(el){',
-  '    const f = el.getAttribute("data-from"), t = el.getAttribute("data-to");',
-  '    el.classList.toggle("dimmed", !!hoverId && f !== hoverId && t !== hoverId);',
-  '  });',
-  '}',
-  '',
-  'function renderDAG() {',
-  '  if (app.drag && app.drag.kind === "node") return;',
-  '  const svg = document.getElementById("dag-svg");',
-  '  const empty = document.getElementById("dag-empty");',
-  '  const list = Object.values(app.nodes).filter(function(n){ return n.role !== "archived"; });',
-  '  if (!list.length) {',
-  '    svg.style.display = "none";',
-  '    empty.style.display = "flex";',
-  '    empty.innerHTML = "<div style=\\"font-size:15px;font-weight:600;color:var(--text-0);\\">当前视图暂无活跃角色或在线工位</div>" +',
-  '      "<div>可先新建项目角色槽位、拉起交互工位或启动无头任务：</div>" +',
-  '      "<div style=\\"display:flex;gap:8px;margin-top:4px;\\"><button class=\\"ui-btn primary\\" onclick=\\"openRoleSetSheet()\\">＋ 新建项目角色</button><button class=\\"ui-btn\\" onclick=\\"openStartSheet()\\">＋ 交互工位</button></div>";',
-  '    return;',
-  '  }',
-  '  svg.style.display = "block";',
-  '  empty.style.display = "none";',
-  '',
-  '  const pos = computeDagPositions(list);',
-  '  const cardBg = cssVar("--svg-card"), chipBg = cssVar("--svg-chip"), edgeBg = cssVar("--svg-edge-bg");',
-  '  const text0 = cssVar("--text-0"), text1 = cssVar("--text-1"), text2 = cssVar("--text-2"), hairline = cssVar("--hairline-strong");',
-  '  const blue = cssVar("--blue"), green = cssVar("--green-dot"), orange = cssVar("--orange-dot"), purple = cssVar("--purple-dot"), red = cssVar("--red-dot");',
-  '',
-  '  let out = "<defs>" +',
-  '    "<filter id=\\"node-shadow\\" x=\\"-10%\\" y=\\"-10%\\" width=\\"125%\\" height=\\"135%\\"><feDropShadow dx=\\"0\\" dy=\\"3\\" stdDeviation=\\"5\\" flood-color=\\"#000\\" flood-opacity=\\"0.10\\"/></filter>" +',
-  '    "<marker id=\\"m-blue\\" viewBox=\\"0 0 10 10\\" refX=\\"8\\" refY=\\"5\\" markerWidth=\\"6\\" markerHeight=\\"6\\" orient=\\"auto-start-reverse\\"><path d=\\"M 0 1 L 10 5 L 0 9 z\\" fill=\\"" + blue + "\\"/></marker>" +',
-  '    "<marker id=\\"m-orange\\" viewBox=\\"0 0 10 10\\" refX=\\"8\\" refY=\\"5\\" markerWidth=\\"6\\" markerHeight=\\"6\\" orient=\\"auto-start-reverse\\"><path d=\\"M 0 1 L 10 5 L 0 9 z\\" fill=\\"" + orange + "\\"/></marker>" +',
-  '    "<marker id=\\"m-green\\" viewBox=\\"0 0 10 10\\" refX=\\"8\\" refY=\\"5\\" markerWidth=\\"6\\" markerHeight=\\"6\\" orient=\\"auto-start-reverse\\"><path d=\\"M 0 1 L 10 5 L 0 9 z\\" fill=\\"" + green + "\\"/></marker>" +',
-  '    "<marker id=\\"m-purple\\" viewBox=\\"0 0 10 10\\" refX=\\"8\\" refY=\\"5\\" markerWidth=\\"6\\" markerHeight=\\"6\\" orient=\\"auto-start-reverse\\"><path d=\\"M 0 1 L 10 5 L 0 9 z\\" fill=\\"" + purple + "\\"/></marker>" +',
-  '    "<marker id=\\"m-red\\" viewBox=\\"0 0 10 10\\" refX=\\"8\\" refY=\\"5\\" markerWidth=\\"6\\" markerHeight=\\"6\\" orient=\\"auto-start-reverse\\"><path d=\\"M 0 1 L 10 5 L 0 9 z\\" fill=\\"" + red + "\\"/></marker>" +',
-  '    "</defs><g id=\\"dag-viewport\\">";',
-  '',
-  '  app.edges.forEach(function(e, idx){',
-  '    const a = pos[e.from], b = pos[e.to];',
-  '    if (!a || !b) return;',
-  '    const c = edgePathCoords(a, b);',
-  '    const col = e.status === "blocked" ? orange : (e.status === "retrying" || e.status === "scheduled_retry") ? purple : (e.status === "failed" || e.status === "cancelled") ? red : (e.status === "idle" || e.status === "done" || e.status === "succeeded" || e.status === "headless") ? green : blue;',
-  '    const mk = col === orange ? "m-orange" : col === green ? "m-green" : col === purple ? "m-purple" : col === red ? "m-red" : "m-blue";',
-  '    const lw = Math.max(76, Math.min(130, e.label.length * 6.8 + 18));',
-  '    out += "<g class=\\"dag-edge\\" data-from=\\"" + esc(e.from) + "\\" data-to=\\"" + esc(e.to) + "\\">" +',
-  '      "<path id=\\"edge-p-" + idx + "\\" d=\\"" + c.d + "\\" fill=\\"none\\" stroke=\\"" + col + "\\" stroke-width=\\"1.9\\" " + (e.dash ? ("stroke-dasharray=\\"" + e.dash + "\\"") : "") + " marker-end=\\"url(#" + mk + ")\\" opacity=\\"0.88\\"/>" +',
-  '      "<rect id=\\"edge-r-" + idx + "\\" x=\\"" + (c.mx - lw / 2) + "\\" y=\\"" + (c.my - 9) + "\\" width=\\"" + lw + "\\" height=\\"18\\" rx=\\"9\\" fill=\\"" + edgeBg + "\\" stroke=\\"" + hairline + "\\" stroke-width=\\"0.8\\"/>" +',
-  '      "<text id=\\"edge-t-" + idx + "\\" x=\\"" + c.mx + "\\" y=\\"" + (c.my + 3) + "\\" text-anchor=\\"middle\\" fill=\\"" + text1 + "\\" font-size=\\"10\\" font-family=\\"ui-monospace, Menlo, monospace\\">" + esc(e.label) + "</text>" +',
-  '      "</g>";',
-  '  });',
-  '',
-  '  Object.keys(pos).forEach(function(id){',
-  '    const p = pos[id], n = app.nodes[id];',
-  '    const col = statusStroke(n.status);',
-  '    const sel = id === app.selectedId;',
-  '    const t = n.taskObj;',
-  '    const elapsed = t ? fmtElapsed(t.startedAt, ["succeeded","failed","cancelled"].includes(t.state) ? t.activityAt : null) : "";',
-  '    let foot = n.status + " · " + n.pane;',
-  '    if (n.role === "controller") foot = n.paused ? "🔕 已暂停投递 (DND)" : (n.deferredCount > 0 ? ("⏸ 暂缓 " + n.deferredCount + " 项 · 右键强推") : ("✓ 投递就绪 · " + (n.projectId || "local")));',
-  '    else if (n.unbound) foot = "◌ 未绑定会话 · 右键绑定或启动";',
-  '    else if (n.status === "blocked") foot = "⚡ 待授权 (" + ((t && t.block && t.block.kind) || "prompt") + ") · 右键放行";',
-  '    else if (n.status === "scheduled_retry") foot = "⏰ 定时重试 · " + fmtRel(t && t.nextAt);',
-  '    else if (n.role === "unmanaged") foot = "+ 未纳管 (" + (n.liveStatus || "live") + ") · 右键绑定角色";',
-  '    const titleClip = n.label.length > 20 ? n.label.slice(0, 19) + "…" : n.label;',
-  '    const subClip = ((app.activeProject === "all" && n.projectId ? (n.projectId + " · ") : "") + n.harness + " · " + n.worktree).slice(0, 32);',
-  '    const modClip = String(n.model || "").slice(0, 33);',
-  '    const footClip = foot.length > 32 ? foot.slice(0, 31) + "…" : foot;',
-  '    const rightBadge = n.status === "blocked" ? { txt: "BLOCK", bg: orange, fg: "#fff" }',
-  '      : n.unbound ? { txt: "待命", bg: chipBg, fg: text2 }',
-  '      : n.paused ? { txt: "DND", bg: orange, fg: "#fff" }',
-  '      : (n.queuedCount > 0 ? { txt: "Q:" + n.queuedCount, bg: blue, fg: "#fff" } : (elapsed ? { txt: elapsed, bg: chipBg, fg: text1 } : null));',
-  '    const dashed = (n.role === "unmanaged" || n.unbound) && !sel ? "stroke-dasharray=\\"5,3\\"" : "";',
-  '    out += "<g class=\\"dag-node\\" data-id=\\"" + esc(id) + "\\" transform=\\"translate(" + p.x + "," + p.y + ")\\">" +',
-  '      "<rect class=\\"node-rect\\" x=\\"0\\" y=\\"0\\" width=\\"" + p.w + "\\" height=\\"" + p.h + "\\" rx=\\"12\\" fill=\\"" + cardBg + "\\" stroke=\\"" + (sel ? blue : (n.status === "blocked" ? orange : hairline)) + "\\" stroke-width=\\"" + (sel ? 2.3 : (n.status === "blocked" ? 1.6 : 1)) + "\\" " + dashed + " filter=\\"url(#node-shadow)\\"/>" +',
-  '      "<circle cx=\\"15\\" cy=\\"19\\" r=\\"4.5\\" fill=\\"" + col + "\\"/>" +',
-  '      "<text x=\\"26\\" y=\\"23\\" fill=\\"" + text0 + "\\" font-size=\\"12.2\\" font-weight=\\"600\\">" + esc(titleClip) + "</text>" +',
-  '      (rightBadge ? ("<rect x=\\"" + (p.w - 56) + "\\" y=\\"10\\" width=\\"46\\" height=\\"17\\" rx=\\"8.5\\" fill=\\"" + rightBadge.bg + "\\"/><text class=\\"node-timer\\" data-node=\\"" + esc(id) + "\\" x=\\"" + (p.w - 33) + "\\" y=\\"21.5\\" text-anchor=\\"middle\\" fill=\\"" + rightBadge.fg + "\\" font-size=\\"9.5\\" font-weight=\\"600\\" font-family=\\"ui-monospace, Menlo, monospace\\">" + esc(rightBadge.txt) + "</text>") : "") +',
-  '      "<text x=\\"13\\" y=\\"43\\" fill=\\"" + text1 + "\\" font-size=\\"10.5\\" font-family=\\"ui-monospace, Menlo, monospace\\">" + esc(subClip) + "</text>" +',
-  '      "<text x=\\"13\\" y=\\"61\\" fill=\\"" + text2 + "\\" font-size=\\"10\\">" + esc(modClip) + "</text>" +',
-  '      "<rect x=\\"11\\" y=\\"" + (p.h - 26) + "\\" width=\\"" + (p.w - 22) + "\\" height=\\"19\\" rx=\\"6\\" fill=\\"" + chipBg + "\\"/>" +',
-  '      "<text x=\\"18\\" y=\\"" + (p.h - 13.5) + "\\" fill=\\"" + col + "\\" font-size=\\"10\\" font-weight=\\"500\\" font-family=\\"ui-monospace, Menlo, monospace\\">" + esc(footClip) + "</text>" +',
-  '      "</g>";',
-  '  });',
-  '',
-  '  out += "</g>";',
-  '  svg.innerHTML = out;',
-  '  if (!app.cam.initialized) fitCanvas();',
-  '  else applyCamTransform();',
-  '  if (app.hoverId && app.nodes[app.hoverId]) applyHoverHighlight(app.hoverId);',
-  '}',
-  '',
-  'function openNodeContextMenu(nodeId, clientX, clientY) {',
-  '  const n = app.nodes[nodeId];',
-  '  const menu = document.getElementById("ctx-menu");',
-  '  if (!n || !menu) return;',
-  '  app.selectedId = nodeId;',
-  '  renderSidebar(); renderInspector();',
-  '  const t = n.taskObj;',
-  '  const isPane = n.pane && !String(n.pane).startsWith("headless:") && !String(n.pane).startsWith("chain(") && n.pane !== "unbound";',
-  '  const permTarget = (t && t.task) || (n.paneObj && n.paneObj.pane_id) || (isPane ? n.pane : null);',
-  '  const ctrlTarget = (t && t.task) || n.pane;',
-  '  const items = ["<div class=\\"ctx-head\\">" + esc(n.label + " · " + (n.projectId ? (n.projectId + " · ") : "") + n.pane) + "</div>"];',
-  '  if (t && t.state === "blocked") {',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();quickTerminal(\'" + esc(t.task) + "\',[\'enter\'])\\"><span>✓ 一键批准阻塞 (Enter)</span><span>↵</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();quickTerminal(\'" + esc(t.task) + "\',[\'down\',\'enter\'])\\"><span>↓ 选第 2 项并回车</span><span>↓↵</span></button>");',
-  '    items.push("<button class=\\"ctx-item danger\\" onclick=\\"closeCtxMenu();quickTerminal(\'" + esc(t.task) + "\',[\'esc\'])\\"><span>✕ 拒绝操作 (Esc)</span><span>⎋</span></button>");',
-  '    items.push("<div class=\\"ctx-sep\\"></div>");',
-  '  }',
-  '  if (n.role === "role_slot") {',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openRoleBindSheet(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\"><span>⇄ " + (n.unbound ? "绑定 / 启动会话" : "更换底层会话 / Harness") + "</span></button>");',
-  '    if (!n.unbound) items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();triggerRoleUnbind(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\"><span>⏏ 解绑为待命槽位</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openSendSheet(\'" + esc(n.roleName) + "\',\'" + esc((t && !["succeeded","failed","cancelled"].includes(t.state)) ? "" : (t ? t.task : "")) + "\',\'" + esc(n.projectId) + "\'," + (n.unbound ? "true" : "false") + ")\\"><span>✦ 向该角色派发任务</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openRoleSetSheet(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\"><span>✎ 编辑角色默认配置</span></button>");',
-  '    items.push("<div class=\\"ctx-sep\\"></div>");',
-  '  }',
-  '  if (permTarget && (n.role === "worker" || n.role === "task" || n.role === "role_slot")) {',
-  '    items.push("<div class=\\"ctx-perms\\">" + ["readonly","ask","auto-workspace","yolo"].map(function(pm){',
-  '      const cls = pm === n.perm ? (" active" + (pm === "yolo" ? " yolo" : pm === "auto-workspace" ? " auto" : "")) : "";',
-  '      return "<button class=\\"perm-pill" + cls + "\\" onclick=\\"closeCtxMenu();hotSetPerm(\'" + esc(permTarget) + "\',\'" + pm + "\')\\">" + (pm === "auto-workspace" ? "auto-ws" : pm) + "</button>";',
-  '    }).join("") + "</div><div class=\\"ctx-sep\\"></div>");',
-  '  }',
-  '  if (n.role === "controller") {',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();toggleRecipientPause(\'" + esc(n.pane) + "\'," + (n.paused ? "false" : "true") + ")\\"><span>" + (n.paused ? "▶ 恢复自动投递" : "⏸ 免打扰暂停投递") + "</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();deliverNowPane(\'" + esc(n.pane) + "\')\\"><span>⚡ 强制推入全部候投回执</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();triggerFlush(\'" + esc(n.pane) + "\')\\"><span>✓ Flush 仅在 Web 消费</span></button>");',
-  '  } else if (n.role === "unmanaged") {',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openAdoptSheet(\'" + esc(n.pane) + "\',\'" + esc(n.harness) + "\')\\"><span>⚡ 纳管 / 绑定为角色</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openSendSheet(\'" + esc(n.pane) + "\',\'\')\\"><span>✦ 直接向该窗格派发任务</span></button>");',
-  '  } else if (n.role !== "role_slot") {',
-  '    if (isPane) items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openSendSheet(\'" + esc(n.paneObj ? (n.paneObj.alias || n.pane) : n.pane) + "\',\'" + esc((t && !["succeeded","failed","cancelled"].includes(t.state)) ? "" : (t ? t.task : "")) + "\')\\"><span>✦ 派发任务 / 多轮追问</span></button>");',
-  '    if (isPane) items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openSwitchSheet(\'" + esc(n.paneObj ? (n.paneObj.alias || n.pane) : n.pane) + "\',\'" + esc(n.harness) + "\',\'" + esc(n.perm) + "\')\\"><span>⇄ 切换模型 / 重启参数</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openHandoffSheet(\'" + esc((t && t.task) || n.pane) + "\')\\"><span>⇄ 移交控制权 (Handoff)</span></button>");',
-  '  }',
-  '  if (isPane) {',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openAssignProjectSheet(\'" + esc(n.pane) + "\',\'" + esc(n.projectId) + "\')\\"><span>◈ 归入其他项目</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();focusNodeQa(\'" + esc(nodeId) + "\');fetchScreenNow(\'" + esc(ctrlTarget) + "\',40)\\"><span>👁 抓取实时终端屏幕 (40行)</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();copyAttach(\'" + esc(n.pane) + "\',\'" + esc(n.host) + "\')\\"><span>📋 复制 Herdr attach 命令</span></button>");',
-  '  }',
-  '  if (t && !["succeeded","cancelled"].includes(t.state)) {',
-  '    items.push("<div class=\\"ctx-sep\\"></div>");',
-  '    if (n.harness !== "agy" && t.state === "scheduled_retry") items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();forceRetryNow(\'" + esc(t.task) + "\')\\"><span>⚡ 立即执行定时重试</span></button>");',
-  '    items.push("<button class=\\"ctx-item\\" onclick=\\"closeCtxMenu();openFinishSheet(\'" + esc(t.task) + "\')\\"><span>✓ 验收结单 (Finish)</span></button>");',
-  '    items.push("<button class=\\"ctx-item danger\\" onclick=\\"closeCtxMenu();openCancelSheet(\'" + esc(t.task) + "\'," + (isPane ? "true" : "false") + ")\\"><span>✕ 取消任务 (Cancel)</span></button>");',
-  '  }',
-  '  if (n.role === "role_slot" && n.roleObj && n.roleObj.source === "manual") {',
-  '    items.push("<button class=\\"ctx-item danger\\" onclick=\\"closeCtxMenu();triggerRoleRemove(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\"><span>🗑 移除自定义角色</span></button>");',
-  '  }',
-  '  menu.innerHTML = items.join("");',
-  '  menu.classList.add("open");',
-  '  const mw = menu.offsetWidth || 226, mh = menu.offsetHeight || 260;',
-  '  const left = Math.max(8, Math.min(window.innerWidth - mw - 8, clientX));',
-  '  const top = Math.max(8, Math.min(window.innerHeight - mh - 8, clientY));',
-  '  menu.style.left = left + "px";',
-  '  menu.style.top = top + "px";',
-  '}',
-  '',
-  'window.closeCtxMenu = function() {',
-  '  const menu = document.getElementById("ctx-menu");',
-  '  if (menu) menu.classList.remove("open");',
-  '};',
-  '',
-  'function bindCanvasEvents() {',
-  '  const canvas = document.getElementById("dag-canvas");',
-  '  const svg = document.getElementById("dag-svg");',
-  '  if (!canvas || !svg) return;',
-  '',
-  '  canvas.addEventListener("wheel", function(ev){',
-  '    ev.preventDefault();',
-  '    closeCtxMenu();',
-  '    const rect = canvas.getBoundingClientRect();',
-  '    const factor = ev.deltaY < 0 ? 1.1 : 0.91;',
-  '    zoomAt(ev.clientX - rect.left, ev.clientY - rect.top, app.cam.zoom * factor);',
-  '  }, { passive: false });',
-  '',
-  '  canvas.addEventListener("dblclick", function(ev){',
-  '    if (ev.target.closest(".dag-node") || ev.target.closest(".canvas-zoom") || ev.target.closest(".canvas-float")) return;',
-  '    fitCanvas();',
-  '  });',
-  '',
-  '  canvas.addEventListener("contextmenu", function(ev){',
-  '    const nodeEl = ev.target.closest(".dag-node");',
-  '    if (!nodeEl) { closeCtxMenu(); return; }',
-  '    ev.preventDefault();',
-  '    openNodeContextMenu(nodeEl.getAttribute("data-id"), ev.clientX, ev.clientY);',
-  '  });',
-  '',
-  '  svg.addEventListener("mouseover", function(ev){',
-  '    if (app.drag) return;',
-  '    const nodeEl = ev.target.closest(".dag-node");',
-  '    const next = nodeEl ? nodeEl.getAttribute("data-id") : null;',
-  '    if (next !== app.hoverId) applyHoverHighlight(next);',
-  '  });',
-  '  svg.addEventListener("mouseleave", function(){ if (!app.drag && app.hoverId) applyHoverHighlight(null); });',
-  '',
-  '  canvas.addEventListener("pointerdown", function(ev){',
-  '    if (ev.button !== 0) return;',
-  '    if (ev.target.closest(".canvas-zoom") || ev.target.closest(".canvas-float") || ev.target.closest(".empty-state")) return;',
-  '    closeCtxMenu();',
-  '    const nodeEl = ev.target.closest(".dag-node");',
-  '    if (nodeEl) {',
-  '      const id = nodeEl.getAttribute("data-id");',
-  '      const p = app.computedPos[id];',
-  '      if (!p) return;',
-  '      app.drag = { kind: "node", id: id, el: nodeEl, startX: ev.clientX, startY: ev.clientY, origX: p.x, origY: p.y, moved: false, pointerId: ev.pointerId };',
-  '      nodeEl.classList.add("dragging");',
-  '      try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}',
-  '    } else {',
-  '      app.drag = { kind: "pan", startX: ev.clientX, startY: ev.clientY, origX: app.cam.x, origY: app.cam.y, moved: false, pointerId: ev.pointerId };',
-  '      canvas.classList.add("panning");',
-  '      try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}',
-  '    }',
-  '  });',
-  '',
-  '  canvas.addEventListener("pointermove", function(ev){',
-  '    if (!app.drag || app.drag.pointerId !== ev.pointerId) return;',
-  '    const dx = ev.clientX - app.drag.startX, dy = ev.clientY - app.drag.startY;',
-  '    if (!app.drag.moved && Math.hypot(dx, dy) > 4) app.drag.moved = true;',
-  '    if (!app.drag.moved) return;',
-  '    if (app.drag.kind === "pan") {',
-  '      app.cam.x = app.drag.origX + dx;',
-  '      app.cam.y = app.drag.origY + dy;',
-  '      applyCamTransform();',
-  '    } else if (app.drag.kind === "node") {',
-  '      const nx = Math.round(app.drag.origX + dx / app.cam.zoom);',
-  '      const ny = Math.round(app.drag.origY + dy / app.cam.zoom);',
-  '      const p = app.computedPos[app.drag.id];',
-  '      if (p) { p.x = nx; p.y = ny; }',
-  '      app.nodePos[app.activeProject + "::" + app.drag.id] = { x: nx, y: ny };',
-  '      app.drag.el.setAttribute("transform", "translate(" + nx + "," + ny + ")");',
-  '      updateConnectedEdgesDom(app.drag.id);',
-  '    }',
-  '  });',
-  '',
-  '  function endDrag(ev) {',
-  '    if (!app.drag || (ev && app.drag.pointerId !== ev.pointerId)) return;',
-  '    const d = app.drag;',
-  '    app.drag = null;',
-  '    canvas.classList.remove("panning");',
-  '    if (d.el) d.el.classList.remove("dragging");',
-  '    if (d.kind === "node") {',
-  '      if (d.moved) savePositions(app.nodePos);',
-  '      else selectNode(d.id, isMobile());',
-  '    }',
-  '  }',
-  '  canvas.addEventListener("pointerup", endDrag);',
-  '  canvas.addEventListener("pointercancel", endDrag);',
-  '}',
-  '',
-  'function buildWirePreview(n) {',
-  '  if (!n) return "(未选中节点)";',
-  '  if (n.unbound) return "(当前角色为待命槽位，尚未绑定会话；点击「绑定 / 启动会话」或在派发时勾选 --spawn)";',
-  '  if (n.role === "unmanaged") return "(未纳管窗格，不产生 chflow 自动协议消息；但你可在「授权 & 终端直控」直接推入按键或指令)";',
-  '  if (n.role === "controller") {',
-  '    const pending = (app.snap.queue || []).filter(function(q){ return q.recipient && q.recipient.pane === n.pane && ["queued","deferred_user_typing","paused_by_operator","delivering"].includes(q.state); });',
-  '    if (!pending.length) return "(当前主控窗格无候投唤醒消息)";',
-  '    if (pending.length === 1) {',
-  '      const e = pending[0];',
-  '      return "[chflow] task=" + e.task + "#" + e.turn + " from=" + e.worker + " to=" + (e.recipient.label || e.recipient.pane) + "(" + e.recipient.pane + ") scope=" + e.perm + "\\n" +',
-  '        "status=" + e.status + (e.out ? " | out=" + shortPath(e.out) : "") + (e.diag ? " | diag=" + shortPath(e.diag) : "") + (e.note ? " | note=" + e.note : "") + "\\n" +',
-  '        "action: 按需读取 out/diag 文件核验处理；已完成项执行 chflow finish " + e.task + " --ok。";',
-  '    }',
-  '    return "[chflow:batch] count=" + pending.length + " to=" + n.pane + "\\n" +',
-  '      pending.map(function(e){ return "- " + e.task + "#" + e.turn + " (" + e.worker + ", " + e.perm + "): status=" + e.status + (e.out ? " | out=" + shortPath(e.out) : "") + (e.diag ? " | diag=" + shortPath(e.diag) : ""); }).join("\\n") + "\\n" +',
-  '      "action: 逐项按需读取 out 或 diag；已完成项用 chflow finish，阻塞或失败项用 chflow respond/resume/retry。";',
-  '  }',
-  '  const t = n.taskObj;',
-  '  if (!t) return "(角色/工位已就绪，点击「派发」即可生成工作区 brief 并发送 3 行路由提示词)";',
-  '  const from = t.caller ? ((t.caller.label || t.caller.pane) + "(" + t.caller.pane + ")") : "chflow(ui)";',
-  '  const to = (t.name || t.kind) + "(" + (t.pane || "headless") + ")";',
-  '  return "[chflow] task=" + t.task + "#" + t.turn + " from=" + from + " to=" + to + " scope=" + (t.perm || "ask") + "\\n" +',
-  '    "status=assigned" + (t.adoptedDispatch ? " | mode=adopted" : "") + " | brief=" + shortPath(t.brief) + " | out=" + shortPath(t.out) + "\\n" +',
-  '    "action: 读取 brief 后执行；写入 out，然后运行 chflow reply " + t.task + " --attempt " + String(t.attempt || "").slice(0, 12) + " --ok --note \\"<一句话结论>\\"。";',
-  '}',
-  '',
-  'function renderInspector() {',
-  '  const n = app.nodes[app.selectedId];',
-  '  const head = document.getElementById("insp-head");',
-  '  const mb = document.getElementById("pane-mailbox");',
-  '  const qa = document.getElementById("pane-qa");',
-  '  const wr = document.getElementById("pane-wire");',
-  '  if (!n) {',
-  '    head.innerHTML = "<div class=\\"insp-note\\">请从左侧列表或拓扑图中选择角色、窗格或任务。</div>";',
-  '    mb.innerHTML = ""; qa.innerHTML = ""; wr.innerHTML = "";',
-  '    return;',
-  '  }',
-  '  const t = n.taskObj;',
-  '  const tone = statusTone(n.status);',
-  '  const isInteractivePane = n.pane && !String(n.pane).startsWith("headless:") && !String(n.pane).startsWith("chain(") && n.pane !== "unbound";',
-  '  let actionsHtml = "";',
-  '  if (n.role === "role_slot") {',
-  '    actionsHtml += "<button class=\\"ui-btn sm primary\\" onclick=\\"openRoleBindSheet(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\">⇄ " + (n.unbound ? "绑定 / 启动会话" : "更换会话/Harness") + "</button>";',
-  '    actionsHtml += "<button class=\\"ui-btn sm\\" onclick=\\"openSendSheet(\'" + esc(n.roleName) + "\',\'" + esc((t && !["succeeded","failed","cancelled"].includes(t.state)) ? "" : (t ? t.task : "")) + "\',\'" + esc(n.projectId) + "\'," + (n.unbound ? "true" : "false") + ")\\">✦ 派发</button>";',
-  '    if (!n.unbound) actionsHtml += "<button class=\\"ui-btn sm\\" onclick=\\"triggerRoleUnbind(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\">解绑</button>";',
-  '    if (t && !["succeeded","cancelled"].includes(t.state)) {',
-  '      actionsHtml += "<button class=\\"ui-btn sm success\\" onclick=\\"openFinishSheet(\'" + esc(t.task) + "\')\\">结单</button>";',
-  '      actionsHtml += "<button class=\\"ui-btn sm danger\\" onclick=\\"openCancelSheet(\'" + esc(t.task) + "\'," + (isInteractivePane ? "true" : "false") + ")\\">取消</button>";',
-  '    }',
-  '  } else if (n.role === "unmanaged") {',
-  '    actionsHtml += "<button class=\\"ui-btn sm success\\" onclick=\\"openAdoptSheet(\'" + esc(n.pane) + "\',\'" + esc(n.harness) + "\')\\">⚡ 纳管 / 绑定角色</button>";',
-  '    actionsHtml += "<button class=\\"ui-btn sm primary\\" onclick=\\"openSendSheet(\'" + esc(n.pane) + "\',\'\')\\">✦ 派发任务</button>";',
-  '  } else if (n.role === "controller") {',
-  '    actionsHtml += "<button class=\\"ui-btn sm " + (n.paused ? "success" : "warn") + "\\" onclick=\\"toggleRecipientPause(\'" + esc(n.pane) + "\'," + (n.paused ? "false" : "true") + ")\\">" + (n.paused ? "▶ 恢复自动投递" : "⏸ 免打扰暂停投递") + "</button>";',
-  '    actionsHtml += "<button class=\\"ui-btn sm primary\\" onclick=\\"deliverNowPane(\'" + esc(n.pane) + "\')\\">⚡ 立即强推入终端</button>";',
-  '    actionsHtml += "<button class=\\"ui-btn sm\\" onclick=\\"triggerFlush(\'" + esc(n.pane) + "\')\\">Flush 仅阅</button>";',
-  '  } else if (n.role === "worker" || n.role === "task") {',
-  '    const handoffTarget = (t && t.task) || n.pane;',
-  '    if (isInteractivePane) actionsHtml += "<button class=\\"ui-btn sm primary\\" onclick=\\"openSendSheet(\'" + esc(n.paneObj ? (n.paneObj.alias || n.pane) : n.pane) + "\',\'" + esc((t && !["succeeded","failed","cancelled"].includes(t.state)) ? "" : (t ? t.task : "")) + "\')\\">✦ 派发 / 追问</button>";',
-  '    if (isInteractivePane) actionsHtml += "<button class=\\"ui-btn sm\\" onclick=\\"openSwitchSheet(\'" + esc(n.paneObj ? (n.paneObj.alias || n.pane) : n.pane) + "\',\'" + esc(n.harness) + "\',\'" + esc(n.perm) + "\')\\">切模型/重启</button>";',
-  '    actionsHtml += "<button class=\\"ui-btn sm\\" onclick=\\"openHandoffSheet(\'" + esc(handoffTarget) + "\')\\">移交控制权</button>";',
-  '    if (t && !["succeeded","cancelled"].includes(t.state)) {',
-  '      actionsHtml += "<button class=\\"ui-btn sm\\" onclick=\\"triggerResume(\'" + esc(t.task) + "\',\'" + esc(n.harness) + "\')\\">续跑</button>";',
-  '      if (n.harness !== "agy") actionsHtml += "<button class=\\"ui-btn sm\\" onclick=\\"openRetrySheet(\'" + esc(t.task) + "\')\\">重试/切链</button>";',
-  '      actionsHtml += "<button class=\\"ui-btn sm success\\" onclick=\\"openFinishSheet(\'" + esc(t.task) + "\')\\">结单</button>";',
-  '      actionsHtml += "<button class=\\"ui-btn sm danger\\" onclick=\\"openCancelSheet(\'" + esc(t.task) + "\'," + (isInteractivePane ? "true" : "false") + ")\\">取消</button>";',
-  '    }',
-  '  }',
-  '  if (isInteractivePane) {',
-  '    actionsHtml += "<button class=\\"ui-btn sm ghost\\" onclick=\\"copyAttach(\'" + esc(n.pane) + "\',\'" + esc(n.host) + "\')\\">attach</button>";',
-  '  }',
-  '',
-  '  head.innerHTML = "<div class=\\"insp-top\\"><h2 class=\\"insp-name\\">" + esc(n.label) + "</h2><div style=\\"display:flex;align-items:center;gap:6px;\\"><span class=\\"badge " + tone + " mono\\">" + esc(n.status) + "</span><button class=\\"ui-btn xs ghost mobile-close\\" onclick=\\"closeMobileDrawers()\\">✕</button></div></div>" +',
-  '    "<div class=\\"insp-note\\">" + esc(n.note) + "</div>" +',
-  '    "<div class=\\"insp-actions\\">" + actionsHtml + "</div>";',
-  '',
-  '  let turnHtml = "", curTurn = 1;',
-  '  if (t) {',
-  '    const maxTurn = Math.max(1, Number(t.turn) || 1);',
-  '    curTurn = app.selectedTurn[t.task] || maxTurn;',
-  '    if (curTurn > maxTurn) curTurn = maxTurn;',
-  '    if (maxTurn > 1) {',
-  '      const pills = [];',
-  '      for (let i = 1; i <= maxTurn; i++) pills.push("<button class=\\"turn-pill" + (i === curTurn ? " active" : "") + "\\" onclick=\\"selectTurn(\'" + esc(t.task) + "\'," + i + ")\\">Turn #" + i + "</button>");',
-  '      turnHtml = "<div class=\\"turn-pills\\"><span style=\\"font-size:11px;color:var(--text-2);\\">任务轮次：</span>" + pills.join("") + "</div>";',
-  '    }',
-  '    void ensureTaskFiles(t, curTurn);',
-  '  }',
-  '',
-  '  const briefEntry = t ? app.fileCache[t.task + ":brief:" + curTurn] : null;',
-  '  const outEntry = t ? app.fileCache[t.task + ":out:" + curTurn] : null;',
-  '  const briefText = !t ? "当前节点暂无活跃任务；点击上方「✦ 派发」即可写入工作区 brief。" : (briefEntry ? (briefEntry.loading ? "正在读取 brief…" : (briefEntry.content || "(空)")) : "加载中…");',
-  '  const outText = !t ? "—" : (outEntry ? (outEntry.loading ? "正在读取 reply…" : (outEntry.exists ? outEntry.content : "(Worker 尚未写入本轮 reply.md)")) : "加载中…");',
-  '',
-  '  const permTarget = (t && t.task) || (n.paneObj && n.paneObj.pane_id) || (isInteractivePane ? n.pane : null);',
-  '  const canHotPerm = !!permTarget && (n.role === "worker" || n.role === "task" || n.role === "role_slot");',
-  '  const permRowVal = canHotPerm',
-  '    ? "<div class=\\"perm-pills\\">" + ["readonly","ask","auto-workspace","yolo"].map(function(pm){',
-  '        const cls = pm === n.perm ? (" active" + (pm === "yolo" ? " yolo" : pm === "auto-workspace" ? " auto" : "")) : "";',
-  '        const short = pm === "auto-workspace" ? "auto-ws" : pm;',
-  '        return "<button type=\\"button\\" class=\\"perm-pill" + cls + "\\" onclick=\\"hotSetPerm(\'" + esc(permTarget) + "\',\'" + pm + "\')\\" title=\\"点击零重启热切换 Daemon 授权策略为 " + pm + "\\">" + short + "</button>";',
-  '      }).join("") + "</div>"',
-  '    : esc(n.perm + " (" + (n.nativePerm || "native") + ")");',
-  '',
-  '  mb.innerHTML = "<div class=\\"settings-group\\">" +',
-  '    (n.projectId ? "<div class=\\"settings-row\\"><span class=\\"settings-k\\">所属项目</span><span class=\\"settings-v\\">" + esc(n.projectId) + "</span></div>" : "") +',
-  '    "<div class=\\"settings-row\\"><span class=\\"settings-k\\">绑定 / 窗格</span><span class=\\"settings-v\\">" + esc(n.host + " · " + n.pane) + "</span></div>" +',
-  '    "<div class=\\"settings-row\\"><span class=\\"settings-k\\">工作目录</span><span class=\\"settings-v\\">" + esc(shortPath(n.cwd)) + "</span></div>" +',
-  '    "<div class=\\"settings-row\\"><span class=\\"settings-k\\">控制归属</span><span class=\\"settings-v\\">" + esc(n.controller) + "</span></div>" +',
-  '    "<div class=\\"settings-row\\"><span class=\\"settings-k\\">权限热切换</span><span class=\\"settings-v\\">" + permRowVal + "</span></div>" +',
-  '    (t ? "<div class=\\"settings-row\\"><span class=\\"settings-k\\">任务 / 耗时</span><span class=\\"settings-v\\">" + esc(t.task + "#" + t.turn + " · " + String(t.attempt || "").slice(0, 12) + " · " + fmtElapsed(t.startedAt, ["succeeded","failed","cancelled"].includes(t.state) ? t.activityAt : null)) + "</span></div>" : "") +',
-  '    "</div>" +',
-  '    turnHtml +',
-  '    "<div class=\\"doc-card\\"><div class=\\"doc-bar\\"><span>" + esc(t ? shortPath((briefEntry && briefEntry.path) || t.brief) : "brief") + "</span>" + (t ? "<button class=\\"ui-btn xs ghost\\" onclick=\\"copyPath(\'" + esc((briefEntry && briefEntry.path) || t.brief) + "\')\\">复制路径</button>" : "<span class=\\"badge mono\\">.git/info/exclude</span>") + "</div><pre class=\\"doc-pre\\">" + esc(briefText) + "</pre></div>" +',
-  '    "<div class=\\"doc-card\\"><div class=\\"doc-bar\\"><span>" + esc(t ? shortPath((outEntry && outEntry.path) || t.out) : "reply") + "</span>" + (t ? "<button class=\\"ui-btn xs ghost\\" onclick=\\"copyPath(\'" + esc((outEntry && outEntry.path) || t.out) + "\')\\">复制路径</button>" : "<span>零截屏注入</span>") + "</div><pre class=\\"doc-pre\\">" + esc(outText) + "</pre></div>";',
-  '',
-  '  const activeFieldId = document.activeElement && document.activeElement.id ? document.activeElement.id : null;',
-  '  const wire = buildWirePreview(n);',
-  '  const estTok = Math.max(12, Math.round(wire.length / 3.6));',
-  '  wr.innerHTML = "<div style=\\"font-size:12px;color:var(--text-1);\\">实际进入 Agent 对话框的<strong>极简纯文本协议</strong>（零大段 JSON、零终端截屏）：</div>" +',
-  '    "<div class=\\"doc-card\\"><div class=\\"doc-bar\\"><span>Herdr agent prompt payload</span><span>~" + estTok + " tok</span></div><pre class=\\"doc-pre\\">" + esc(wire) + "</pre></div>";',
-  '',
-  '  if (activeFieldId && ["tc-keys","tc-text","tc-prompt","resp-expect"].includes(activeFieldId)) return;',
-  '',
-  '  const diagEntry = t ? app.fileCache[t.task + ":diag:" + curTurn] : null;',
-  '  const screenKey = (t && t.task) || n.pane;',
-  '  const screenSnap = app.screenCache[screenKey];',
-  '  let qaHtml = "";',
-  '',
-  '  if (n.unbound) {',
-  '    qaHtml += "<div class=\\"callout\\">◌ 该固定角色当前处于待命槽位（未绑定活跃会话）。可随时绑定已有在线窗格，或按角色默认配置拉起新会话：</div>" +',
-  '      "<div style=\\"display:flex;gap:6px;flex-wrap:wrap;\\">" +',
-  '        "<button class=\\"ui-btn sm primary\\" onclick=\\"openRoleBindSheet(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\">⇄ 绑定 / 启动会话</button>" +',
-  '        "<button class=\\"ui-btn sm\\" onclick=\\"openRoleSetSheet(\'" + esc(n.roleName) + "\',\'" + esc(n.projectId) + "\')\\">✎ 修改角色默认配置</button>" +',
-  '      "</div>";',
-  '  }',
-  '',
-  '  if (canHotPerm) {',
-  '    qaHtml += "<div class=\\"settings-group\\" style=\\"padding:10px 11px;display:flex;flex-direction:column;gap:6px;\\">" +',
-  '      "<div style=\\"display:flex;justify-content:space-between;align-items:center;\\"><span style=\\"font-weight:600;font-size:12px;\\">实时授权档位（点击即刻生效，无需重启）</span>" + permBadge(n.perm) + "</div>" +',
-  '      permRowVal +',
-  '      "<div style=\\"font-size:11px;color:var(--text-2);\\">切为 <code>auto-workspace</code> 或 <code>yolo</code> 后，Daemon 将自动放行该工位的权限确认弹窗。</div></div>";',
-  '  }',
-  '',
-  '  if (t && t.state === "blocked") {',
-  '    const bSeq = (t.block && t.block.seq) != null ? t.block.seq : (t.seq || "—");',
-  '    const diagBody = diagEntry && diagEntry.exists ? diagEntry.content : "(正在读取阻塞快照…)";',
-  '    qaHtml += "<div class=\\"callout warn\\">⚡ 当前工位等待授权或输入（seq=" + esc(bSeq) + "）。你拥有最高操作权限，可直接一键放行或输入回答：</div>" +',
-  '      "<div style=\\"display:flex;gap:6px;flex-wrap:wrap;\\">" +',
-  '        "<button class=\\"ui-btn sm success\\" onclick=\\"quickTerminal(\'" + esc(t.task) + "\',[\'enter\'])\\">✓ 一键批准 (Enter)</button>" +',
-  '        "<button class=\\"ui-btn sm success\\" onclick=\\"quickTerminal(\'" + esc(t.task) + "\',[\'y\'])\\">✓ 发送 y 同意</button>" +',
-  '        "<button class=\\"ui-btn sm\\" onclick=\\"quickTerminal(\'" + esc(t.task) + "\',[\'down\',\'enter\'])\\">↓ 选第 2 项并回车</button>" +',
-  '        "<button class=\\"ui-btn sm danger\\" onclick=\\"quickTerminal(\'" + esc(t.task) + "\',[\'esc\'])\\">✕ 拒绝 (Esc)</button>" +',
-  '        "<button class=\\"ui-btn sm primary\\" onclick=\\"hotSetPerm(\'" + esc(t.task) + "\',\'yolo\')\\">⚡ 升为 yolo 并自动放行</button>" +',
-  '      "</div>" +',
-  '      "<div class=\\"doc-card\\"><div class=\\"doc-bar\\"><span>" + esc(shortPath((diagEntry && diagEntry.path) || t.diag || "diag.txt")) + "</span><span>seq=" + esc(bSeq) + "</span></div><pre class=\\"doc-pre\\">" + esc(diagBody) + "</pre></div>";',
-  '  } else if (diagEntry && diagEntry.exists) {',
-  '    qaHtml += "<div class=\\"doc-card\\"><div class=\\"doc-bar\\"><span>最近诊断快照 (" + esc(shortPath(diagEntry.path)) + ")</span><span>只读存档</span></div><pre class=\\"doc-pre\\">" + esc(diagEntry.content) + "</pre></div>";',
-  '  }',
-  '',
-  '  if (isInteractivePane) {',
-  '    const ctrlTarget = (t && t.task) || n.pane;',
-  '    qaHtml += "<div class=\\"settings-group\\" style=\\"padding:11px;display:flex;flex-direction:column;gap:8px;\\">" +',
-  '      "<div style=\\"display:flex;justify-content:space-between;align-items:center;\\"><span style=\\"font-weight:600;font-size:12px;\\">终端直控台 (" + esc(n.pane) + ")</span><span class=\\"badge mono\\">Direct Override</span></div>" +',
-  '      "<div class=\\"key-chips\\">" +',
-  '        [["Enter","enter"],["y","y"],["n","n"],["Esc","esc"],["↑","up"],["↓","down"],["Space","space"],["Tab","tab"],["Ctrl+C","ctrl+c"]].map(function(pair){',
-  '          return "<button type=\\"button\\" class=\\"key-chip\\" onclick=\\"quickTerminal(\'" + esc(ctrlTarget) + "\',[\'" + pair[1] + "\'])\\">" + pair[0] + "</button>";',
-  '        }).join("") +',
-  '      "</div>" +',
-  '      "<div style=\\"display:flex;gap:6px;\\">" +',
-  '        "<input class=\\"ui-input\\" id=\\"tc-text\\" placeholder=\\"直接向终端输入文本回答或命令（回车直发）…\\" onkeydown=\\"if(event.key===\'Enter\'){event.preventDefault();sendTerminalText(\'" + esc(ctrlTarget) + "\');}\\" />" +',
-  '        "<button class=\\"ui-btn sm primary\\" onclick=\\"sendTerminalText(\'" + esc(ctrlTarget) + "\')\\">发送并回车</button>" +',
-  '      "</div>" +',
-  '      "<div style=\\"display:flex;gap:6px;\\">" +',
-  '        "<input class=\\"ui-input\\" id=\\"tc-prompt\\" placeholder=\\"通过 Herdr agent prompt 注入完整指令…\\" onkeydown=\\"if(event.key===\'Enter\'){event.preventDefault();sendAgentPrompt(\'" + esc(ctrlTarget) + "\');}\\" />" +',
-  '        "<button class=\\"ui-btn sm\\" onclick=\\"sendAgentPrompt(\'" + esc(ctrlTarget) + "\')\\">注入 Prompt</button>" +',
-  '      "</div>" +',
-  '      "<div style=\\"display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:2px;\\">" +',
-  '        "<span style=\\"font-size:11px;color:var(--text-2);\\">实时读取可见终端画面：</span>" +',
-  '        "<div style=\\"display:flex;gap:5px;\\">" +',
-  '          "<button class=\\"ui-btn xs\\" onclick=\\"fetchScreenNow(\'" + esc(ctrlTarget) + "\',40)\\">读屏 40 行</button>" +',
-  '          "<button class=\\"ui-btn xs\\" onclick=\\"fetchScreenNow(\'" + esc(ctrlTarget) + "\',120)\\">读屏 120 行</button>" +',
-  '        "</div></div></div>";',
-  '    if (screenSnap) {',
-  '      qaHtml += "<div class=\\"doc-card\\"><div class=\\"doc-bar\\"><span>终端可见画面 (" + esc(n.pane) + ")</span><span>" + esc(screenSnap.at) + "</span></div><pre class=\\"doc-pre\\">" + esc(screenSnap.text) + "</pre></div>";',
-  '    }',
-  '  } else if (t && t.state === "scheduled_retry") {',
-  '    qaHtml += "<div class=\\"callout warn\\">任务处于定时等待中，你可不等倒计时直接执行：</div>" +',
-  '      "<div style=\\"display:flex;gap:6px;flex-wrap:wrap;\\">" +',
-  '        "<button class=\\"ui-btn sm primary\\" onclick=\\"forceRetryNow(\'" + esc(t.task) + "\')\\">⚡ 立即执行重试</button>" +',
-  '        (Array.isArray(t.fallback) && t.fallback.length ? "<button class=\\"ui-btn sm warn\\" onclick=\\"forceNextFallback(\'" + esc(t.task) + "\',\'" + esc(formatFallbackSpec(t.fallback[0])) + "\')\\">⇄ 立即切备选通道 (" + esc(t.fallback[0].kind) + ")</button>" : "") +',
-  '        "<button class=\\"ui-btn sm danger\\" onclick=\\"cancelScheduledRetry(\'" + esc(t.task) + "\')\\">✕ 取消重试计划</button>" +',
-  '      "</div>";',
-  '  } else if (!qaHtml) {',
-  '    qaHtml = "<div class=\\"callout ok\\">当前节点运行正常，无待授权阻塞。</div>";',
-  '  }',
-  '  qa.innerHTML = qaHtml;',
-  '}',
-  '',
-  'function formatFallbackSpec(f) {',
-  '  if (!f) return "";',
-  '  if (f.channel) return f.channel;',
-  '  return [f.kind, f.provider || "", f.model || "", f.effort || ""].join(":").replace(/:+$/, "");',
-  '}',
-  '',
-  'function categorizeAudit(row) {',
-  '  const ev = String(row.event || "");',
-  '  if (/human|adopted|controller_transferred|perm|operator|role|project|prune/.test(ev)) return { cat: "human", tone: "green" };',
-  '  if (/deferred|batch|flush|deliver|pause|reroute|drop/.test(ev)) return { cat: "queue", tone: ev.indexOf("deferred") >= 0 || ev.indexOf("pause") >= 0 ? "orange" : "blue" };',
-  '  if (/retry|fallback|failure|quota/.test(ev)) return { cat: "retry", tone: "purple" };',
-  '  if (/block|approv|respond|terminal/.test(ev)) return { cat: "blocked", tone: "orange" };',
-  '  return { cat: "all", tone: "blue" };',
-  '}',
-  '',
-  'function renderEvents() {',
-  '  const tasks = (Array.isArray(app.snap.tasks) ? app.snap.tasks : []).filter(function(t){ return matchesProject(t.project_id); });',
-  '  const taskIds = new Set(tasks.map(function(t){ return t.task; }));',
-  '  const audit = (Array.isArray(app.snap.audit) ? app.snap.audit : []).filter(function(r){ return app.activeProject === "all" || !r.task || taskIds.has(r.task); });',
-  '  const rows = audit.filter(function(r){ return app.eventFilter === "all" || categorizeAudit(r).cat === app.eventFilter; });',
-  '  const el = document.getElementById("event-list");',
-  '  if (!rows.length) { el.innerHTML = "<div class=\\"empty-state\\" style=\\"position:static;\\">当前筛选条件下暂无审计事件记录</div>"; return; }',
-  '  el.innerHTML = rows.map(function(r){',
-  '    const meta = categorizeAudit(r);',
-  '    const detail = [r.task ? ("<code>" + esc(r.task) + "</code>") : "", r.detail ? esc(r.detail) : ""].filter(Boolean).join(" · ") || "—";',
-  '    return "<div class=\\"ev-card\\"><div class=\\"ev-ts\\">" + esc(fmtTime(r.at)) + "</div><div><span class=\\"badge " + meta.tone + " mono\\">" + esc(r.event) + "</span></div><div class=\\"ev-body\\">" + detail + "</div></div>";',
-  '  }).join("");',
-  '}',
-  '',
-  'function renderBoards() {',
-  '  const tasks = (Array.isArray(app.snap.tasks) ? app.snap.tasks : []).filter(function(t){ return matchesProject(t.project_id); });',
-  '  const taskIds = new Set(tasks.map(function(t){ return t.task; }));',
-  '  const queue = (Array.isArray(app.snap.queue) ? app.snap.queue : []).filter(function(q){ return app.activeProject === "all" || taskIds.has(q.task); });',
-  '  const plans = (Array.isArray(app.snap.scheduled_retries) ? app.snap.scheduled_retries : []).filter(function(p){ return app.activeProject === "all" || taskIds.has(p.task); });',
-  '  const qb = document.getElementById("queue-board");',
-  '  const rb = document.getElementById("retry-board");',
-  '  const rc = document.getElementById("recipient-controls");',
-  '',
-  '  const controllers = Object.values(app.nodes).filter(function(n){ return n.role === "controller"; });',
-  '  if (controllers.length) {',
-  '    rc.innerHTML = controllers.map(function(c){',
-  '      return "<span class=\\"badge " + (c.paused ? "orange" : "green") + " mono\\">" + esc(c.pane) + (c.paused ? " · DND暂停中" : " · 自动收信中") + "</span>" +',
-  '        "<button class=\\"ui-btn xs " + (c.paused ? "success" : "") + "\\" onclick=\\"toggleRecipientPause(\'" + esc(c.pane) + "\'," + (c.paused ? "false" : "true") + ")\\">" + (c.paused ? "▶ 恢复投递" : "⏸ 暂停该窗格投递") + "</button>";',
-  '    }).join("");',
-  '  } else {',
-  '    rc.innerHTML = "<span style=\\"font-size:12px;color:var(--text-2);\\">投递队列总控台</span>";',
-  '  }',
-  '',
-  '  if (!queue.length) {',
-  '    qb.innerHTML = "<div style=\\"padding:12px;color:var(--text-2);font-size:12px;\\">当前队列无记录。</div>";',
-  '  } else {',
-  '    qb.innerHTML = queue.slice().reverse().slice(0, 25).map(function(q){',
-  '      const isPending = ["queued","deferred_user_typing","paused_by_operator","pending_unreachable"].includes(q.state);',
-  '      const tone = q.state === "deferred_user_typing" || q.state === "paused_by_operator" ? "orange" : String(q.state).startsWith("superseded") ? "green" : q.state === "delivered" ? "blue" : "red";',
-  '      const toPane = (q.recipient && q.recipient.pane) || "—";',
-  '      return "<div class=\\"inset-row\\">" +',
-  '        "<div style=\\"display:flex;justify-content:space-between;align-items:center;gap:6px;\\">" +',
-  '          "<span style=\\"font-family:var(--font-mono);font-weight:600;font-size:12px;\\">" + esc(q.task + "#" + q.turn + " → " + toPane) + "</span>" +',
-  '          "<span class=\\"badge " + tone + " mono\\">" + esc(q.state) + "</span>" +',
-  '        "</div>" +',
-  '        "<div style=\\"font-size:11.5px;color:var(--text-1);\\">" + esc(q.status + (q.note ? (" · " + q.note) : "")) + "</div>" +',
-  '        "<div style=\\"font-family:var(--font-mono);font-size:10.5px;color:var(--text-2);\\">" + esc(shortPath(q.out || q.diag || "") + " · " + fmtTime(q.created)) + "</div>" +',
-  '        (isPending ? ("<div class=\\"row-actions\\">" +',
-  '          "<button class=\\"ui-btn xs primary\\" onclick=\\"deliverSingleEvent(\'" + esc(q.event_id) + "\')\\">⚡ 立即强推入终端</button>" +',
-  '          "<button class=\\"ui-btn xs\\" onclick=\\"consumeSingleEvent(\'" + esc(q.event_id) + "\')\\">✓ 标为已阅</button>" +',
-  '          "<button class=\\"ui-btn xs\\" onclick=\\"openRerouteEventSheet(\'" + esc(q.event_id) + "\',\'" + esc(toPane) + "\')\\">⇄ 改投其他窗格</button>" +',
-  '          "<button class=\\"ui-btn xs danger\\" onclick=\\"dropSingleEvent(\'" + esc(q.event_id) + "\')\\">✕ 撤回丢弃</button>" +',
-  '        "</div>") : "") +',
-  '      "</div>";',
-  '    }).join("");',
-  '  }',
-  '',
-  '  const retryCards = [];',
-  '  plans.forEach(function(p){',
-  '    const t = tasks.find(function(x){ return x.task === p.task; });',
-  '    const fb0 = t && Array.isArray(t.fallback) && t.fallback.length ? t.fallback[0] : null;',
-  '    const fbText = t && Array.isArray(t.fallback) && t.fallback.length ? t.fallback.map(function(f){ return f.kind + (f.model ? ":" + f.model : ""); }).join(" → ") : "无备选链（原会话续跑）";',
-  '    const activePlan = p.state === "pending" || p.state === "running";',
-  '    retryCards.push("<div class=\\"inset-row\\">" +',
-  '      "<div style=\\"display:flex;justify-content:space-between;align-items:center;\\">" +',
-  '        "<span style=\\"font-family:var(--font-mono);font-weight:600;font-size:12px;\\">" + esc(p.task) + " · 定时/退避计划</span>" +',
-  '        "<span class=\\"badge " + (activePlan ? "purple" : "green") + " mono\\">" + esc(p.state) + "</span>" +',
-  '      "</div>" +',
-  '      "<div style=\\"font-size:12px;color:var(--text-1);\\">计划触发：<code>" + esc(new Date(p.at).toISOString()) + "</code> (" + esc(fmtRel(p.at)) + ")</div>" +',
-  '      "<div style=\\"font-size:11.5px;color:var(--text-2);\\">回退优先级链：" + esc(fbText) + "</div>" +',
-  '      (activePlan ? ("<div class=\\"row-actions\\">" +',
-  '        "<button class=\\"ui-btn xs primary\\" onclick=\\"forceRetryNow(\'" + esc(p.task) + "\')\\">⚡ 立即执行重试</button>" +',
-  '        (fb0 ? "<button class=\\"ui-btn xs warn\\" onclick=\\"forceNextFallback(\'" + esc(p.task) + "\',\'" + esc(formatFallbackSpec(fb0)) + "\')\\">⇄ 立即切 " + esc(fb0.kind) + "</button>" : "") +',
-  '        "<button class=\\"ui-btn xs danger\\" onclick=\\"cancelScheduledRetry(\'" + esc(p.task) + "\')\\">✕ 取消重试</button>" +',
-  '      "</div>") : "") +',
-  '    "</div>");',
-  '  });',
-  '  tasks.filter(function(t){ return Array.isArray(t.fallback) && t.fallback.length && !plans.some(function(p){ return p.task === t.task; }); }).forEach(function(t){',
-  '    const fb0 = t.fallback[0];',
-  '    retryCards.push("<div class=\\"inset-row\\">" +',
-  '      "<div style=\\"display:flex;justify-content:space-between;align-items:center;\\">" +',
-  '        "<span style=\\"font-family:var(--font-mono);font-weight:600;font-size:12px;\\">" + esc(t.task) + " · 备选回退链 (待命)</span>" +',
-  '        "<span class=\\"badge blue mono\\">standby</span>" +',
-  '      "</div>" +',
-  '      "<div style=\\"font-size:11.5px;color:var(--green);\\">候选通道：" + esc(t.fallback.map(function(f){ return f.kind + (f.model ? ":" + f.model : ""); }).join(" → ")) + "</div>" +',
-  '      (!["succeeded","cancelled"].includes(t.state) && fb0 ? "<div class=\\"row-actions\\"><button class=\\"ui-btn xs warn\\" onclick=\\"forceNextFallback(\'" + esc(t.task) + "\',\'" + esc(formatFallbackSpec(fb0)) + "\')\\">⇄ 强制立即切至 " + esc(fb0.kind) + "</button></div>" : "") +',
-  '    "</div>");',
-  '  });',
-  '  rb.innerHTML = retryCards.join("") || "<div style=\\"padding:12px;color:var(--text-2);font-size:12px;\\">当前无挂起的定时重试计划。</div>";',
-  '}',
-  '',
-  'function updateHeaderAndKpis() {',
-  '  const snap = app.snap || {};',
-  '  const roles = (Array.isArray(snap.roles) ? snap.roles : []).filter(function(r){ return matchesProject(r.project_id); });',
-  '  const boundRoles = roles.filter(function(r){ return r.binding_mode !== "unbound" && r.live; }).length;',
-  '  const tasks = (Array.isArray(snap.tasks) ? snap.tasks : []).filter(function(t){ return matchesProject(t.project_id); });',
-  '  const taskIds = new Set(tasks.map(function(t){ return t.task; }));',
-  '  const activeTasks = tasks.filter(function(t){ return !["succeeded","failed","cancelled"].includes(t.state); });',
-  '  const interactiveCount = activeTasks.filter(function(t){ return t.mode !== "headless"; }).length;',
-  '  const headlessCount = activeTasks.filter(function(t){ return t.mode === "headless"; }).length;',
-  '  const blockedCount = Object.values(app.nodes).filter(function(n){ return n.status === "blocked"; }).length;',
-  '  const queue = (Array.isArray(snap.queue) ? snap.queue : []).filter(function(q){ return app.activeProject === "all" || taskIds.has(q.task); });',
-  '  const pendingQueue = queue.filter(function(q){ return ["queued","deferred_user_typing","paused_by_operator","delivering","pending_unreachable"].includes(q.state); });',
-  '  const deferredCount = queue.filter(function(q){ return q.state === "deferred_user_typing" || q.state === "paused_by_operator"; }).length;',
-  '  const unmanagedCount = Object.values(app.nodes).filter(function(n){ return n.role === "unmanaged"; }).length;',
-  '',
-  '  document.getElementById("kpi-roles").textContent = String(roles.length);',
-  '  document.getElementById("kpi-roles-sub").textContent = boundRoles + " 已绑定 · " + Math.max(0, roles.length - boundRoles) + " 待命";',
-  '  document.getElementById("kpi-active").textContent = String(activeTasks.length);',
-  '  document.getElementById("kpi-active-sub").textContent = interactiveCount + " Herdr · " + headlessCount + " Headless";',
-  '  document.getElementById("kpi-blocked").textContent = String(blockedCount);',
-  '  document.getElementById("kpi-deferred").textContent = String(pendingQueue.length);',
-  '  document.getElementById("kpi-deferred-sub").textContent = deferredCount > 0 ? ("暂缓/冻结 " + deferredCount + " 项") : "支持单条强推/冻结";',
-  '  document.getElementById("kpi-unmanaged").textContent = String(unmanagedCount);',
-  '',
-  '  const pill = document.getElementById("tb-typing");',
-  '  if ((snap.paused_recipients || []).length > 0) {',
-  '    pill.className = "badge orange"; pill.textContent = "🔕 免打扰已开启";',
-  '  } else if (deferredCount > 0) {',
-  '    pill.className = "badge orange"; pill.textContent = "⏸ 暂缓 " + deferredCount;',
-  '  } else if (pendingQueue.length > 0) {',
-  '    pill.className = "badge blue"; pill.textContent = "⇄ 候投 " + pendingQueue.length;',
-  '  } else {',
-  '    pill.className = "badge green"; pill.textContent = "✓ 队列空闲";',
-  '  }',
-  '',
-  '  const conn = document.getElementById("tb-conn");',
-  '  const demoBar = document.getElementById("demo-controls");',
-  '  const sbLeft = document.getElementById("sb-left");',
-  '  if (!IS_LIVE) {',
-  '    conn.className = "badge purple mono"; conn.textContent = "✦ 离线演示";',
-  '    demoBar.style.display = "inline-flex";',
-  '    sbLeft.textContent = "✦ Preview Mode · 多项目与角色槽位演示";',
-  '  } else {',
-  '    demoBar.style.display = "none";',
-  '    conn.className = "badge " + (app.sseConnected ? "green" : "orange") + " mono";',
-  '    conn.textContent = (app.sseConnected ? "● Live #" : "◌ 同步 #") + (snap.seq || 0);',
-  '    const dpid = snap.daemon && snap.daemon.pid ? snap.daemon.pid : "—";',
-  '    sbLeft.textContent = "● daemon (PID " + dpid + " · v" + ((snap.daemon && snap.daemon.version) || BOOT.version) + ") · herdr=" + (snap.herdr || "unknown") + " · seq=" + (snap.seq || 0);',
-  '  }',
-  '}',
-  '',
-  'function renderAll() {',
-  '  renderProjectBar(); buildGraph(); renderAlertBanner(); renderSidebar(); renderDAG(); renderInspector(); renderEvents(); renderBoards(); updateHeaderAndKpis();',
-  '}',
-  '',
-  'function openSheet(title, desc, bodyHtml, confirmLabel, onConfirm, danger) {',
-  '  document.getElementById("sheet-title").textContent = title;',
-  '  document.getElementById("sheet-desc").textContent = desc || "";',
-  '  document.getElementById("sheet-body").innerHTML = bodyHtml || "";',
-  '  const foot = document.getElementById("sheet-foot");',
-  '  foot.style.display = confirmLabel === null ? "none" : "flex";',
-  '  const btn = document.getElementById("sheet-confirm");',
-  '  btn.textContent = confirmLabel || "确认执行";',
-  '  btn.className = "ui-btn " + (danger ? "danger" : "primary");',
-  '  app.sheetConfirmFn = onConfirm;',
-  '  btn.onclick = async function() {',
-  '    if (!app.sheetConfirmFn) { closeSheet(); return; }',
-  '    btn.disabled = true;',
-  '    try { await app.sheetConfirmFn(); closeSheet(); }',
-  '    catch (err) { notify("操作失败", err.message || String(err)); }',
-  '    finally { btn.disabled = false; }',
-  '  };',
-  '  document.getElementById("sheet-backdrop").classList.add("open");',
-  '}',
-  '',
-  'window.closeSheet = function() { document.getElementById("sheet-backdrop").classList.remove("open"); app.sheetConfirmFn = null; };',
-  'window.closeMobileDrawers = function() {',
-  '  document.getElementById("sidebar-panel").classList.remove("mobile-open");',
-  '  document.getElementById("inspector-panel").classList.remove("mobile-open");',
-  '  document.getElementById("mobile-backdrop").classList.remove("show");',
-  '};',
-  'window.selectNode = function(id, openDrawerOnMobile) {',
-  '  app.selectedId = id;',
-  '  renderSidebar(); renderDAG(); renderInspector();',
-  '  if (openDrawerOnMobile && isMobile()) {',
-  '    document.getElementById("sidebar-panel").classList.remove("mobile-open");',
-  '    document.getElementById("inspector-panel").classList.add("mobile-open");',
-  '    document.getElementById("mobile-backdrop").classList.add("show");',
-  '  }',
-  '};',
-  'window.focusNodeQa = function(id) { switchView("dag"); switchSubtab("qa"); selectNode(id, true); };',
-  'window.selectTurn = function(task, turn) { app.selectedTurn[task] = turn; renderInspector(); };',
-  'window.switchView = function(name) {',
-  '  app.view = name;',
-  '  ["dag","queues","events"].forEach(function(v){',
-  '    document.getElementById("tab-" + v).classList.toggle("active", v === name);',
-  '    document.getElementById("view-" + v).classList.toggle("active", v === name);',
-  '  });',
-  '  if (name === "dag") setTimeout(applyCamTransform, 20);',
-  '};',
-  'window.switchSubtab = function(name) {',
-  '  app.subtab = name;',
-  '  ["qa","mailbox","wire"].forEach(function(s){',
-  '    document.getElementById("subtab-" + s).classList.toggle("active", s === name);',
-  '    document.getElementById("pane-" + s).classList.toggle("active", s === name);',
-  '  });',
-  '};',
-  'window.setEventFilter = function(cat, btn) {',
-  '  app.eventFilter = cat;',
-  '  btn.parentElement.querySelectorAll(".seg-btn").forEach(function(b){ b.classList.remove("active"); });',
-  '  btn.classList.add("active"); renderEvents();',
-  '};',
-  'window.togglePanel = function(side) {',
-  '  if (isMobile()) {',
-  '    const sb = document.getElementById("sidebar-panel");',
-  '    const ins = document.getElementById("inspector-panel");',
-  '    const bd = document.getElementById("mobile-backdrop");',
-  '    const target = side === "left" ? sb : ins;',
-  '    const other = side === "left" ? ins : sb;',
-  '    other.classList.remove("mobile-open");',
-  '    const open = target.classList.toggle("mobile-open");',
-  '    bd.classList.toggle("show", open);',
-  '    return;',
-  '  }',
-  '  document.getElementById("main-split").classList.toggle(side === "left" ? "hide-left" : "hide-right");',
-  '};',
-  'window.toggleTheme = function() {',
-  '  const html = document.documentElement;',
-  '  const next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";',
-  '  html.setAttribute("data-theme", next);',
-  '  try { localStorage.setItem("chflow-theme", next); } catch (e) {}',
-  '  document.getElementById("theme-btn").textContent = next === "dark" ? "☀" : "☾"; renderDAG();',
-  '};',
-  'window.copyAttach = function(pane, host) {',
-  '  const cmd = String(host).startsWith("ssh:") ? ("herdr --machine " + host.slice(4) + " agent attach " + pane) : ("herdr agent attach " + pane);',
-  '  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(cmd).catch(function(){});',
-  '  notify("已复制 Herdr 接管命令", cmd);',
-  '};',
-  'window.copyPath = function(p) {',
-  '  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(p).catch(function(){});',
-  '  notify("已复制文件路径", p);',
-  '};',
-  '',
-  '/* === Role & Project Operator Actions === */',
-  'function defaultProjId() {',
-  '  if (app.activeProject !== "all") return app.activeProject;',
-  '  const first = (app.snap.projects || [])[0];',
-  '  return (first && first.project_id) || "";',
-  '}',
-  '',
-  'window.openRoleSetSheet = function(presetRole, presetProj) {',
-  '  const proj = presetProj || defaultProjId();',
-  '  const existing = presetRole ? (app.snap.roles || []).find(function(r){ return r.role === presetRole && (!proj || r.project_id === proj); }) : null;',
-  '  const body = "<div class=\\"form-grid\\">" +',
-  '    "<div><label class=\\"form-label\\">角色名 (如 backend / reviewer)</label><input class=\\"ui-input\\" id=\\"f-rs-name\\" value=\\"" + esc(presetRole || "") + "\\" placeholder=\\"小写字母、数字、-、_\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">所属项目 ID (可选)</label><input class=\\"ui-input\\" id=\\"f-rs-proj\\" value=\\"" + esc(proj) + "\\" placeholder=\\"默认当前项目\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">默认 Harness</label><select class=\\"ui-select\\" id=\\"f-rs-kind\\">" + ["codex","claude","pi","agy"].map(function(k){ return "<option value=\\"" + k + "\\"" + ((existing && existing.default_kind === k) ? " selected" : "") + ">" + k + "</option>"; }).join("") + "</select></div>" +',
-  '    "<div><label class=\\"form-label\\">默认权限档位</label><select class=\\"ui-select\\" id=\\"f-rs-perm\\">" + ["auto-workspace","yolo","ask","readonly"].map(function(p){ return "<option value=\\"" + p + "\\"" + ((existing && existing.default_perm === p) ? " selected" : "") + ">" + p + "</option>"; }).join("") + "</select></div>" +',
-  '    "<div><label class=\\"form-label\\">默认模型 (可选)</label><input class=\\"ui-input\\" id=\\"f-rs-model\\" value=\\"" + esc((existing && existing.default_model) || "") + "\\" placeholder=\\"如 codex-model / sonnet\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">默认推理强度</label><select class=\\"ui-select\\" id=\\"f-rs-effort\\"><option value=\\"\\">(默认)</option><option value=\\"high\\">high</option><option value=\\"medium\\">medium</option><option value=\\"low\\">low</option><option value=\\"xhigh\\">xhigh</option></select></div>" +',
-  '  "</div>" +',
-  '  "<div><label class=\\"form-label\\">角色职责描述 (可选)</label><input class=\\"ui-input\\" id=\\"f-rs-desc\\" value=\\"" + esc((existing && existing.description) || "") + "\\" placeholder=\\"如 后端接口实现与回归测试\\" /></div>" +',
-  '  "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-rs-wt\\" " + (existing && existing.worktree ? "checked" : "") + " /> 按默认配置启动时自动使用隔离 Git Worktree</label>";',
-  '  openSheet(presetRole ? ("配置角色 @" + presetRole) : "新建项目角色槽位 (role set)", "角色在项目内保持稳定，底层 Harness 与会话可随时热替换：", body, "保存角色", async function(){',
-  '    const name = document.getElementById("f-rs-name").value.trim();',
-  '    if (!name) throw new Error("请输入角色名");',
-  '    await apiAction("role_set", name, {',
-  '      project: document.getElementById("f-rs-proj").value.trim() || undefined,',
-  '      kind: document.getElementById("f-rs-kind").value,',
-  '      perm: document.getElementById("f-rs-perm").value,',
-  '      model: document.getElementById("f-rs-model").value.trim() || undefined,',
-  '      effort: document.getElementById("f-rs-effort").value || undefined,',
-  '      desc: document.getElementById("f-rs-desc").value.trim() || undefined,',
-  '      worktree: document.getElementById("f-rs-wt").checked || undefined',
-  '    });',
-  '    notify("角色已保存", "@" + name);',
-  '  });',
-  '};',
-  '',
-  'window.openRoleBindSheet = function(roleName, projId) {',
-  '  const proj = projId || defaultProjId();',
-  '  const online = [];',
-  '  (app.snap.managed_panes || []).forEach(function(p){ if (p.live !== false) online.push({ id: p.pane_id, label: p.pane_id + " (" + p.kind + " · " + (p.alias || p.name || "") + ")" }); });',
-  '  (app.snap.unmanaged_live_agents || []).forEach(function(u){ if (!online.some(function(x){ return x.id === u.pane_id; })) online.push({ id: u.pane_id, label: u.pane_id + " (" + u.kind + " · 未纳管)" }); });',
-  '  const paneOpts = "<option value=\\"\\">(不绑定已有窗格)</option>" + online.map(function(o){ return "<option value=\\"" + esc(o.id) + "\\">" + esc(o.label) + "</option>"; }).join("");',
-  '  const ctrlDefault = (Object.values(app.nodes).find(function(n){ return n.role === "controller"; }) || {}).pane || "";',
-  '  const body = "<div><label class=\\"form-label\\">绑定模式</label><select class=\\"ui-select\\" id=\\"f-rb-mode\\"><option value=\\"pane\\">绑定 / 热切换到已有在线窗格</option><option value=\\"spawn\\">拉起全新 Harness 会话并绑定 (--spawn)</option><option value=\\"headless\\">切换为无头执行器 (--headless)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">已有在线窗格 (模式 1)</label><select class=\\"ui-select\\" id=\\"f-rb-pane\\">" + paneOpts + "</select></div>" +',
-  '    "<div class=\\"form-grid\\">" +',
-  '      "<div><label class=\\"form-label\\">Harness (模式 2/3)</label><select class=\\"ui-select\\" id=\\"f-rb-kind\\"><option value=\\"codex\\">codex</option><option value=\\"claude\\">claude</option><option value=\\"pi\\">pi</option><option value=\\"agy\\">agy (在场)</option></select></div>" +',
-  '      "<div><label class=\\"form-label\\">权限档位</label><select class=\\"ui-select\\" id=\\"f-rb-perm\\"><option value=\\"auto-workspace\\">auto-workspace</option><option value=\\"yolo\\">yolo</option><option value=\\"ask\\">ask</option><option value=\\"readonly\\">readonly</option></select></div>" +',
-  '      "<div><label class=\\"form-label\\">模型 (可选)</label><input class=\\"ui-input\\" id=\\"f-rb-model\\" placeholder=\\"留空沿用角色默认\\" /></div>" +',
-  '      "<div><label class=\\"form-label\\">主控收件窗格 (可选)</label><input class=\\"ui-input\\" id=\\"f-rb-ctrl\\" value=\\"" + esc(ctrlDefault) + "\\" /></div>" +',
-  '    "</div>" +',
-  '    "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-rb-close\\" /> 热换绑后顺带关闭原旧窗格 (--close-old)</label>";',
-  '  openSheet("更换角色底层会话 — @" + roleName, "无须更改任务号或路由名，换绑后后续派发自动路由到新会话：", body, "执行绑定", async function(){',
-  '    const mode = document.getElementById("f-rb-mode").value;',
-  '    const opts = { project: proj || undefined, controller: document.getElementById("f-rb-ctrl").value.trim() || undefined, close_old: document.getElementById("f-rb-close").checked || undefined };',
-  '    if (mode === "pane") {',
-  '      const pane = document.getElementById("f-rb-pane").value;',
-  '      if (!pane) throw new Error("请选择要绑定的在线窗格");',
-  '      opts.pane = pane;',
-  '    } else if (mode === "spawn") {',
-  '      const kind = document.getElementById("f-rb-kind").value;',
-  '      opts.spawn = true; opts.kind = kind; opts.perm = document.getElementById("f-rb-perm").value;',
-  '      opts.model = document.getElementById("f-rb-model").value.trim() || undefined;',
-  '      if (kind === "agy") opts.attended = true;',
-  '    } else {',
-  '      opts.headless = true; opts.kind = document.getElementById("f-rb-kind").value; opts.perm = document.getElementById("f-rb-perm").value;',
-  '      opts.model = document.getElementById("f-rb-model").value.trim() || undefined;',
-  '    }',
-  '    await apiAction("role_bind", roleName, opts);',
-  '    notify("角色绑定已更新", "@" + roleName);',
-  '  });',
-  '};',
-  '',
-  'window.triggerRoleUnbind = async function(roleName, projId) {',
-  '  try { await apiAction("role_unbind", roleName, { project: projId || undefined }); notify("已解绑为待命槽位", "@" + roleName); }',
-  '  catch (err) { notify("解绑失败", err.message); }',
-  '};',
-  '',
-  'window.triggerRoleRemove = async function(roleName, projId) {',
-  '  try { await apiAction("role_remove", roleName, { project: projId || undefined }); notify("已移除角色", "@" + roleName); }',
-  '  catch (err) { notify("移除失败", err.message); }',
-  '};',
-  '',
-  'window.openAssignProjectSheet = function(target, curProj) {',
-  '  const body = "<div><label class=\\"form-label\\">目标项目 ID</label><input class=\\"ui-input\\" id=\\"f-ap-proj\\" value=\\"" + esc(curProj || "") + "\\" placeholder=\\"如 acme-api 或自定义名称\\" /></div>";',
-  '  openSheet("显式归入项目 — " + target, "将节点归属覆盖到指定项目视图（最高优先级）：", body, "确认归组", async function(){',
-  '    const project = document.getElementById("f-ap-proj").value.trim();',
-  '    if (!project) throw new Error("请填写项目 ID");',
-  '    await apiAction("assign_project", target, { project: project });',
-  '    notify("已更新项目归属", target + " -> " + project);',
-  '  });',
-  '};',
-  '',
-  'window.triggerPrune = async function() {',
-  '  try {',
-  '    const res = await apiAction("prune", undefined, { tasks: true, project: app.activeProject === "all" ? undefined : app.activeProject });',
-  '    notify("已清理离线与归档记录", "工位 " + ((res && res.pruned_panes) || 0) + " · 已结单任务 " + ((res && res.pruned_tasks) || 0));',
-  '  } catch (err) { notify("清理失败", err.message); }',
-  '};',
-  '',
-  '/* === Highest Authority Operator Actions === */',
-  'window.hotSetPerm = async function(target, perm) {',
-  '  try { await apiAction("set_perm", target, { perm: perm }); notify("权限档位已热更新", target + " -> " + perm + "（立即生效）"); }',
-  '  catch (err) { notify("权限更新失败", err.message); }',
-  '};',
-  '',
-  'window.quickTerminal = async function(target, keys) {',
-  '  try { await apiAction("terminal_control", target, { keys: keys }); notify("已直推终端按键", target + " <- [" + keys.join(", ") + "]"); }',
-  '  catch (err) { notify("按键发送失败", err.message); }',
-  '};',
-  '',
-  'window.sendTerminalText = async function(target) {',
-  '  const el = document.getElementById("tc-text");',
-  '  const txt = el ? el.value : "";',
-  '  if (!txt.trim()) { notify("请输入内容", "文本框为空"); return; }',
-  '  try { await apiAction("terminal_control", target, { text: txt, submit_key: "enter" }); if (el) el.value = ""; notify("已直发文本并回车", target); }',
-  '  catch (err) { notify("发送失败", err.message); }',
-  '};',
-  '',
-  'window.sendAgentPrompt = async function(target) {',
-  '  const el = document.getElementById("tc-prompt");',
-  '  const txt = el ? el.value.trim() : "";',
-  '  if (!txt) { notify("请输入 Prompt", "Prompt 为空"); return; }',
-  '  try { await apiAction("terminal_control", target, { prompt: txt }); if (el) el.value = ""; notify("已注入 Agent Prompt", target); }',
-  '  catch (err) { notify("注入失败", err.message); }',
-  '};',
-  '',
-  'window.openStartSheet = function() {',
-  '  const ctrlDefault = (Object.values(app.nodes).find(function(n){ return n.role === "controller"; }) || {}).pane || "";',
-  '  const projDefault = defaultProjId();',
-  '  const body = "<div class=\\"form-grid\\">" +',
-  '    "<div><label class=\\"form-label\\">Harness 类型</label><select class=\\"ui-select\\" id=\\"f-st-kind\\"><option value=\\"codex\\">codex</option><option value=\\"claude\\">claude</option><option value=\\"pi\\">pi</option><option value=\\"agy\\">agy (人在场交互)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">绑定角色 / 别名 (可选)</label><input class=\\"ui-input\\" id=\\"f-st-name\\" placeholder=\\"如 backend\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">权限档位 (--perm)</label><select class=\\"ui-select\\" id=\\"f-st-perm\\"><option value=\\"yolo\\">yolo (一律通过)</option><option value=\\"auto-workspace\\" selected>auto-workspace (工作区免审)</option><option value=\\"ask\\">ask (原生确认)</option><option value=\\"readonly\\">readonly (只读)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">布局位置 (--place)</label><select class=\\"ui-select\\" id=\\"f-st-place\\"><option value=\\"tab\\">tab (新建标签页)</option><option value=\\"split\\">split (当前分屏)</option><option value=\\"workspace\\">workspace (独立空间/Worktree)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">模型 (--model，可选)</label><input class=\\"ui-input\\" id=\\"f-st-model\\" placeholder=\\"如 codex-model / sonnet\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">所属项目 (--project，可选)</label><input class=\\"ui-input\\" id=\\"f-st-proj\\" value=\\"" + esc(projDefault) + "\\" placeholder=\\"默认按目录归组\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">目标空间 (--workspace，可选)</label><input class=\\"ui-input\\" id=\\"f-st-ws\\" placeholder=\\"如 w2\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">Git Worktree 分支 (可选)</label><input class=\\"ui-input\\" id=\\"f-st-wt\\" placeholder=\\"填写则自动创建隔离分支\\" /></div>" +',
-  '  "</div>" +',
-  '  "<div><label class=\\"form-label\\">工作目录 (--cwd，可选)</label><input class=\\"ui-input\\" id=\\"f-st-cwd\\" placeholder=\\"默认使用当前目录\\" /></div>" +',
-  '  "<div><label class=\\"form-label\\">绑定主控收件窗格 (可选)</label><input class=\\"ui-input\\" id=\\"f-st-ctrl\\" value=\\"" + esc(ctrlDefault) + "\\" placeholder=\\"如 w1:p1\\" /></div>";',
-  '  openSheet("新建 Herdr 交互工位 (start)", "直接在选定空间拉起新 Harness 并注册到 Daemon：", body, "立即启动工位", async function(){',
-  '    const kind = document.getElementById("f-st-kind").value;',
-  '    const name = document.getElementById("f-st-name").value.trim() || undefined;',
-  '    const wt = document.getElementById("f-st-wt").value.trim() || undefined;',
-  '    const place = wt ? "workspace" : document.getElementById("f-st-place").value;',
-  '    const opts = {',
-  '      kind: kind,',
-  '      perm: document.getElementById("f-st-perm").value,',
-  '      place: place,',
-  '      model: document.getElementById("f-st-model").value.trim() || undefined,',
-  '      project: document.getElementById("f-st-proj").value.trim() || undefined,',
-  '      workspace: (!wt ? document.getElementById("f-st-ws").value.trim() : "") || undefined,',
-  '      worktree: wt,',
-  '      cwd: document.getElementById("f-st-cwd").value.trim() || undefined,',
-  '      controller: document.getElementById("f-st-ctrl").value.trim() || undefined,',
-  '      trust_repository: true,',
-  '      attended: kind === "agy" ? true : undefined',
-  '    };',
-  '    const res = await apiAction("start", name, opts);',
-  '    notify("新工位已启动", (res && (res.alias || res.pane_id)) || kind);',
-  '  });',
-  '};',
-  '',
-  'window.openSendSheet = function(presetTarget, presetTask, presetProj, presetSpawn) {',
-  '  const candidates = [];',
-  '  (app.snap.roles || []).filter(function(r){ return matchesProject(r.project_id); }).forEach(function(r){',
-  '    candidates.push({ val: r.role, label: "@" + r.role + " (" + r.project_id + " · " + (r.binding_mode === "unbound" ? "待命角色" : (r.kind + " " + (r.pane_id || "headless"))) + ")" });',
-  '  });',
-  '  (app.snap.managed_panes || []).filter(function(p){ return matchesProject(p.project_id) && p.live !== false; }).forEach(function(p){',
-  '    const v = p.alias || p.pane_id;',
-  '    if (!candidates.some(function(c){ return c.val === v; })) candidates.push({ val: v, label: v + " (" + p.kind + " · " + p.pane_id + ")" });',
-  '  });',
-  '  (app.snap.unmanaged_live_agents || []).filter(function(u){ return matchesProject(u.project_id); }).forEach(function(u){',
-  '    if (!candidates.some(function(c){ return c.label.indexOf(u.pane_id) >= 0; })) candidates.push({ val: u.pane_id, label: u.pane_id + " (" + u.kind + " · 未纳管自动接入)" });',
-  '  });',
-  '  const selOpts = candidates.map(function(c){ return "<option value=\\"" + esc(c.val) + "\\"" + (c.val === presetTarget ? " selected" : "") + ">" + esc(c.label) + "</option>"; }).join("");',
-  '  const ctrlDefault = (Object.values(app.nodes).find(function(n){ return n.role === "controller"; }) || {}).pane || "";',
-  '  const projDefault = presetProj || defaultProjId();',
-  '  const body = "<div class=\\"form-grid\\">" +',
-  '    "<div><label class=\\"form-label\\">目标角色或工位</label>" + (candidates.length ? ("<select class=\\"ui-select\\" id=\\"f-sd-target\\">" + selOpts + "</select>") : "<input class=\\"ui-input\\" id=\\"f-sd-target\\" value=\\"" + esc(presetTarget || "") + "\\" placeholder=\\"角色名、别名或窗格 ID\\" />") + "</div>" +',
-  '    "<div><label class=\\"form-label\\">任务号 (--task，留空新建 / 填入追问)</label><input class=\\"ui-input\\" id=\\"f-sd-task\\" value=\\"" + esc(presetTask || "") + "\\" placeholder=\\"如 feat-orders\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">权限档位 (--perm)</label><select class=\\"ui-select\\" id=\\"f-sd-perm\\"><option value=\\"yolo\\">yolo (一律通过)</option><option value=\\"auto-workspace\\" selected>auto-workspace (工作区免审)</option><option value=\\"ask\\">ask (原生确认)</option><option value=\\"readonly\\">readonly (只读审查)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">回执投递窗格 (controller，可选)</label><input class=\\"ui-input\\" id=\\"f-sd-ctrl\\" value=\\"" + esc(ctrlDefault) + "\\" placeholder=\\"如 w1:p1\\" /></div>" +',
-  '  "</div>" +',
-  '  "<div><label class=\\"form-label\\">任务正文 (写入 .chflow/tasks/<task>/tN-brief.md)</label><textarea class=\\"ui-textarea\\" id=\\"f-sd-brief\\" placeholder=\\"在此输入完整任务目标、范围与验收要求…\\"></textarea></div>" +',
-  '  "<div class=\\"form-grid\\">" +',
-  '    "<div><label class=\\"form-label\\">所属项目 (--project，可选)</label><input class=\\"ui-input\\" id=\\"f-sd-proj\\" value=\\"" + esc(projDefault) + "\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">回退优先级链 (--fallback，可选)</label><input class=\\"ui-input\\" id=\\"f-sd-fb\\" placeholder=\\"如 pi:provider/model:high\\" /></div>" +',
-  '  "</div>" +',
-  '  "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-sd-spawn\\" " + (presetSpawn ? "checked" : "") + " /> 若目标为待命角色 (unbound)，按默认配置自动拉起并绑定 (--spawn)</label>";',
-  '  openSheet("派发任务 / 多轮追问 (send)", "正文落盘工作区 .chflow/ 信箱，仅向目标工位注入 3 行纯文本：", body, "立即派发", async function(){',
-  '    const target = document.getElementById("f-sd-target").value.trim();',
-  '    const brief = document.getElementById("f-sd-brief").value;',
-  '    if (!target) throw new Error("请选择或输入目标角色/工位");',
-  '    if (!brief.trim()) throw new Error("请填写任务 brief 正文");',
-  '    const opts = {',
-  '      task: document.getElementById("f-sd-task").value.trim() || undefined,',
-  '      brief: brief,',
-  '      perm: document.getElementById("f-sd-perm").value,',
-  '      project: document.getElementById("f-sd-proj").value.trim() || undefined,',
-  '      controller: document.getElementById("f-sd-ctrl").value.trim() || undefined,',
-  '      fallback: document.getElementById("f-sd-fb").value.trim() || undefined,',
-  '      spawn: document.getElementById("f-sd-spawn").checked || undefined',
-  '    };',
-  '    const res = await apiAction("send", target, opts);',
-  '    notify("任务已派发", ((res && res.task) || "task") + " -> " + target);',
-  '  });',
-  '};',
-  '',
-  'window.openRunSheet = function() {',
-  '  const ctrlDefault = (Object.values(app.nodes).find(function(n){ return n.role === "controller"; }) || {}).pane || "";',
-  '  const body = "<div class=\\"form-grid\\">" +',
-  '    "<div><label class=\\"form-label\\">无头引擎 (--kind)</label><select class=\\"ui-select\\" id=\\"f-rn-kind\\"><option value=\\"codex\\">codex (exec)</option><option value=\\"claude\\">claude (print)</option><option value=\\"pi\\">pi (rpc/print)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">权限档位 (--perm)</label><select class=\\"ui-select\\" id=\\"f-rn-perm\\"><option value=\\"readonly\\">readonly (只读审查)</option><option value=\\"auto-workspace\\" selected>auto-workspace</option><option value=\\"yolo\\">yolo</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">模型 (可选)</label><input class=\\"ui-input\\" id=\\"f-rn-model\\" placeholder=\\"如 codex-model\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">完成后唤醒窗格 (可选)</label><input class=\\"ui-input\\" id=\\"f-rn-ctrl\\" value=\\"" + esc(ctrlDefault) + "\\" /></div>" +',
-  '  "</div>" +',
-  '  "<div><label class=\\"form-label\\">任务正文 (Brief)</label><textarea class=\\"ui-textarea\\" id=\\"f-rn-brief\\" placeholder=\\"输入一次性无头任务说明…\\"></textarea></div>";',
-  '  openSheet("启动后台无头任务 (chflow run --bg)", "由常驻 Daemon 托管独立进程组、超时清理与回执落盘：", body, "后台启动", async function(){',
-  '    const brief = document.getElementById("f-rn-brief").value;',
-  '    if (!brief.trim()) throw new Error("请填写任务 brief");',
-  '    const res = await apiAction("run", undefined, {',
-  '      kind: document.getElementById("f-rn-kind").value,',
-  '      perm: document.getElementById("f-rn-perm").value,',
-  '      model: document.getElementById("f-rn-model").value.trim() || undefined,',
-  '      controller: document.getElementById("f-rn-ctrl").value.trim() || undefined,',
-  '      brief: brief,',
-  '      bg: true',
-  '    });',
-  '    notify("无头任务已启动", (res && res.task) || "running");',
-  '  });',
-  '};',
-  '',
-  'window.openSwitchSheet = function(target, kind, curPerm) {',
-  '  const body = "<div class=\\"form-grid\\">" +',
-  '    "<div><label class=\\"form-label\\">目标模型 (--model)</label><input class=\\"ui-input\\" id=\\"f-sw-model\\" placeholder=\\"如 codex-model / sonnet\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">推理强度 (--effort)</label><select class=\\"ui-select\\" id=\\"f-sw-effort\\"><option value=\\"\\">(保持不变)</option><option value=\\"high\\">high</option><option value=\\"xhigh\\">xhigh</option><option value=\\"medium\\">medium</option><option value=\\"low\\">low</option><option value=\\"max\\">max</option></select></div>" +',
-  '  "</div>" +',
-  '  "<div><label class=\\"form-label\\">原生权限参数升级 (--perm)</label><select class=\\"ui-select\\" id=\\"f-sw-perm\\">" +',
-  '    ["readonly","ask","auto-workspace","yolo"].map(function(p){ return "<option value=\\"" + p + "\\"" + (p === curPerm ? " selected" : "") + ">" + p + "</option>"; }).join("") +',
-  '  "</select></div>" +',
-  '  "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-sw-restart\\" " + (kind !== "claude" ? "checked" : "") + " /> 重启进程并自动 resume 原会话以写入原生启动参数 (--restart --allow-last)</label>";',
-  '  openSheet("切换模型 / 重启升级原生权限 — " + target, "若仅需热改 Daemon 弹窗策略，直接点权限胶囊即可零重启生效。", body, "执行切换", async function(){',
-  '    await apiAction("switch", target, {',
-  '      model: document.getElementById("f-sw-model").value.trim() || undefined,',
-  '      effort: document.getElementById("f-sw-effort").value || undefined,',
-  '      perm: document.getElementById("f-sw-perm").value,',
-  '      restart: document.getElementById("f-sw-restart").checked,',
-  '      allow_last: true,',
-  '      attended: kind === "agy" ? true : undefined',
-  '    });',
-  '    notify("已完成模型/权限切换", target);',
-  '  });',
-  '};',
-  '',
-  'window.openAdoptSheet = function(pane, kind) {',
-  '  const safeDefault = (kind || "worker") + "-" + String(pane).replace(/[^a-z0-9]/gi, "").toLowerCase();',
-  '  const ctrlDefault = (Object.values(app.nodes).find(function(n){ return n.role === "controller"; }) || {}).pane || "";',
-  '  const projDefault = defaultProjId();',
-  '  const body = "<div class=\\"form-grid\\">" +',
-  '    "<div><label class=\\"form-label\\">工位别名 (--name)</label><input class=\\"ui-input\\" id=\\"f-adopt-name\\" value=\\"" + esc(safeDefault) + "\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">绑定为项目角色 (--role，可选)</label><input class=\\"ui-input\\" id=\\"f-adopt-role\\" placeholder=\\"如 backend / reviewer\\" /></div>" +',
-  '    "<div><label class=\\"form-label\\">授予权限策略 (--perm)</label><select class=\\"ui-select\\" id=\\"f-adopt-perm\\"><option value=\\"yolo\\">yolo (一律放行)</option><option value=\\"auto-workspace\\" selected>auto-workspace (工作区免审)</option><option value=\\"ask\\">ask (保留确认)</option><option value=\\"readonly\\">readonly (只读)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">所属项目 (--project，可选)</label><input class=\\"ui-input\\" id=\\"f-adopt-proj\\" value=\\"" + esc(projDefault) + "\\" /></div>" +',
-  '  "</div>" +',
-  '  "<div><label class=\\"form-label\\">绑定主控窗格 (--controller，可留空)</label><input class=\\"ui-input\\" id=\\"f-adopt-ctrl\\" value=\\"" + esc(ctrlDefault) + "\\" placeholder=\\"如 w1:p1\\" /></div>" +',
-  '  "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-adopt-takeover\\" checked /> 强制接管控制权并迁移未发回执 (--takeover)</label>";',
-  '  openSheet("纳管 / 绑定角色 — " + pane, "登记窗格指纹并可选绑定为项目固定角色（不打断运行中的任务）：", body, "确认纳管", async function(){',
-  '    const ctrl = document.getElementById("f-adopt-ctrl").value.trim();',
-  '    await apiAction("adopt", pane, {',
-  '      name: document.getElementById("f-adopt-name").value.trim() || undefined,',
-  '      role: document.getElementById("f-adopt-role").value.trim() || undefined,',
-  '      project: document.getElementById("f-adopt-proj").value.trim() || undefined,',
-  '      perm: document.getElementById("f-adopt-perm").value,',
-  '      controller: ctrl || undefined,',
-  '      takeover: document.getElementById("f-adopt-takeover").checked,',
-  '      attended: kind === "agy" ? true : undefined',
-  '    });',
-  '    notify("已纳管窗格 " + pane, "权限与角色绑定已生效");',
-  '  });',
-  '};',
-  '',
-  'window.openHandoffSheet = function(target) {',
-  '  const body = "<div><label class=\\"form-label\\">移交目标主控窗格 (--to)</label><input class=\\"ui-input\\" id=\\"f-ho-to\\" placeholder=\\"例如 w1:p2\\" /></div>" +',
-  '    "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-ho-notify\\" checked /> 向原主控排队发送 1 行通知 (--notify-old)</label>";',
-  '  openSheet("控制权移交 (Handoff) — " + target, "原子迁移窗格、活跃任务与全部待投递回执至新主控：", body, "确认移交", async function(){',
-  '    const to = document.getElementById("f-ho-to").value.trim();',
-  '    if (!to) throw new Error("请填写新主控窗格 ID");',
-  '    await apiAction("handoff", target, { to: to, notify_old: document.getElementById("f-ho-notify").checked });',
-  '    notify("已完成控制权移交", target + " -> " + to);',
-  '  });',
-  '};',
-  '',
-  '/* === Granular Queue & Retry Controls === */',
-  'window.toggleRecipientPause = async function(pane, pause) {',
-  '  try { await apiAction(pause ? "queue_pause" : "queue_resume", pane, {}); notify(pause ? "已开启免打扰暂停投递" : "已恢复自动防抖投递", pane); }',
-  '  catch (err) { notify("队列状态切换失败", err.message); }',
-  '};',
-  '',
-  'window.deliverNowPane = async function(pane) {',
-  '  const targetPane = (pane || (Object.values(app.nodes).find(function(n){ return n.role === "controller"; }) || {}).pane) || undefined;',
-  '  try { const res = await apiAction("queue_deliver_now", targetPane, {}); notify("已强制推入终端", "送达 " + ((res && res.delivered) != null ? res.delivered : "全部") + " 条回执"); }',
-  '  catch (err) { notify("强制投递失败", err.message); }',
-  '};',
-  '',
-  'window.deliverSingleEvent = async function(eventId) {',
-  '  try { await apiAction("queue_deliver_now", undefined, { event_id: eventId }); notify("单条回执已强推入终端", eventId.slice(0, 8)); }',
-  '  catch (err) { notify("强推失败", err.message); }',
-  '};',
-  '',
-  'window.consumeSingleEvent = async function(eventId) {',
-  '  try { await apiAction("queue_consume", undefined, { event_id: eventId }); notify("已标记为已阅消费", "不再向终端发送该条回执"); }',
-  '  catch (err) { notify("操作失败", err.message); }',
-  '};',
-  '',
-  'window.dropSingleEvent = async function(eventId) {',
-  '  try { await apiAction("queue_drop", undefined, { event_id: eventId }); notify("已撤回丢弃回执", eventId.slice(0, 8)); }',
-  '  catch (err) { notify("撤回失败", err.message); }',
-  '};',
-  '',
-  'window.openRerouteEventSheet = function(eventId, oldPane) {',
-  '  const body = "<div><label class=\\"form-label\\">新收件终端窗格 ID (--to)</label><input class=\\"ui-input\\" id=\\"f-rr-to\\" value=\\"" + esc(oldPane) + "\\" placeholder=\\"如 w1:p2\\" /></div>";',
-  '  openSheet("改派单条回执投递目标", "将该条未投递回执改路由至指定窗格：", body, "确认改派", async function(){',
-  '    const to = document.getElementById("f-rr-to").value.trim();',
-  '    if (!to) throw new Error("请填写目标窗格 ID");',
-  '    await apiAction("queue_reroute", undefined, { event_id: eventId, to: to });',
-  '    notify("回执已改派", "-> " + to);',
-  '  });',
-  '};',
-  '',
-  'window.forceRetryNow = async function(task) {',
-  '  try { await apiAction("retry", task, {}); notify("已立即触发重试", task); }',
-  '  catch (err) { notify("重试未执行", err.message); }',
-  '};',
-  '',
-  'window.forceNextFallback = async function(task, spec) {',
-  '  try { await apiAction("retry", task, { switch: spec }); notify("已强制切换备选通道", task + " -> " + spec); }',
-  '  catch (err) { notify("切换失败", err.message); }',
-  '};',
-  '',
-  'window.cancelScheduledRetry = async function(task) {',
-  '  try { await apiAction("cancel_retry", task, {}); notify("已取消自动重试计划", task + " 保持当前现场"); }',
-  '  catch (err) { notify("取消重试失败", err.message); }',
-  '};',
-  '',
-  'window.triggerResume = async function(task, harness) {',
-  '  try {',
-  '    const res = await apiAction("resume", task, harness === "agy" ? { attended: true } : {});',
-  '    if (res && res.already_running) notify("无需重复续跑", "目标已在运行中");',
-  '    else notify("已触发原会话续跑", task);',
-  '  } catch (err) { notify("续跑失败", err.message); }',
-  '};',
-  '',
-  'window.openRetrySheet = function(task) {',
-  '  const body = "<div><label class=\\"form-label\\">执行方式</label><select class=\\"ui-select\\" id=\\"f-rt-after\\"><option value=\\"\\">⚡ 立即重试</option><option value=\\"15m\\">15 分钟后定时重试</option><option value=\\"30m\\">30 分钟后定时重试</option><option value=\\"1h\\">1 小时后定时重试</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">或强制切换备选通道 (--switch，可选)</label><input class=\\"ui-input\\" id=\\"f-rt-switch\\" placeholder=\\"如 pi:provider/model:high\\" /></div>";',
-  '  openSheet("重试或强制切链 — " + task, "支持立即执行、定时排期或直接切往指定渠道：", body, "确认执行", async function(){',
-  '    const after = document.getElementById("f-rt-after").value;',
-  '    const sw = document.getElementById("f-rt-switch").value.trim();',
-  '    const opts = {};',
-  '    if (after) opts.after = after;',
-  '    if (sw) opts.switch = sw;',
-  '    await apiAction("retry", task, opts);',
-  '    notify("已提交重试调度", task);',
-  '  });',
-  '};',
-  '',
-  'window.openFinishSheet = function(task) {',
-  '  const body = "<div><label class=\\"form-label\\">验收结论</label><select class=\\"ui-select\\" id=\\"f-fin-mode\\"><option value=\\"ok\\">通过验收 (--ok)</option><option value=\\"fail\\">标记未通过 (--fail)</option></select></div>" +',
-  '    "<div><label class=\\"form-label\\">结单备注 (可选)</label><input class=\\"ui-input\\" id=\\"f-fin-note\\" placeholder=\\"例如：审查与测试全部通过\\" /></div>";',
-  '  openSheet("结单归档 — " + task, "正式结束当前任务轮次并清理挂起队列：", body, "确认结单", async function(){',
-  '    const ok = document.getElementById("f-fin-mode").value === "ok";',
-  '    const note = document.getElementById("f-fin-note").value.trim();',
-  '    await apiAction("finish", task, { ok: ok, fail: !ok, note: note || undefined });',
-  '    notify("任务已结单", task);',
-  '  });',
-  '};',
-  '',
-  'window.openCancelSheet = function(task, hasPane) {',
-  '  const body = (hasPane ? "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-can-close\\" /> 同时关闭该交互窗格 (--close-pane)</label>" : "") +',
-  '    "<label style=\\"display:flex;gap:6px;align-items:center;font-size:12px;\\"><input type=\\"checkbox\\" id=\\"f-can-rec\\" /> 强制对账清理未知关窗锁 (--reconcile)</label>";',
-  '  openSheet("取消任务 " + task, "将终止无头进程组、取消重试计划并清空未投递告警：", body, "确认取消", async function(){',
-  '    const cl = document.getElementById("f-can-close");',
-  '    const rc = document.getElementById("f-can-rec");',
-  '    await apiAction("cancel", task, { close_pane: !!(cl && cl.checked), reconcile: !!(rc && rc.checked) });',
-  '    notify("已取消任务", task);',
-  '  }, true);',
-  '};',
-  '',
-  'window.fetchScreenNow = async function(target, lines) {',
-  '  try {',
-  '    const res = await apiAction("inspect_screen", target, { lines: lines || 40 });',
-  '    app.screenCache[target] = { text: (res && res.screen) || "(空屏幕输出)", at: fmtTime(Date.now()) };',
-  '    renderInspector();',
-  '    notify("已读取实时终端屏幕", target + " (" + (lines || 40) + " 行)");',
-  '  } catch (err) { notify("读取屏幕失败", err.message); }',
-  '};',
-  '',
-  'window.triggerFlush = async function(pane) {',
-  '  const fallbackPane = ((app.snap.queue || []).find(function(q){ return q.recipient && q.recipient.pane; }) || { recipient: {} }).recipient.pane;',
-  '  const targetPane = (pane || (Object.values(app.nodes).find(function(n){ return n.role === "controller"; }) || {}).pane || fallbackPane) || undefined;',
-  '  try {',
-  '    const res = await apiAction("flush", targetPane, {});',
-  '    const summary = (res && res.summary) || "当前无待消费回执。";',
-  '    openSheet("Flush 摘要（仅在 Web 消费，零终端注入）", "以下队列项已标记为已阅：", "<pre class=\\"doc-pre\\">" + esc(summary) + "</pre>", null, null);',
-  '  } catch (err) { notify("Flush 失败", err.message); }',
-  '};',
-  '',
-  'window.openPalette = function() {',
-  '  const cmds = [',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();openRoleSetSheet();\\"><span>＋ 新建或配置项目角色 (chflow role set)</span><span class=\\"badge blue mono\\">Role</span></div>",',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();openStartSheet();\\"><span>＋ 新建交互工位 (chflow start)</span><span class=\\"badge blue mono\\">Action</span></div>",',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();openSendSheet();\\"><span>✦ 按角色或工位派发任务 (chflow send)</span><span class=\\"badge blue mono\\">Action</span></div>",',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();openRunSheet();\\"><span>⚡ 启动后台无头任务 (chflow run --bg)</span><span class=\\"badge purple mono\\">Action</span></div>",',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();deliverNowPane();\\"><span>⚡ 强制将全部候投回执推入终端</span><span class=\\"badge orange mono\\">Queue</span></div>",',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();triggerPrune();\\"><span>🧹 清理离线残留与已结单任务 (chflow prune)</span><span class=\\"badge mono\\">Clean</span></div>",',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();fitCanvas();\\"><span>◎ 拓扑画布适配全图视口 (Fit)</span><span class=\\"badge mono\\">Canvas</span></div>",',
-  '    "<div class=\\"palette-item\\" onclick=\\"closeSheet();resetDagLayout();\\"><span>↺ 重置拓扑节点自定义排布</span><span class=\\"badge mono\\">Canvas</span></div>"',
-  '  ];',
-  '  const nodes = Object.values(app.nodes).map(function(n){',
-  '    return "<div class=\\"palette-item\\" onclick=\\"selectNode(\'" + esc(n.id) + "\', true);closeSheet();\\"><span><span class=\\"dot " + esc(n.status) + "\\" style=\\"margin-right:7px;\\"></span>" + esc(n.label) + "</span><span class=\\"badge mono\\">" + esc((n.projectId ? (n.projectId + " · ") : "") + n.pane) + "</span></div>";',
-  '  });',
-  '  openSheet("全局控制与跳转面板 (⌘K)", "直接执行高权限编排命令或跳转任意角色/工位：", "<div class=\\"palette-list\\">" + cmds.concat(nodes).join("") + "</div>", null, null);',
-  '};',
-  '',
-  'window.refreshNow = async function(silent) {',
-  '  if (!IS_LIVE) { renderAll(); if (!silent) notify("演示状态已刷新", "多项目与角色槽位演示模式"); return; }',
-  '  try { app.snap = await apiGet("/api/snapshot"); renderAll(); if (!silent) notify("已同步最新快照", "seq=" + app.snap.seq); }',
-  '  catch (err) { if (!silent) notify("同步失败", err.message); }',
-  '};',
-  '',
-  'function runDemoAction(action, target, opts) {',
-  '  const s = app.snap;',
-  '  if (action === "role_set") {',
-  '    const proj = opts.project || defaultProjId() || "acme-api";',
-  '    const existing = (s.roles || []).find(function(r){ return r.role === target && r.project_id === proj; });',
-  '    if (existing) Object.assign(existing, { description: opts.desc || existing.description, default_kind: opts.kind || existing.default_kind, default_perm: opts.perm || existing.default_perm, default_model: opts.model || existing.default_model });',
-  '    else s.roles.push({ project_id: proj, role: target, description: opts.desc || "自定义角色槽位", source: "manual", default_kind: opts.kind || "codex", default_perm: opts.perm || "auto-workspace", default_model: opts.model, binding_mode: "unbound", live: false, agent_status: "unbound" });',
-  '    renderAll(); return { role: target, project_id: proj };',
-  '  }',
-  '  if (action === "role_bind") {',
-  '    const proj = opts.project || defaultProjId() || "acme-api";',
-  '    const r = (s.roles || []).find(function(x){ return x.role === target && (!opts.project || x.project_id === proj); });',
-  '    if (r) {',
-  '      if (opts.headless) { r.binding_mode = "headless"; r.kind = opts.kind || r.default_kind || "codex"; r.pane_id = undefined; r.live = true; r.agent_status = "headless"; }',
-  '      else { r.binding_mode = "pane"; r.pane_id = opts.pane || ("w2:p" + (s.managed_panes.length + 5)); r.kind = opts.kind || r.default_kind || "codex"; r.perm = opts.perm || r.default_perm || "auto-workspace"; r.live = true; r.agent_status = "idle"; r.controller = { pane: opts.controller || "w1:p1", label: "lead-agy", kind: "agy", route: { socket: "local" } }; }',
-  '    }',
-  '    renderAll(); return { role: target };',
-  '  }',
-  '  if (action === "role_unbind") {',
-  '    const r = (s.roles || []).find(function(x){ return x.role === target && (!opts.project || x.project_id === opts.project); });',
-  '    if (r) { r.binding_mode = "unbound"; r.pane_id = undefined; r.live = false; r.agent_status = "unbound"; }',
-  '    renderAll(); return { role: target, binding_mode: "unbound" };',
-  '  }',
-  '  if (action === "role_remove") {',
-  '    s.roles = (s.roles || []).filter(function(x){ return !(x.role === target && (!opts.project || x.project_id === opts.project)); });',
-  '    renderAll(); return { role: target, removed: true };',
-  '  }',
-  '  if (action === "assign_project") {',
-  '    (s.managed_panes || []).forEach(function(p){ if (p.pane_id === target) p.project_id = opts.project; });',
-  '    (s.unmanaged_live_agents || []).forEach(function(u){ if (u.pane_id === target) u.project_id = opts.project; });',
-  '    if (!(s.projects || []).some(function(p){ return p.project_id === opts.project; })) s.projects.push({ project_id: opts.project, name: opts.project, root: "~/workspace/" + opts.project, source: "override", controllers: [], roles_count: 0, live_panes: 1, active_tasks: 0, blocked_count: 0 });',
-  '    renderAll(); return { project_id: opts.project };',
-  '  }',
-  '  if (action === "prune") {',
-  '    const beforeT = s.tasks.length;',
-  '    if (opts.tasks) s.tasks = s.tasks.filter(function(t){ return !["succeeded","failed","cancelled"].includes(t.state); });',
-  '    renderAll(); return { pruned_panes: 0, pruned_tasks: beforeT - s.tasks.length };',
-  '  }',
-  '  if (action === "set_perm") {',
-  '    s.tasks.forEach(function(t){ if (t.task === target || t.pane === target) { t.perm = opts.perm; if (t.launch) t.launch.perm = opts.perm; if (opts.perm === "yolo" && t.state === "blocked") { t.state = "submitted"; t.block = undefined; } } });',
-  '    s.managed_panes.forEach(function(p){ if (p.pane_id === target || (s.tasks.some(function(t){ return t.task === target && t.pane === p.pane_id; }))) { p.perm = opts.perm; if (opts.perm === "yolo" && p.agent_status === "blocked") p.agent_status = "working"; } });',
-  '    (s.roles || []).forEach(function(r){ if (r.pane_id === target || r.active_task === target) { r.perm = opts.perm; if (opts.perm === "yolo" && r.agent_status === "blocked") r.agent_status = "working"; } });',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: target, event: "perm_updated", detail: "热切换权限为 " + opts.perm });',
-  '    renderAll(); return { perm: opts.perm };',
-  '  }',
-  '  if (action === "terminal_control") {',
-  '    const t = s.tasks.find(function(x){ return x.task === target || x.pane === target; });',
-  '    if (t && t.state === "blocked") {',
-  '      t.state = "submitted"; t.block = undefined;',
-  '      const p = s.managed_panes.find(function(m){ return m.pane_id === t.pane; });',
-  '      if (p) p.agent_status = "working";',
-  '      (s.roles || []).forEach(function(r){ if (r.pane_id === t.pane) r.agent_status = "working"; });',
-  '      s.queue.forEach(function(q){ if (q.task === t.task && q.type === "blocked") q.state = "superseded_by_human_unblock"; });',
-  '    }',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: t ? t.task : target, event: "terminal_control", detail: opts.keys ? ("keys=" + opts.keys.join(",")) : opts.prompt ? "agent_prompt" : "send_text" });',
-  '    renderAll(); return { ok: true };',
-  '  }',
-  '  if (action === "start") {',
-  '    const pid = "w2:p" + (s.managed_panes.length + 5);',
-  '    const alias = target || (opts.kind + "-" + pid.slice(-2));',
-  '    s.managed_panes.push({ pane_id: pid, alias: alias, name: alias, project_id: opts.project || defaultProjId() || "acme-api", kind: opts.kind, model: opts.model || "default", effort: opts.effort || "high", perm: opts.perm || "auto-workspace", native_perm: opts.perm || "auto-workspace", adopted: false, live: true, agent_status: "idle", cwd: opts.cwd || "~/workspace/acme-api", state_change_seq: 1, controller: { pane: opts.controller || "w1:p1", label: "lead-agy", kind: "agy" }, route: { socket: "local" } });',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: null, event: "pane_started", detail: alias + " (" + pid + " · " + opts.perm + ")" });',
-  '    app.selectedId = "pane:" + pid;',
-  '    renderAll(); return { alias: alias, pane_id: pid };',
-  '  }',
-  '  if (action === "send" || action === "run") {',
-  '    const tid = opts.task || ("task-" + Math.random().toString(16).slice(2, 8));',
-  '    const rObj = (s.roles || []).find(function(r){ return r.role === target && (!opts.project || r.project_id === opts.project); });',
-  '    if (rObj && rObj.binding_mode === "unbound") {',
-  '      if (!opts.spawn) throw new Error("role_unbound: 角色处于待命状态，请先绑定会话或勾选 --spawn");',
-  '      rObj.binding_mode = "pane"; rObj.pane_id = "w2:p" + (s.managed_panes.length + 6); rObj.kind = rObj.default_kind || "codex"; rObj.live = true; rObj.agent_status = "working"; rObj.active_task = tid;',
-  '    }',
-  '    const p = s.managed_panes.find(function(m){ return m.alias === target || m.pane_id === target || (rObj && m.pane_id === rObj.pane_id); });',
-  '    const paneId = (rObj && rObj.pane_id) || (p ? p.pane_id : (action === "run" ? undefined : target));',
-  '    if (p) p.agent_status = "working";',
-  '    const existing = s.tasks.find(function(x){ return x.task === tid; });',
-  '    const turn = existing ? (existing.turn + 1) : 1;',
-  '    DEMO_FILES[tid + ":brief:" + turn] = opts.brief;',
-  '    if (existing) { existing.turn = turn; existing.state = "submitted"; existing.perm = opts.perm; }',
-  '    else s.tasks.unshift({ task: tid, project_id: (rObj && rObj.project_id) || opts.project || defaultProjId() || "acme-api", role: rObj ? rObj.role : undefined, attempt: "ab12cd34ef5678901234567890abcdef", turn: 1, state: "submitted", mode: action === "run" ? "headless" : "interactive", kind: (rObj && rObj.kind) || (p && p.kind) || opts.kind || "codex", name: (rObj && rObj.role) || (p && p.alias) || tid, pane: paneId, pane_id: paneId, perm: opts.perm || "auto-workspace", launch: { kind: (rObj && rObj.kind) || (p && p.kind) || opts.kind || "codex", perm: opts.perm || "auto-workspace", model: opts.model || (p && p.model) }, cwd: "~/workspace/acme-api", brief: ".chflow/tasks/" + tid + "/t1-brief.md", out: ".chflow/tasks/" + tid + "/t1-reply.md", retries: 0, delays: [5000,15000], fallback: [], controller: { pane: opts.controller || "w1:p1", label: "lead-agy", kind: "agy", route: { socket: "local" } }, startedAt: Date.now(), activityAt: Date.now() });',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: tid, event: "submitted", detail: (target || opts.kind) + " (" + (opts.perm || "auto-workspace") + ")" });',
-  '    renderAll(); return { task: tid };',
-  '  }',
-  '  if (action === "queue_pause" || action === "queue_resume") {',
-  '    const pane = target || "w1:p1";',
-  '    s.paused_recipients = (s.paused_recipients || []).filter(function(x){ return x !== pane; });',
-  '    if (action === "queue_pause") s.paused_recipients.push(pane);',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: null, event: action, detail: pane });',
-  '    renderAll(); return { paused: action === "queue_pause" };',
-  '  }',
-  '  if (action === "queue_deliver_now") {',
-  '    let n = 0;',
-  '    s.queue.forEach(function(q){',
-  '      if ((opts.event_id && q.event_id === opts.event_id) || (!opts.event_id && ["queued","deferred_user_typing","paused_by_operator","pending_unreachable"].includes(q.state) && (!target || (q.recipient && q.recipient.pane === target)))) {',
-  '        q.state = "delivered"; n++;',
-  '      }',
-  '    });',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: null, event: "operator_deliver_now", detail: "强制推入终端 " + n + " 条" });',
-  '    renderAll(); return { delivered: n };',
-  '  }',
-  '  if (action === "queue_consume" || action === "queue_drop" || action === "queue_reroute") {',
-  '    s.queue.forEach(function(q){',
-  '      if (q.event_id === opts.event_id) {',
-  '        if (action === "queue_consume") q.state = "delivered";',
-  '        else if (action === "queue_drop") q.state = "superseded_by_operator";',
-  '        else if (action === "queue_reroute") { q.recipient = { pane: opts.to, label: opts.to, route: { socket: "local" } }; q.state = "queued"; }',
-  '      }',
-  '    });',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: null, event: action, detail: opts.event_id });',
-  '    renderAll(); return { ok: true };',
-  '  }',
-  '  if (action === "cancel_retry") {',
-  '    s.scheduled_retries.forEach(function(p){ if (p.task === target) p.state = "cancelled"; });',
-  '    const t = s.tasks.find(function(x){ return x.task === target; });',
-  '    if (t && (t.state === "scheduled_retry" || t.state === "retrying")) t.state = "failed";',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: target, event: "retry_cancelled", detail: "operator_cancelled_retry" });',
-  '    renderAll(); return { ok: true };',
-  '  }',
-  '  if (action === "adopt") {',
-  '    const idx = s.unmanaged_live_agents.findIndex(function(u){ return u.pane_id === target; });',
-  '    if (idx >= 0) {',
-  '      const u = s.unmanaged_live_agents.splice(idx, 1)[0];',
-  '      s.managed_panes.push({ pane_id: u.pane_id, project_id: opts.project || u.project_id || defaultProjId() || "acme-api", role: opts.role, alias: opts.name || u.name || u.pane_id, name: u.name, kind: u.kind, perm: opts.perm || "auto-workspace", native_perm: "unknown", adopted: true, live: true, agent_status: u.agent_status || "idle", cwd: u.cwd, state_change_seq: u.state_change_seq, controller: { pane: opts.controller || "w1:p1", label: "lead-agy", kind: "agy" }, route: { socket: "local" } });',
-  '    }',
-  '    renderAll(); return { adopted: true };',
-  '  }',
-  '  if (action === "flush") {',
-  '    const lines = [];',
-  '    s.queue.forEach(function(q){ if (["queued","deferred_user_typing","paused_by_operator"].includes(q.state)) { q.state = "delivered"; lines.push("- " + q.task + "#" + q.turn + ": " + q.status); } });',
-  '    renderAll(); return { summary: lines.length ? lines.join("\\n") : "无待消费回执。" };',
-  '  }',
-  '  if (action === "finish") {',
-  '    const t = s.tasks.find(function(x){ return x.task === target; });',
-  '    if (t) t.state = opts.ok ? "succeeded" : "failed";',
-  '    renderAll(); return { ok: true };',
-  '  }',
-  '  if (action === "cancel") {',
-  '    const t = s.tasks.find(function(x){ return x.task === target; });',
-  '    if (t) t.state = "cancelled";',
-  '    s.scheduled_retries.forEach(function(p){ if (p.task === target) p.state = "cancelled"; });',
-  '    renderAll(); return { cancelled: true };',
-  '  }',
-  '  if (action === "resume" || action === "retry" || action === "switch" || action === "handoff") {',
-  '    const t = s.tasks.find(function(x){ return x.task === target; });',
-  '    if (t && action === "retry") { t.state = opts.after ? "scheduled_retry" : "submitted"; if (opts.switch) t.kind = opts.switch.split(":")[0]; }',
-  '    s.audit.unshift({ id: Date.now(), at: Date.now(), task: target, event: action, detail: JSON.stringify(opts) });',
-  '    renderAll(); return { ok: true };',
-  '  }',
-  '  if (action === "inspect_screen") {',
-  '    return { screen: "❯ codex -m codex-model\\n● Running integration test suite (all tests passing)…\\n" };',
-  '  }',
-  '  return {};',
-  '}',
-  '',
-  'window.simHumanUnblock = function() {',
-  '  const t = app.snap.tasks.find(function(x){ return x.state === "blocked"; });',
-  '  if (!t) { notify("当前无阻塞任务", "所有角色与工位均在正常运行"); return; }',
-  '  void quickTerminal(t.task, ["enter"]);',
-  '};',
-  '',
-  'window.simTypingToggle = function() {',
-  '  app.typingSim = !app.typingSim;',
-  '  const q0 = app.snap.queue[0];',
-  '  if (q0) q0.state = app.typingSim ? "deferred_user_typing" : "delivered";',
-  '  renderAll();',
-  '  notify(app.typingSim ? "已模拟打字防抢占暂缓" : "已模拟投递完成", "可在顶部提醒条或队列看板一键强推入终端");',
-  '};',
-  '',
-  'function connectLiveSse() {',
-  '  if (!IS_LIVE || typeof EventSource === "undefined") return;',
-  '  const es = new EventSource("/api/events");',
-  '  es.addEventListener("snapshot", function(ev){',
-  '    try { app.snap = JSON.parse(ev.data); app.sseConnected = true; renderAll(); } catch (e) {}',
-  '  });',
-  '  es.onopen = function() { app.sseConnected = true; updateHeaderAndKpis(); };',
-  '  es.onerror = function() { app.sseConnected = false; updateHeaderAndKpis(); };',
-  '}',
-  '',
-  'document.addEventListener("click", function(){ closeCtxMenu(); });',
-  'document.addEventListener("keydown", function(ev){',
-  '  if (ev.key === "Escape") { closeSheet(); closeCtxMenu(); closeMobileDrawers(); return; }',
-  '  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { ev.preventDefault(); openPalette(); return; }',
-  '  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "b") { ev.preventDefault(); togglePanel("left"); return; }',
-  '  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "i") { ev.preventDefault(); togglePanel("right"); return; }',
-  '  const tag = (ev.target && ev.target.tagName) || "";',
-  '  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;',
-  '  if (ev.key === "1") switchView("dag");',
-  '  else if (ev.key === "2") switchView("queues");',
-  '  else if (ev.key === "3") switchView("events");',
-  '  else if (ev.key === "0") fitCanvas();',
-  '});',
-  '',
-  'setInterval(function(){',
-  '  if (app.drag) return;',
-  '  document.querySelectorAll(".node-timer").forEach(function(el){',
-  '    const n = app.nodes[el.getAttribute("data-node")];',
-  '    const t = n && n.taskObj;',
-  '    if (t && n.status !== "blocked" && !n.paused && !n.unbound && !(n.queuedCount > 0)) {',
-  '      el.textContent = fmtElapsed(t.startedAt, ["succeeded","failed","cancelled"].includes(t.state) ? t.activityAt : null);',
-  '    }',
-  '  });',
-  '}, 1000);',
-  '',
-  'try {',
-  '  const saved = localStorage.getItem("chflow-theme");',
-  '  const dark = saved ? saved === "dark" : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);',
-  '  if (dark) { document.documentElement.setAttribute("data-theme", "dark"); document.getElementById("theme-btn").textContent = "☀"; }',
-  '} catch (e) {}',
-  '',
-  'bindCanvasEvents();',
-  'renderAll();',
-  'if (IS_LIVE) { void refreshNow(true); connectLiveSse(); }',
-  '})();',
-].join('\n');
+.topbar{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--border)}
+.topbar-in{width:92%;max-width:2200px;margin:0 auto;height:58px;padding:0;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:4px}
+.logo{width:32px;height:32px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center}
+.brand-name{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.brand-sub{font-size:13px;color:var(--text-3);padding-left:10px;border-left:1px solid var(--border)}
+.spacer{flex:1}
+.vsep{width:1px;height:24px;background:var(--border)}
+.daemon{display:flex;align-items:center;gap:9px;height:36px;padding:0 4px 0 13px;border:1px solid var(--border);border-radius:999px;background:var(--surface)}
+.daemon .d-txt{font-size:13.5px;font-weight:600}
+.daemon .d-meta{font-size:12.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.dot-live{width:8px;height:8px;border-radius:50%;flex:none}
+.dot-live.ok{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.dot-live.warn{background:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)}
+.dot-live.off{background:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
 
-function renderAuthGateHtml(boot: UiBootConfig): string {
-  const safeVer = String(boot.version || '3.3.0').replace(/[<>&"]/g, '');
-  const authPayload = JSON.stringify({
-    mode: 'auth',
-    version: boot.version || '3.3.0',
-    ...(boot.authError ? { authError: boot.authError } : {}),
-  }).replace(/</g, '\\u003c');
-  const err = boot.authError ? String(boot.authError).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-  const authScript = [
-    '(function(){',
-    'const form = document.getElementById("auth-form");',
-    'const input = document.getElementById("auth-token");',
-    'const msg = document.getElementById("auth-msg");',
-    'const btn = document.getElementById("auth-btn");',
-    'try {',
-    '  const saved = localStorage.getItem("chflow-theme");',
-    '  const dark = saved ? saved === "dark" : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);',
-    '  if (dark) document.documentElement.setAttribute("data-theme", "dark");',
-    '} catch (e) {}',
-    'form.addEventListener("submit", async function(ev){',
-    '  ev.preventDefault();',
-    '  const tok = input.value.trim();',
-    '  if (!tok) { msg.textContent = "请输入访问令牌"; return; }',
-    '  btn.disabled = true; msg.textContent = "正在验证…";',
-    '  try {',
-    '    const res = await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: tok }) });',
-    '    const body = await res.json().catch(function(){ return null; });',
-    '    if (!res.ok || !body || !body.ok) {',
-    '      msg.textContent = (body && body.error && body.error.message) || "令牌无效，请重试";',
-    '      btn.disabled = false; return;',
-    '    }',
-    '    location.replace("/");',
-    '  } catch (e) { msg.textContent = "连接失败，请检查网络"; btn.disabled = false; }',
-    '});',
-    '})();',
-  ].join('\n');
-  return [
-    '<!DOCTYPE html>',
-    '<html lang="zh-CN" data-theme="light">',
-    '<head>',
-    '<meta charset="UTF-8" />',
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
-    `<title>chflow — 访问令牌验证 (v${safeVer})</title>`,
-    `<style>${CSS}</style>`,
-    '</head>',
-    '<body>',
-    '<div class="auth-wrap"><form class="auth-card" id="auth-form">',
-    '  <div style="display:flex;align-items:center;gap:10px;"><div class="notif-icon">cf</div><div><div style="font-size:16px;font-weight:700;">chflow 远程控制台</div><div style="font-size:11.5px;color:var(--text-2);">v' + safeVer + ' · 非回环访问安全门禁</div></div></div>',
-    '  <div style="font-size:12.5px;color:var(--text-1);">当前控制台已开放局域网 / 跨设备访问。请在主机终端运行 <code>chflow ui</code> 获取访问令牌，或直接使用带 <code>?token=</code> 的登录链接打开：</div>',
-    '  <input class="ui-input" id="auth-token" type="password" autocomplete="off" placeholder="输入访问令牌 (Access Token)…" autofocus />',
-    `  <div id="auth-msg" style="font-size:12px;color:var(--red);min-height:16px;">${err}</div>`,
-    '  <button class="ui-btn primary" id="auth-btn" type="submit" style="height:34px;font-size:13px;">解锁控制台</button>',
-    '</form></div>',
-    `<script>window.__CHFLOW_BOOT__ = ${authPayload};\n${authScript}</script>`,
-    '</body>',
-    '</html>',
-  ].join('\n');
+.proj-wrap{position:relative}
+.menu-pop{position:absolute;top:calc(100% + 6px);left:0;min-width:260px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;z-index:60}
+.menu-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border-radius:8px;border:0;background:transparent;text-align:left;cursor:pointer;font-size:14px}
+.menu-item:hover{background:var(--surface-2)}
+.menu-item.active{background:var(--accent-soft);color:var(--accent-text);font-weight:600}
+.menu-meta{font-size:12.5px;color:var(--text-3)}
+
+main{width:92%;max-width:2200px;margin:0 auto;padding:16px 0 40px}
+.off-banner{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:13px;background:var(--danger-soft);border:1px solid var(--danger-border);margin-bottom:14px;font-size:14.5px}
+.off-banner .t{flex:1}
+body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacity:.48;filter:grayscale(.65);pointer-events:none;user-select:none}
+
+.focus{border:1px solid var(--warn-border);background:var(--warn-soft);border-radius:13px;padding:9px 12px 10px;margin-bottom:12px}
+.focus-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 8px}
+.fh-l{display:flex;align-items:center;gap:8px;color:var(--warn);font-size:14px;font-weight:600}
+.fh-l b{color:var(--text)}
+.fh-count{font-size:12.5px;font-weight:600;color:var(--warn);background:var(--surface);border:1px solid var(--warn-border);border-radius:999px;padding:0 8px}
+.fh-r{display:flex;align-items:center;gap:10px}
+.fh-hint{font-size:12.5px;color:var(--text-3)}
+.focus-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:8px}
+.fi{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;min-width:0}
+.fi-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--warn-soft);color:var(--warn);flex:none}
+.fi-body{flex:1;min-width:0}
+.fi-title{font-size:14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.fi-sub{font-size:12.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fi-code{display:inline-block;max-width:100%;margin-top:2px;font-size:12.5px;background:var(--surface-2);border-radius:5px;padding:1px 7px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fi-actions{display:flex;gap:5px;flex:none}
+
+.toolbar-row{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap}
+.tabs{display:flex;align-items:center;gap:4px}
+.tab{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:0;background:transparent;font-size:14.5px;font-weight:500;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.tab-badge{font-size:12.5px;font-weight:600;padding:0 7px;border-radius:999px;background:var(--surface-2);color:var(--text-2)}
+.tab-badge.warn{background:var(--warn);color:#fff}
+
+.toolbar-right{display:flex;align-items:center;gap:14px;padding-bottom:8px;flex-wrap:wrap}
+.summary-inline{display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--text-2);flex-wrap:wrap}
+.s-item{display:inline-flex;align-items:center;gap:6px}
+.s-item b{color:var(--text);font-variant-numeric:tabular-nums}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.dot.ok{background:var(--ok)}
+.dot.warn{background:var(--warn)}
+.dot.retry{background:var(--retry)}
+.dot.idle{background:var(--idle)}
+.dot.danger{background:var(--danger)}
+.dot.unbound{border:1.5px dashed var(--text-3);background:transparent}
+
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);gap:2px}
+.seg button{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:7px;border:0;background:transparent;font-size:13.5px;font-weight:500;color:var(--text-2);cursor:pointer}
+.seg button.active{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--shadow)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.45;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.retry{background:var(--retry-soft);color:var(--retry)}
+.pill.idle{background:var(--idle-soft);color:var(--idle)}
+.pill.head{background:var(--head-soft);color:var(--head)}
+.pill.danger{background:var(--danger-soft);color:var(--danger)}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;font-size:12.5px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+
+.dag-shell{position:relative;height:max(540px, calc(100vh - 270px));border-radius:16px;border:1px solid var(--border);background:var(--canvas-bg);background-image:radial-gradient(var(--canvas-dot) 1.25px, transparent 1.25px);background-size:22px 22px;overflow:hidden;box-shadow:var(--shadow);user-select:none}
+.dag-shell.expanded{position:fixed;inset:2vh 2vw;height:auto;z-index:42;border-radius:16px;box-shadow:var(--shadow-lg)}
+.dag-shell.panning{cursor:grabbing}
+.dag-stage{position:absolute;inset:0;transform-origin:0 0}
+.dag-svg{position:absolute;left:0;top:0;width:4000px;height:3200px;pointer-events:none;overflow:visible}
+
+.dag-lane{position:absolute;border-radius:18px;border:1px solid var(--lane-border);background:var(--lane-bg);backdrop-filter:blur(4px);pointer-events:none}
+.dag-lane-head{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px dashed var(--border);pointer-events:auto}
+.dag-lane-title{display:flex;align-items:center;gap:9px;font-size:15.5px;font-weight:700;color:var(--text)}
+.dag-lane-meta{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-3)}
+.dag-col-labels{position:absolute;top:52px;left:0;right:0;pointer-events:none}
+.dag-col-label{position:absolute;font-size:12.5px;font-weight:600;color:var(--text-3);letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+
+.dag-node{position:absolute;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s,border-color .15s;display:flex;flex-direction:column}
+.dag-node:hover{box-shadow:var(--shadow-hover);border-color:var(--border-strong)}
+.dag-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-hover)}
+.dag-node.dragging{cursor:grabbing;z-index:25;box-shadow:var(--shadow-lg)}
+
+.dag-node.ctrl{width:268px;border-left:4px solid var(--accent)}
+.dag-node.role{width:336px}
+.dag-node.role.st-blocked{border-color:var(--warn);background:linear-gradient(180deg,color-mix(in srgb,var(--warn-soft) 55%,var(--surface)) 0%,var(--surface) 44%)}
+.dag-node.role.st-working{border-color:color-mix(in srgb,var(--ok) 45%,var(--border))}
+.dag-node.role.st-retry{border-color:color-mix(in srgb,var(--retry) 50%,var(--border))}
+.dag-node.role.st-offline{border-color:var(--danger-border);background:color-mix(in srgb,var(--danger-soft) 35%,var(--surface))}
+.dag-node.role.st-unbound{border-style:dashed;background:color-mix(in srgb,var(--surface) 75%,var(--surface-2))}
+.dag-node.fallback{width:264px;border:1.5px dashed var(--retry-border);background:color-mix(in srgb,var(--retry-soft) 50%,var(--surface))}
+
+.dn-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dn-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dn-sub{font-size:13px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dn-task{margin-top:8px;padding:7px 10px;border-radius:9px;background:var(--surface-2);font-size:13.5px;color:var(--text-2)}
+.dn-task-top{display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:600;color:var(--text)}
+.dn-task-note{font-size:12.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dn-alert{margin-top:8px;padding:7px 10px;border-radius:9px;background:var(--warn-soft);border:1px solid var(--warn-border);color:var(--warn);font-size:13px;display:flex;align-items:center;gap:7px}
+.dn-alert span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);font-size:12.5px}
+.dn-retry{margin-top:7px;padding:6px 10px;border-radius:9px;background:var(--retry-soft);color:var(--retry);font-size:12.5px;display:flex;align-items:center;gap:6px}
+.dn-actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.dn-foot{margin-top:auto;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--text-3)}
+.dn-foot-left{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.edge-path{fill:none;stroke:var(--border-strong);stroke-width:2}
+.edge-path.working{stroke:var(--accent);stroke-width:2.2;stroke-dasharray:6 5;animation:flow 1.2s linear infinite}
+.edge-path.blocked{stroke:var(--warn);stroke-width:2.4}
+.edge-path.retry{stroke:var(--retry);stroke-width:2;stroke-dasharray:5 5}
+.edge-path.fallback{stroke:var(--retry);stroke-width:1.9;stroke-dasharray:4 4;opacity:.85}
+@keyframes flow{to{stroke-dashoffset:-22}}
+.edge-badge{position:absolute;transform:translate(-50%,-50%);padding:2px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text-2);white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.edge-badge.blocked{border-color:var(--warn-border);background:var(--warn-soft);color:var(--warn)}
+.edge-badge.working{border-color:color-mix(in srgb,var(--accent) 35%,var(--border));color:var(--accent-text)}
+.edge-badge.retry,.edge-badge.fallback{border-color:var(--retry-border);background:var(--retry-soft);color:var(--retry)}
+
+.dag-hint{position:absolute;bottom:12px;left:16px;padding:6px 12px;border-radius:10px;background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(8px);border:1px solid var(--border);font-size:12.5px;color:var(--text-3);z-index:10}
+.dag-controls{position:absolute;bottom:12px;right:16px;display:flex;align-items:center;gap:4px;padding:4px;border-radius:11px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(8px);border:1px solid var(--border);box-shadow:var(--shadow);z-index:10}
+.dag-controls button{height:30px;padding:0 10px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center}
+.dag-controls button:hover{background:var(--surface-2);color:var(--text)}
+.dag-zoom-val{min-width:46px;text-align:center;font-size:13px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+
+.empty-canvas{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:32px;color:var(--text-2)}
+.empty-card{max-width:460px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px 28px;box-shadow:var(--shadow)}
+
+.unmanaged-box{margin-top:16px;padding:14px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface)}
+.unm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;gap:12px;flex-wrap:wrap}
+.unm-title{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.unm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.unm-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border-radius:11px;border:1px solid var(--border);background:var(--surface-2)}
+.unm-info{min-width:0}
+.unm-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.unm-sub{font-size:12.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.proj-section{margin-bottom:26px}
+.proj-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.proj-title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700}
+.proj-meta{font-size:13px;color:var(--text-3);font-weight:400;display:inline-flex;align-items:center;gap:6px}
+.ctrl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.ctrl-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:13.5px;cursor:pointer}
+.ctrl-chip:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.role-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s;min-height:170px}
+.role-card:hover{box-shadow:var(--shadow-hover);border-color:var(--border-strong)}
+.role-card.st-blocked{border-color:var(--warn)}
+.role-card.st-unbound{border-style:dashed}
+.role-card.st-offline{border-color:var(--danger-border)}
+
+.section-h{font-size:18px;font-weight:700;margin:0 0 4px}
+.section-sub{font-size:14px;color:var(--text-3);margin:0 0 18px}
+.q-group{margin-bottom:22px}
+.q-group-title{font-size:14px;font-weight:600;color:var(--text-2);display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.q-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border-radius:13px;border:1px solid var(--border);background:var(--surface);margin-bottom:9px;flex-wrap:wrap}
+.q-left{display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1}
+.q-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--text-2);flex:none}
+.q-icon.warn{background:var(--warn-soft);color:var(--warn)}
+.q-icon.retry{background:var(--retry-soft);color:var(--retry)}
+.q-title{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.q-desc{font-size:13.5px;color:var(--text-2);margin-top:3px}
+.q-meta{font-size:12.5px;color:var(--text-3);margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.q-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none}
+.q-btns{display:flex;gap:6px;flex-wrap:wrap}
+
+.audit-list{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
+.audit-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px}
+.audit-row:last-child{border-bottom:0}
+.audit-time{font-size:12.5px;color:var(--text-3);width:84px;flex:none;font-variant-numeric:tabular-nums}
+
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:45;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:560px;max-width:94vw;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow-lg);z-index:50;transform:translateX(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.dr-head{padding:18px 22px 0;border-bottom:1px solid var(--border)}
+.dr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.dr-crumb{font-size:13px;color:var(--text-3);display:flex;align-items:center;gap:6px}
+.dr-name{font-size:21px;font-weight:700;display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
+.dr-desc{font-size:14px;color:var(--text-2);margin-top:3px}
+.dr-tabs{display:flex;gap:6px;margin-top:14px}
+.dr-tabs button{padding:9px 12px;border:0;background:transparent;font-size:14px;font-weight:500;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.dr-tabs button.active{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+.dr-body{flex:1;overflow-y:auto;padding:18px 22px 28px}
+
+.box{border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:14px;background:var(--surface)}
+.box.warn{border-color:var(--warn-border);background:var(--warn-soft)}
+.box-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:15px;font-weight:600}
+.term{background:var(--term-bg);color:var(--term-text);border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:13px;line-height:1.65;overflow-x:auto;white-space:pre-wrap;margin:10px 0 12px;max-height:280px}
+.keybar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.keybtn{height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12.5px;cursor:pointer}
+.keybtn:hover{background:var(--surface-2)}
+.term-input-row{display:flex;gap:6px;margin-top:10px}
+.term-input-row input{flex:1;padding:7px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:13.5px}
+
+.perm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.perm-btn{padding:8px 6px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:500;cursor:pointer;text-align:center}
+.perm-btn:hover{background:var(--surface-2)}
+.perm-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text);font-weight:600}
+
+.mail-pre{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;font-family:var(--mono);font-size:13px;line-height:1.65;white-space:pre-wrap;color:var(--text);max-height:360px;overflow:auto}
+
+.ctx-menu{position:fixed;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;z-index:80}
+.ctx-item{width:100%;display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;border:0;background:transparent;font-size:13.5px;cursor:pointer;text-align:left}
+.ctx-item:hover{background:var(--surface-2)}
+.ctx-item.danger{color:var(--danger)}
+.ctx-item.danger:hover{background:var(--danger-soft)}
+
+.modal-back{position:fixed;inset:0;background:var(--scrim);z-index:70;display:grid;place-items:center;padding:20px}
+.modal{width:500px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden}
+.modal-h{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:16.5px;font-weight:700}
+.modal-b{padding:18px 20px;max-height:72vh;overflow-y:auto}
+.modal-f{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--surface-2)}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:13.5px;font-weight:600;margin-bottom:5px;color:var(--text-2)}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:14px}
+.field textarea{min-height:92px;resize:vertical}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check-row{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-2);margin-top:6px}
+.check-row input{width:auto}
+
+.toasts{position:fixed;bottom:20px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:90}
+.toast{background:var(--toast);color:#fff;padding:10px 15px;border-radius:10px;font-size:13.5px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px}
+.toast.err{background:var(--danger)}
+
+.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg)}
+.auth-card{width:440px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)}
+.auth-err{padding:10px 12px;border-radius:9px;background:var(--danger-soft);border:1px solid var(--danger-border);color:var(--danger);font-size:13.5px;margin-bottom:14px}
+`;
+
+const SVG_SPRITE = `<svg style="display:none" aria-hidden="true">
+  <defs>
+    <symbol id="i-logo" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.2 7.2L11 15.6M15.8 7.2L13 15.6M8.5 6h7"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></symbol>
+    <symbol id="i-dag" viewBox="0 0 24 24"><rect x="2.5" y="4" width="6" height="5" rx="1.2"/><rect x="15.5" y="3" width="6" height="5" rx="1.2"/><rect x="15.5" y="15" width="6" height="5" rx="1.2"/><path d="M8.5 6.5h3.5c1.5 0 1.5-1 3.5-1M8.5 6.5h2c2.2 0 1.8 11 5 11"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M15.5 20.5v-1.5a4 4 0 0 0-4-4h-5a4 4 0 0 0-4 4v1.5"/><circle cx="9" cy="7.5" r="3.5"/><path d="M19 8v6M22 11h-6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-6.5 18-4-8-8-4L21 3z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6L6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.6 6.6 0 0 0 9.7 9.7z"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/><path d="M12 2.5V12"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4.2M12 17.2h.01"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 21.5s7.5-3.6 7.5-9.6V5.4L12 2.5 4.5 5.4v6.5c0 6 7.5 9.6 7.5 9.6z"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7.5 9.5l3 2.5-3 2.5M13 15h4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6.5L9.5 17 4 11.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2.5L4 13.5h7.5l-1 8 9-11H12l1-8z"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2.5l9.5 5-9.5 5-9.5-5 9.5-5z"/><path d="M2.5 12l9.5 5 9.5-5M2.5 16.5l9.5 5 9.5-5"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M21.5 12.5h-5.5l-2 3h-4l-2-3H2.5"/><path d="M5.5 5.1L2.5 12.5v5.5a2 2 0 0 0 2 2h15a2 2 0 0 0 2-2v-5.5l-3-7.4a2 2 0 0 0-1.8-1.1H7.3a2 2 0 0 0-1.8 1.1z"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M21.5 12h-4l-3 8.5-5-17-3 8.5h-4"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M21.5 18.5a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h4.8l2 2.8h8.2a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6.5" cy="5.5" r="2.2"/><circle cx="6.5" cy="18.5" r="2.2"/><circle cx="17.5" cy="7.5" r="2.2"/><path d="M6.5 7.7v8.6M17.5 9.7c0 4.3-5.5 3.6-9.6 7.1"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.8 8.2l-2 5.6-5.6 2 2-5.6 5.6-2z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5v5h-5"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M16.5 3.5l4 4-4 4"/><path d="M20.5 7.5h-15"/><path d="M7.5 20.5l-4-4 4-4"/><path d="M3.5 16.5h15"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9.5 2v3M14.5 2v3M9.5 19v3M14.5 19v3M2 9.5h3M2 14.5h3M19 9.5h3M19 14.5h3"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2.5" y="3.5" width="19" height="13" rx="2"/><path d="M8 20.5h8M12 16.5v4"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13.5a4.5 4.5 0 0 0 6.8.5l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.6 1.6"/><path d="M14 10.5a4.5 4.5 0 0 0-6.8-.5l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3.5 6.5h17M9 6.5V4.5h6v2M18.5 6.5l-.9 13a2 2 0 0 1-2 1.9H8.4a2 2 0 0 1-2-1.9l-.9-13"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+    <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+    <symbol id="i-minimize" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></symbol>
+  </defs>
+</svg>`;
+
+const APP_JS = `
+(function(){
+'use strict';
+const BOOT = window.__CHFLOW_BOOT__ || { mode: 'preview', version: '3.4.0' };
+const ic = (name, cls='') => '<svg class="ic ' + cls + '"><use href="#i-' + name + '"/></svg>';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const TERMINAL_STATES = new Set(['succeeded','failed','cancelled']);
+const PENDING_QUEUE = new Set(['queued','deferred_user_typing','paused_by_operator','delivering','pending_unreachable']);
+const PERMS = [
+  {id:'readonly', zh:'只读', desc:'只能读取文件与运行只读命令，拒绝所有写入。'},
+  {id:'ask', zh:'逐项询问', desc:'写文件与执行命令前暂停等待人工确认。'},
+  {id:'auto-workspace', zh:'工作区自动', desc:'工作区内自动放行安全操作，越界与高危命令拦截。'},
+  {id:'yolo', zh:'完全放行', desc:'不做审批拦截，仅建议在明确授权或隔离环境中使用。'}
+];
+const ST = {
+  working:{label:'运行中', c:'ok'},
+  submitted:{label:'运行中', c:'ok'},
+  dispatching:{label:'派发中', c:'ok'},
+  blocked:{label:'待授权', c:'warn'},
+  retrying:{label:'退避重试', c:'retry'},
+  scheduled_retry:{label:'定时重试', c:'retry'},
+  idle:{label:'空闲', c:'idle'},
+  done:{label:'空闲', c:'idle'},
+  unbound:{label:'待命', c:'idle'},
+  offline:{label:'离线', c:'danger'}
+};
+
+function shortPath(p){
+  if (!p) return '';
+  const parts = String(p).split(/[\\/]/).filter(Boolean);
+  return parts.length > 2 ? '.../' + parts.slice(-2).join('/') : String(p);
+}
+function fmtUptime(startedAt, now){
+  if (!startedAt) return '';
+  const ms = Math.max(0, (now || Date.now()) - Date.parse(startedAt));
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return '刚刚启动';
+  const h = Math.floor(m / 60);
+  return h > 0 ? '已运行 ' + h + ' 小时 ' + (m % 60) + ' 分' : '已运行 ' + m + ' 分钟';
+}
+function fmtEta(ts, now){
+  if (!ts) return '即将重试';
+  const sec = Math.max(0, Math.round((ts - (now || Date.now())) / 1000));
+  if (sec < 60) return sec + ' 秒后';
+  return Math.floor(sec / 60) + ' 分 ' + (sec % 60) + ' 秒后';
+}
+function fmtClock(ts){
+  if (!ts) return '--:--:--';
+  const d = new Date(ts);
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2,'0')).join(':');
 }
 
-export function renderUiHtml(boot: UiBootConfig): string {
-  if (boot.mode === 'auth') return renderAuthGateHtml(boot);
-  const payload = JSON.stringify(boot).replace(/</g, '\\u003c');
-  const safeVer = String(boot.version || '3.3.0').replace(/[<>&"]/g, '');
-  return [
-    '<!DOCTYPE html>',
-    '<html lang="zh-CN" data-theme="light">',
-    '<head>',
-    '<meta charset="UTF-8" />',
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
-    `<title>chflow — Cross-Harness Orchestrator (v${safeVer})</title>`,
-    `<style>${CSS}</style>`,
-    '</head>',
-    '<body>',
-    BODY,
-    `<script>window.__CHFLOW_BOOT__ = ${payload};\n${SCRIPT}</script>`,
-    '</body>',
-    '</html>',
-  ].join('\n');
+function makePreviewSnapshot(){
+  const now = Date.now(), min = 60000;
+  return {
+    seq: 42, now, herdr: 'reachable',
+    daemon: { pid: 48213, version: BOOT.version || '3.4.0', started_at: new Date(now - (3*60+12)*min).toISOString(), ui_url: 'http://127.0.0.1:4317', running: true },
+    projects: [
+      { project_id: 'acme-api', name: 'acme-api', root: '~/workspace/acme-api', source: 'config', controllers: ['w1:p2','w1:p5'], roles_count: 4, live_panes: 4, active_tasks: 3, blocked_count: 1 },
+      { project_id: 'web-portal', name: 'web-portal', root: '~/workspace/web-portal', source: 'git', controllers: ['w3:p1'], roles_count: 2, live_panes: 2, active_tasks: 2, blocked_count: 0 }
+    ],
+    roles: [
+      { project_id: 'acme-api', role: 'backend', description: '服务端实现与单元测试', source: 'config', binding_mode: 'pane', pane_id: 'w2:p1', kind: 'codex', default_kind: 'codex', perm: 'auto-workspace', model: 'codex-model', live: true, agent_status: 'working', active_task: 'feat-rate-limit', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' } },
+      { project_id: 'acme-api', role: 'docs', description: 'API 文档与变更日志', source: 'config', binding_mode: 'headless', kind: 'pi', default_kind: 'pi', perm: 'auto-workspace', model: 'pi-model', live: true, agent_status: 'scheduled_retry', active_task: 'sync-api-docs', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' } },
+      { project_id: 'acme-api', role: 'reviewer', description: '异构代码审阅与测试复核', source: 'config', binding_mode: 'pane', pane_id: 'w2:p3', kind: 'claude', default_kind: 'claude', perm: 'ask', model: 'sonnet', live: true, agent_status: 'blocked', active_task: 'review-pr-87', controller: { pane: 'w1:p5', label: '主控 B', kind: 'codex' } },
+      { project_id: 'acme-api', role: 'auditor', description: '依赖与安全合规审计', source: 'config', binding_mode: 'unbound', kind: 'pi', default_kind: 'pi', perm: 'readonly', model: 'pi-fast', live: false, agent_status: 'unbound' },
+      { project_id: 'web-portal', role: 'frontend', description: '页面交互与样式实现', source: 'manual', binding_mode: 'pane', pane_id: 'w3:p2', kind: 'agy', default_kind: 'agy', perm: 'auto-workspace', model: 'primary-interactive', live: true, agent_status: 'working', active_task: 'checkout-ux', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } },
+      { project_id: 'web-portal', role: 'tester', description: '黑盒 E2E 与回归测试', source: 'manual', binding_mode: 'headless', kind: 'codex', default_kind: 'codex', perm: 'auto-workspace', model: 'codex-mini', live: true, agent_status: 'retrying', active_task: 'checkout-e2e', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } }
+    ],
+    managed_panes: [
+      { pane_id: 'w2:p1', alias: 'backend', role: 'backend', kind: 'codex', model: 'codex-model', perm: 'auto-workspace', project_id: 'acme-api', live: true, agent_status: 'working', cwd: '~/workspace/acme-api', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' } },
+      { pane_id: 'w2:p3', alias: 'reviewer', role: 'reviewer', kind: 'claude', model: 'sonnet', perm: 'ask', project_id: 'acme-api', live: true, agent_status: 'blocked', cwd: '~/workspace/acme-api', controller: { pane: 'w1:p5', label: '主控 B', kind: 'codex' } },
+      { pane_id: 'w3:p2', alias: 'frontend', role: 'frontend', kind: 'agy', model: 'primary-interactive', perm: 'auto-workspace', project_id: 'web-portal', live: true, agent_status: 'working', cwd: '~/workspace/web-portal', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } }
+    ],
+    unmanaged_live_agents: [
+      { pane_id: 'w1:p2', name: '主控 A', kind: 'claude', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' },
+      { pane_id: 'w1:p5', name: '主控 B', kind: 'codex', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' },
+      { pane_id: 'w3:p1', name: '主控 A', kind: 'agy', agent_status: 'idle', cwd: '~/workspace/web-portal', project_id: 'web-portal' },
+      { pane_id: 'w4:p1', name: 'scratch-claude', kind: 'claude', agent_status: 'idle', cwd: '~/workspace/web-portal', project_id: 'web-portal' },
+      { pane_id: 'w4:p2', name: 'scratch-codex', kind: 'codex', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' }
+    ],
+    tasks: [
+      { task: 'feat-rate-limit', turn: 2, state: 'submitted', mode: 'interactive', kind: 'codex', perm: 'auto-workspace', name: 'backend', role: 'backend', pane_id: 'w2:p1', project_id: 'acme-api', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' }, startedAt: now - 9*min, note: '正在编写 src/store/redis-store.ts' },
+      { task: 'review-pr-87', turn: 1, state: 'blocked', mode: 'interactive', kind: 'claude', perm: 'ask', name: 'reviewer', role: 'reviewer', pane_id: 'w2:p3', project_id: 'acme-api', controller: { pane: 'w1:p5', label: '主控 B', kind: 'codex' }, startedAt: now - 4*min, block: { kind: 'permission', reason: 'pnpm test --filter @acme/api -- --runInBand', seq: 42, since: now - 4*min } },
+      { task: 'sync-api-docs', turn: 1, state: 'scheduled_retry', mode: 'headless', kind: 'pi', perm: 'auto-workspace', name: 'docs', role: 'docs', project_id: 'acme-api', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' }, startedAt: now - 14*min, retries: 2, nextAt: now + 125000, reason: '额度窗口受限 (HTTP 429)', fallback: [{ kind: 'codex', channel: 'codex-sub' }, { kind: 'claude', channel: 'claude-sub' }] },
+      { task: 'checkout-ux', turn: 1, state: 'submitted', mode: 'interactive', kind: 'agy', perm: 'auto-workspace', name: 'frontend', role: 'frontend', pane_id: 'w3:p2', project_id: 'web-portal', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' }, startedAt: now - 6*min, note: '正在更新 CheckoutForm.tsx' },
+      { task: 'checkout-e2e', turn: 1, state: 'retrying', mode: 'headless', kind: 'codex', perm: 'auto-workspace', name: 'tester', role: 'tester', project_id: 'web-portal', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' }, startedAt: now - 3*min, retries: 1, nextAt: now + 15000, reason: '执行器瞬时超时', fallback: [{ kind: 'claude', channel: 'claude-sub' }] }
+    ],
+    queue: [
+      { event_id: 'ev-1', task: 'feat-rate-limit', turn: 1, state: 'deferred_user_typing', type: 'reply', status: 'succeeded', worker: 'backend(w2:p1)', perm: 'auto-workspace', note: '第 1 轮内存限流实现回执已生成，因你在 w1:p2 正在输入而暂缓投递', created: now - 65000, recipient: { pane: 'w1:p2', label: '主控 A' } }
+    ],
+    scheduled_retries: [
+      { task: 'sync-api-docs', state: 'pending', nextAt: now + 125000, reason: 'quota_window_429' },
+      { task: 'checkout-e2e', state: 'pending', nextAt: now + 15000, reason: 'transient_timeout' }
+    ],
+    paused_recipients: [],
+    audit: [
+      { id: 105, at: now - 4*min, task: 'review-pr-87', event: 'blocked', detail: 'permission (w2:p3)' },
+      { id: 104, at: now - 65000, task: 'feat-rate-limit', event: 'deferred_user_typing', detail: 'w1:p2' },
+      { id: 103, at: now - 8*min, task: 'sync-api-docs', event: 'scheduled_retry', detail: 'attempt=2 fallback=codex-sub' },
+      { id: 102, at: now - 12*min, task: 'review-pr-87', event: 'submitted', detail: 'reviewer (ask)' },
+      { id: 101, at: now - 18*min, task: null, event: 'pane_pruned', detail: 'w2:p9 exited' }
+    ]
+  };
+}
+
+const PREVIEW_FILES = {
+  'review-pr-87:diag': '[blocked_kind=permission | state_change_seq=42]\\nRequesting permission for:\\n  pnpm test --filter @acme/api -- --runInBand\\n  env API_TOKEN=[redacted]\\n\\nRun this command?\\n> 1. Yes, run command\\n  2. Yes, and always allow in this session\\n  3. No, cancel',
+  'review-pr-87:brief:1': '# review-pr-87 · 审阅 PR #87\\n1. 检查并发令牌扣减原子性\\n2. 核对 429 Retry-After 响应头\\n3. 确认单测边界覆盖',
+  'review-pr-87:out:1': '（等待测试授权放行后生成完整审查结论）',
+  'feat-rate-limit:brief:1': '# feat-rate-limit 第 1 轮 · 令牌桶限流中间件\\n- 新增 src/middleware/rate-limit.ts\\n- 覆盖放行、突发截断与窗口恢复单测',
+  'feat-rate-limit:out:1': '已完成内存版限流实现与 9 项单测（全部通过）。建议第 2 轮接入 RedisStore。',
+  'feat-rate-limit:brief:2': '# feat-rate-limit 第 2 轮 · 接入 RedisStore\\n- 抽象 TokenStore 接口并补充集成测试',
+  'feat-rate-limit:out:2': '（执行中，尚未生成第 2 轮回执）'
+};
+
+const state = {
+  snap: BOOT.mode === 'preview' ? makePreviewSnapshot() : null,
+  connected: BOOT.mode === 'preview',
+  daemonStopped: false,
+  stopReason: null,
+  project: 'all',
+  tab: 'work',
+  workMode: 'dag',
+  projMenuOpen: false,
+  focusCollapsed: false,
+  drawer: null, // { kind: 'role'|'pane'|'task'|'ctrl', id, projectId?, tab: 'overview'|'mail'|'activity', turn: 1 }
+  fileCache: {},
+  dag: { tx: 24, ty: 14, scale: 0.85, offsets: {}, fitted: false, expanded: false }
+};
+
+let es = null, reconnectTimer = null, reconnectDelay = 1200;
+
+function toast(msg, isErr){
+  const el = document.createElement('div');
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.innerHTML = ic(isErr ? 'alert' : 'check','sm') + '<span>' + esc(msg) + '</span>';
+  const box = document.getElementById('toasts');
+  if (box){ box.appendChild(el); setTimeout(() => el.remove(), 3200); }
+}
+
+async function apiAction(action, target, opts){
+  if (BOOT.mode === 'preview') return handlePreviewAction(action, target, opts || {});
+  const res = await fetch('/api/action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Chflow-Token': BOOT.csrfToken || '' },
+    body: JSON.stringify({ action, target, opts: opts || {} })
+  });
+  const body = await res.json().catch(() => ({ ok: false, error: { message: 'HTTP ' + res.status } }));
+  if (!res.ok || !body.ok){
+    const err = new Error(body.error?.message || ('请求失败 (' + res.status + ')'));
+    err.code = body.error?.code;
+    throw err;
+  }
+  return body.data;
+}
+
+async function loadTaskFile(taskId, kind, turn){
+  const key = taskId + ':' + kind + (kind === 'diag' ? '' : ':' + turn);
+  if (BOOT.mode === 'preview'){
+    state.fileCache[key] = PREVIEW_FILES[key] || '（示例文件暂无更多正文）';
+    return state.fileCache[key];
+  }
+  if (state.fileCache[key] !== undefined && state.fileCache[key] !== null) return state.fileCache[key];
+  state.fileCache[key] = null;
+  const q = kind === 'diag' ? 'kind=diag' : 'kind=' + encodeURIComponent(kind) + '&turn=' + encodeURIComponent(String(turn));
+  try {
+    const res = await fetch('/api/tasks/' + encodeURIComponent(taskId) + '/file?' + q);
+    const body = await res.json();
+    state.fileCache[key] = body.ok ? (body.data?.exists ? (body.data.content || '（文件为空）') : '（尚未生成该文件）') : ('读取失败：' + (body.error?.message || ''));
+  } catch (e){
+    state.fileCache[key] = '读取失败：' + (e.message || e);
+  }
+  renderDrawer();
+}
+
+function handlePreviewAction(action, target, opts){
+  const snap = state.snap;
+  if (!snap) return {};
+  if (action === 'daemon_stop'){
+    state.daemonStopped = true; state.stopReason = 'manual'; state.drawer = null;
+    render(); return { running: false };
+  }
+  if (action === 'terminal_control' || action === 'respond'){
+    const t = snap.tasks.find(x => x.task === target || x.pane_id === target);
+    if (t && t.state === 'blocked'){
+      const deny = (opts.keys || []).includes('esc') || opts.key === 'esc';
+      t.state = deny ? 'idle' : 'submitted'; delete t.block;
+      const r = snap.roles.find(x => x.active_task === t.task);
+      if (r) r.agent_status = deny ? 'idle' : 'working';
+      const p = snap.managed_panes.find(x => x.pane_id === t.pane_id);
+      if (p) p.agent_status = deny ? 'idle' : 'working';
+      snap.projects.forEach(pr => pr.blocked_count = snap.tasks.filter(x => x.project_id === pr.project_id && x.state === 'blocked').length);
+    }
+  } else if (action === 'set_perm'){
+    const t = snap.tasks.find(x => x.task === target || x.pane_id === target || x.role === target);
+    const p = snap.managed_panes.find(x => x.pane_id === target || x.alias === target || x.role === target);
+    const r = snap.roles.find(x => x.role === target || x.pane_id === target || x.active_task === target);
+    if (t){ t.perm = opts.perm; if (t.state === 'blocked' && (opts.perm === 'auto-workspace' || opts.perm === 'yolo')){ t.state = 'submitted'; delete t.block; } }
+    if (p){ p.perm = opts.perm; if (p.agent_status === 'blocked' && (opts.perm === 'auto-workspace' || opts.perm === 'yolo')) p.agent_status = 'working'; }
+    if (r){ r.perm = opts.perm; if (r.agent_status === 'blocked' && (opts.perm === 'auto-workspace' || opts.perm === 'yolo')) r.agent_status = 'working'; }
+  } else if (action === 'queue_deliver_now' || action === 'queue_consume' || action === 'queue_drop'){
+    snap.queue = snap.queue.filter(q => q.event_id !== opts.event_id);
+  } else if (action === 'cancel_retry'){
+    snap.scheduled_retries = snap.scheduled_retries.filter(x => x.task !== target);
+    const t = snap.tasks.find(x => x.task === target);
+    if (t) t.state = 'cancelled';
+  } else if (action === 'finish' || action === 'cancel'){
+    const t = snap.tasks.find(x => x.task === target);
+    if (t) t.state = action === 'finish' ? 'succeeded' : 'cancelled';
+    const r = snap.roles.find(x => x.active_task === target);
+    if (r){ r.agent_status = 'idle'; r.active_task = undefined; }
+  } else if (action === 'role_unbind'){
+    const r = snap.roles.find(x => x.role === target && (!opts.project || x.project_id === opts.project));
+    if (r){ r.binding_mode = 'unbound'; r.pane_id = undefined; r.live = false; r.agent_status = 'unbound'; r.active_task = undefined; }
+  } else if (action === 'role_set'){
+    snap.roles.push({ project_id: opts.project || snap.projects[0].project_id, role: target, description: opts.desc || '项目角色', source: 'manual', binding_mode: 'unbound', kind: opts.kind || 'codex', default_kind: opts.kind || 'codex', perm: opts.perm || 'ask', model: opts.model, live: false, agent_status: 'unbound' });
+  } else if (action === 'role_bind'){
+    const r = snap.roles.find(x => x.role === target && (!opts.project || x.project_id === opts.project));
+    if (r){
+      r.binding_mode = opts.headless ? 'headless' : 'pane';
+      r.kind = opts.kind || r.kind || 'codex';
+      if (opts.model) r.model = opts.model;
+      r.pane_id = opts.headless ? undefined : (opts.pane || ('w2:p' + Math.floor(6 + Math.random()*4)));
+      r.live = true; r.agent_status = 'idle';
+      if (opts.pane) snap.unmanaged_live_agents = snap.unmanaged_live_agents.filter(a => a.pane_id !== opts.pane);
+    }
+  } else if (action === 'adopt'){
+    const a = snap.unmanaged_live_agents.find(x => x.pane_id === target);
+    if (a){
+      snap.unmanaged_live_agents = snap.unmanaged_live_agents.filter(x => x.pane_id !== target);
+      snap.managed_panes.push({ pane_id: a.pane_id, alias: opts.name || a.name || a.pane_id, kind: a.kind, perm: opts.perm || 'ask', project_id: a.project_id, live: true, agent_status: a.agent_status, cwd: a.cwd });
+    }
+  } else if (action === 'send'){
+    const r = snap.roles.find(x => x.role === target && (!opts.project || x.project_id === opts.project));
+    const id = opts.task || ('task-' + Math.floor(100 + Math.random()*800));
+    if (r){
+      if (r.binding_mode === 'unbound'){ r.binding_mode = 'pane'; r.pane_id = 'w2:p8'; r.live = true; }
+      r.agent_status = 'working'; r.active_task = id;
+      snap.tasks.push({ task: id, turn: 1, state: 'submitted', mode: r.binding_mode === 'headless' ? 'headless' : 'interactive', kind: r.kind, perm: opts.perm || r.perm || 'ask', name: r.role, role: r.role, pane_id: r.pane_id, project_id: r.project_id, controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' }, startedAt: Date.now(), note: (opts.brief || '').slice(0, 48) });
+    }
+  }
+  render();
+  return { ok: true };
+}
+
+/* ==================== LIVE SSE CONNECTION ==================== */
+async function connectLive(){
+  if (BOOT.mode !== 'live') return;
+  clearTimeout(reconnectTimer);
+  if (es){ es.close(); es = null; }
+  state.daemonStopped = false;
+  state.stopReason = null;
+  try {
+    const res = await fetch('/api/snapshot');
+    const body = await res.json();
+    if (body.ok && body.data){ state.snap = body.data; state.connected = true; render(); }
+  } catch { state.connected = false; render(); }
+
+  es = new EventSource('/api/events');
+  es.addEventListener('snapshot', ev => {
+    try {
+      state.snap = JSON.parse(ev.data);
+      state.connected = true;
+      state.daemonStopped = false;
+      reconnectDelay = 1200;
+      render();
+    } catch {}
+  });
+  es.addEventListener('shutdown', ev => {
+    let reason = 'manual';
+    try { reason = JSON.parse(ev.data || '{}').reason || 'manual'; } catch {}
+    state.daemonStopped = true;
+    state.stopReason = reason;
+    state.connected = false;
+    state.drawer = null;
+    if (es){ es.close(); es = null; }
+    clearTimeout(reconnectTimer);
+    render();
+  });
+  es.onerror = () => {
+    if (state.daemonStopped) return;
+    state.connected = false;
+    if (es){ es.close(); es = null; }
+    render();
+    reconnectTimer = setTimeout(() => {
+      reconnectDelay = Math.min(10000, Math.round(reconnectDelay * 1.5));
+      connectLive();
+    }, reconnectDelay);
+  };
+}
+
+/* ==================== VIEW MODEL HELPERS ==================== */
+function getSnap(){ return state.snap || { projects: [], roles: [], managed_panes: [], unmanaged_live_agents: [], tasks: [], queue: [], scheduled_retries: [], paused_recipients: [], audit: [], daemon: {} }; }
+function visibleProjects(){
+  const list = getSnap().projects || [];
+  return state.project === 'all' ? list : list.filter(p => p.project_id === state.project);
+}
+function projectName(pid){
+  return (getSnap().projects || []).find(p => p.project_id === pid)?.name || pid || 'default';
+}
+function taskForRole(r){
+  const tasks = getSnap().tasks || [];
+  if (r.active_task){
+    const hit = tasks.find(t => t.task === r.active_task);
+    if (hit) return hit;
+  }
+  return tasks.find(t => t.project_id === r.project_id && t.role === r.role && !TERMINAL_STATES.has(t.state));
+}
+function taskForPane(p){
+  return (getSnap().tasks || []).find(t => (t.pane_id === p.pane_id || t.pane === p.pane_id) && !TERMINAL_STATES.has(t.state));
+}
+function roleDisplayStatus(r, task){
+  if (r.binding_mode === 'unbound') return 'unbound';
+  if (r.binding_mode === 'pane' && r.live === false) return 'offline';
+  if (task){
+    if (task.state === 'blocked') return 'blocked';
+    if (task.state === 'scheduled_retry') return 'scheduled_retry';
+    if (task.state === 'retrying') return 'retrying';
+    if (task.state === 'submitted' || task.state === 'dispatching') return 'working';
+  }
+  return r.agent_status || 'idle';
+}
+function paneDisplayStatus(p, task){
+  if (p.live === false) return 'offline';
+  if (task){
+    if (task.state === 'blocked') return 'blocked';
+    if (task.state === 'scheduled_retry') return 'scheduled_retry';
+    if (task.state === 'retrying') return 'retrying';
+    if (task.state === 'submitted' || task.state === 'dispatching') return 'working';
+  }
+  return p.agent_status || 'idle';
+}
+
+function buildProjectWorkers(projectId){
+  const snap = getSnap();
+  const items = [];
+  const boundPanes = new Set();
+  const seenTasks = new Set();
+
+  for (const r of (snap.roles || []).filter(x => x.project_id === projectId)){
+    const task = taskForRole(r);
+    if (r.pane_id) boundPanes.add(r.pane_id);
+    if (task) seenTasks.add(task.task);
+    items.push({
+      nodeId: 'role:' + r.project_id + ':' + r.role,
+      itemKind: 'role',
+      name: r.role,
+      desc: r.description || (r.binding_mode === 'headless' ? '无头角色槽位' : '项目稳定角色'),
+      projectId: r.project_id,
+      status: roleDisplayStatus(r, task),
+      perm: task?.perm || r.perm || 'ask',
+      kind: task?.kind || r.kind || r.default_kind || 'codex',
+      model: r.model || '',
+      bindingMode: r.binding_mode,
+      paneId: r.pane_id,
+      controllerPane: task?.controller?.pane || r.controller?.pane || null,
+      task, role: r
+    });
+  }
+
+  for (const p of (snap.managed_panes || []).filter(x => x.project_id === projectId && !x.role && !boundPanes.has(x.pane_id))){
+    const task = taskForPane(p);
+    if (task) seenTasks.add(task.task);
+    items.push({
+      nodeId: 'pane:' + p.pane_id,
+      itemKind: 'pane',
+      name: p.alias || p.name || p.pane_id,
+      desc: '临时交互工位' + (p.adopted ? '（已纳管）' : ''),
+      projectId: p.project_id,
+      status: paneDisplayStatus(p, task),
+      perm: task?.perm || p.perm || 'ask',
+      kind: p.kind || 'codex',
+      model: p.model || '',
+      bindingMode: 'pane',
+      paneId: p.pane_id,
+      controllerPane: task?.controller?.pane || p.controller?.pane || null,
+      task, pane: p
+    });
+  }
+
+  for (const t of (snap.tasks || []).filter(x => x.project_id === projectId && !TERMINAL_STATES.has(x.state) && !seenTasks.has(x.task))){
+    items.push({
+      nodeId: 'task:' + t.task,
+      itemKind: 'task',
+      name: t.name || t.task,
+      desc: t.mode === 'headless' ? '一次性无头任务' : '活跃任务',
+      projectId: t.project_id,
+      status: t.state === 'submitted' ? 'working' : t.state,
+      perm: t.perm || 'ask',
+      kind: t.kind || 'codex',
+      model: '',
+      bindingMode: t.mode === 'headless' ? 'headless' : 'pane',
+      paneId: t.pane_id || t.pane,
+      controllerPane: t.controller?.pane || null,
+      task: t
+    });
+  }
+
+  return items;
+}
+
+function buildProjectControllers(project, workers){
+  const snap = getSnap();
+  const paneMeta = new Map();
+  for (const a of (snap.unmanaged_live_agents || [])) paneMeta.set(a.pane_id, a);
+  for (const p of (snap.managed_panes || [])) paneMeta.set(p.pane_id, p);
+
+  const ids = new Set(project.controllers || []);
+  for (const w of workers) if (w.controllerPane) ids.add(w.controllerPane);
+  const paused = new Set(snap.paused_recipients || []);
+
+  const list = [...ids].map((paneId, idx) => {
+    const info = paneMeta.get(paneId);
+    const queued = (snap.queue || []).filter(q => PENDING_QUEUE.has(q.state) && q.recipient?.pane === paneId);
+    const typing = queued.some(q => q.state === 'deferred_user_typing');
+    const isPaused = paused.has(paneId);
+    return {
+      nodeId: 'ctrl:' + project.project_id + ':' + paneId,
+      paneId, projectId: project.project_id,
+      name: info?.name || info?.alias || ('主控 ' + String.fromCharCode(65 + idx)),
+      kind: info?.kind || 'agent',
+      status: info?.agent_status || 'idle',
+      typing, paused: isPaused, queuedCount: queued.length
+    };
+  });
+  return list;
+}
+
+function allVisibleWorkers(){
+  return visibleProjects().flatMap(p => buildProjectWorkers(p.project_id));
+}
+
+function computeDagLayout(){
+  const projs = visibleProjects();
+  const lanes = [], nodes = [], edges = [];
+  let cursorY = 18;
+  const colX = { ctrl: 32, role: 454, fallback: 938 };
+
+  for (const p of projs){
+    const rawWorkers = buildProjectWorkers(p.project_id);
+    const ctrls = buildProjectControllers(p, rawWorkers);
+    if (!rawWorkers.length && !ctrls.length) continue;
+
+    const ctrlOrder = new Map(ctrls.map((c, i) => [c.paneId, i]));
+    const workers = rawWorkers.slice().sort((a, b) => {
+      const ca = a.controllerPane ? (ctrlOrder.get(a.controllerPane) ?? 99) : 100;
+      const cb = b.controllerPane ? (ctrlOrder.get(b.controllerPane) ?? 99) : 100;
+      return ca - cb;
+    });
+    const hasFallback = workers.some(w => (w.status === 'retrying' || w.status === 'scheduled_retry') && w.task?.fallback?.length);
+
+    const roleH = w => w.status === 'blocked' ? 182 : (w.status === 'scheduled_retry' || w.status === 'retrying') ? 174 : w.status === 'unbound' ? 132 : 162;
+    const ctrlH = 118, gapY = 18;
+
+    let ry = cursorY + 84;
+    const centersByCtrl = new Map();
+    const roleNodes = [];
+    for (const w of workers){
+      const h = roleH(w);
+      const off = state.dag.offsets[w.nodeId] || { dx: 0, dy: 0 };
+      const rn = { kind: 'worker', id: w.nodeId, data: w, x: 20 + colX.role + off.dx, y: ry + off.dy, w: 336, h };
+      roleNodes.push(rn);
+      if (w.controllerPane){
+        const arr = centersByCtrl.get(w.controllerPane) || [];
+        arr.push(ry + h / 2);
+        centersByCtrl.set(w.controllerPane, arr);
+      }
+      ry += h + gapY;
+    }
+
+    const rolesBottom = workers.length ? ry - gapY : cursorY + 190;
+    let lastCtrlBottom = cursorY + 84 - gapY;
+    for (const c of ctrls){
+      const ys = centersByCtrl.get(c.paneId);
+      const desiredY = ys && ys.length ? ((Math.min(...ys) + Math.max(...ys)) / 2 - ctrlH / 2) : (lastCtrlBottom + gapY);
+      const baseY = Math.max(cursorY + 84, lastCtrlBottom + gapY, desiredY);
+      lastCtrlBottom = baseY + ctrlH;
+      const off = state.dag.offsets[c.nodeId] || { dx: 0, dy: 0 };
+      nodes.push({ kind: 'ctrl', id: c.nodeId, data: c, x: 20 + colX.ctrl + off.dx, y: baseY + off.dy, w: 268, h: ctrlH });
+    }
+
+    const bodyBottom = Math.max(rolesBottom, lastCtrlBottom);
+    const laneW = hasFallback ? 1236 : 826;
+    const laneH = (bodyBottom - cursorY) + 24;
+    lanes.push({ project: p, x: 20, y: cursorY, w: laneW, h: laneH, hasFallback, ctrlCount: ctrls.length, roleCount: workers.length });
+
+    for (const rn of roleNodes){
+      nodes.push(rn);
+      const w = rn.data;
+      if (w.controllerPane){
+        const ctrlId = 'ctrl:' + p.project_id + ':' + w.controllerPane;
+        const edgeCls = w.status === 'blocked' ? 'blocked' : w.status === 'working' ? 'working' : (w.status === 'retrying' || w.status === 'scheduled_retry') ? 'retry' : 'idle';
+        const permShort = w.perm === 'auto-workspace' ? 'auto-ws' : w.perm;
+        edges.push({ from: ctrlId, to: w.nodeId, cls: edgeCls, label: permShort + (w.task?.turn ? ' · #' + w.task.turn : '') });
+      }
+      if ((w.status === 'retrying' || w.status === 'scheduled_retry') && w.task?.fallback?.length){
+        const fid = 'fb:' + w.nodeId;
+        const foff = state.dag.offsets[fid] || { dx: 0, dy: 0 };
+        const chain = w.task.fallback.map(f => f.channel || f.kind);
+        nodes.push({
+          kind: 'fallback', id: fid, workerId: w.nodeId,
+          data: { title: '回退链 · ' + chain[0], chain, retries: w.task.retries || 1, eta: fmtEta(w.task.nextAt, getSnap().now) },
+          x: 20 + colX.fallback + foff.dx, y: rn.y + 18 + foff.dy, w: 264, h: 134
+        });
+        edges.push({ from: w.nodeId, to: fid, cls: 'fallback', label: 'fallback' });
+      }
+    }
+    cursorY += laneH + 22;
+  }
+
+  return { lanes, nodes, edges, totalH: Math.max(cursorY + 24, 300), totalW: Math.max(...lanes.map(l => l.x + l.w), 960) + 40 };
+}
+
+/* ==================== RENDER TOPBAR & FOCUS ==================== */
+function renderTopbar(){
+  const snap = getSnap();
+  const projs = snap.projects || [];
+  document.getElementById('proj-label').textContent = state.project === 'all' ? '全部项目' : projectName(state.project);
+
+  const menu = document.getElementById('proj-menu');
+  menu.style.display = state.projMenuOpen ? 'block' : 'none';
+  if (state.projMenuOpen){
+    menu.innerHTML = [
+      '<button class="menu-item ' + (state.project==='all'?'active':'') + '" data-action="selectProject" data-id="all"><span>全部项目</span><span class="menu-meta">' + projs.length + ' 项目</span></button>',
+      ...projs.map(p => '<button class="menu-item ' + (state.project===p.project_id?'active':'') + '" data-action="selectProject" data-id="' + esc(p.project_id) + '"><span>' + esc(p.name) + '</span><span class="menu-meta">' + (p.blocked_count ? p.blocked_count + ' 待授权' : p.active_tasks + ' 活跃') + '</span></button>')
+    ].join('');
+  }
+
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  document.getElementById('theme-btn').innerHTML = ic(isDark ? 'sun' : 'moon');
+
+  const d = snap.daemon || {};
+  document.body.classList.toggle('daemon-off', state.daemonStopped);
+  const statusEl = document.getElementById('daemon');
+  if (state.daemonStopped){
+    statusEl.innerHTML = '<span class="dot-live off"></span><span class="d-txt">Daemon 已停止</span><button class="btn sm primary" data-action="reconnect">重新连接</button>';
+  } else if (!state.connected && BOOT.mode === 'live'){
+    statusEl.innerHTML = '<span class="dot-live warn"></span><span class="d-txt">连接中...</span><button class="btn sm ghost" data-action="reconnect">重试</button>';
+  } else {
+    const up = fmtUptime(d.started_at, snap.now);
+    statusEl.innerHTML = '<span class="dot-live ok"></span><span class="d-txt">' + (BOOT.mode === 'preview' ? '离线预览' : 'Daemon 运行中') + '</span><span class="d-meta">pid ' + esc(d.pid || '—') + (up ? ' · ' + esc(up) : '') + '</span><button class="btn sm danger-ghost" data-action="openStopModal">' + ic('power','sm') + '停止服务</button>';
+  }
+
+  document.getElementById('offbanner').innerHTML = !state.daemonStopped ? '' :
+    '<div class="off-banner">' + ic('power','lg') + '<div class="t"><b>后台 Daemon 已' + (state.stopReason === 'idle' ? '空闲自动退出' : '手动停止') + '</b><div style="font-size:13px;color:var(--text-2);margin-top:2px">已停止自动重连循环，避免在后台无故唤醒服务。需要继续使用时可点击右侧重新连接，或在终端运行任意 chflow 命令。</div></div><button class="btn primary" data-action="reconnect">重新连接</button></div>';
+}
+
+function renderFocus(){
+  const snap = getSnap();
+  const blocked = (snap.tasks || []).filter(t => t.state === 'blocked' && (state.project === 'all' || t.project_id === state.project));
+  const deferred = (snap.queue || []).filter(q => (q.state === 'deferred_user_typing' || q.state === 'paused_by_operator') && (state.project === 'all' || (snap.tasks || []).some(t => t.task === q.task && t.project_id === state.project)));
+  const total = blocked.length + deferred.length;
+  const el = document.getElementById('focus');
+  if (!total){ el.innerHTML = ''; return; }
+
+  el.innerHTML = '<div class="focus"><div class="focus-head"><div class="fh-l">' + ic('alert') + '<b>需要你介入</b><span class="fh-count">' + total + ' 项</span></div><div class="fh-r"><span class="fh-hint">处理完成后自动收起</span><button class="btn sm ghost" data-action="toggleFocus">' + (state.focusCollapsed ? '展开待办' : '收起') + '</button></div></div>' +
+    (state.focusCollapsed ? '' : '<div class="focus-grid">' +
+      blocked.map(t => '<div class="fi"><div class="fi-icon">' + ic('shield') + '</div><div class="fi-body"><div class="fi-title"><b>' + esc(t.role || t.name || t.task) + '</b> 等待授权 <span class="tag">' + esc(projectName(t.project_id)) + '</span></div><div class="fi-code">' + esc(t.block?.reason || t.block?.kind || 'permission_prompt') + '</div></div><div class="fi-actions"><button class="btn sm ghost" data-action="openTask" data-id="' + esc(t.task) + '">' + ic('terminal','sm') + '现场</button><button class="btn sm" data-action="denyTask" data-id="' + esc(t.task) + '">拒绝</button><button class="btn sm primary" data-action="approveTask" data-id="' + esc(t.task) + '">' + ic('check','sm') + '批准</button></div></div>').join('') +
+      deferred.map(q => '<div class="fi"><div class="fi-icon">' + ic('keyboard') + '</div><div class="fi-body"><div class="fi-title"><b>' + esc(q.worker || q.task) + '</b> 回执暂缓 <span class="tag">' + esc(q.recipient?.pane || '') + '</span></div><div class="fi-sub">' + esc(q.note || q.status || q.state) + '</div></div><div class="fi-actions"><button class="btn sm" data-action="consumeQueue" data-id="' + esc(q.event_id) + '">' + ic('eye','sm') + '仅阅</button><button class="btn sm primary" data-action="pushQueue" data-id="' + esc(q.event_id) + '">' + ic('zap','sm') + '强推</button></div></div>').join('') +
+    '</div>') + '</div>';
+}
+
+function renderToolbar(){
+  const snap = getSnap();
+  const qCount = (snap.queue || []).filter(q => PENDING_QUEUE.has(q.state)).length + (snap.scheduled_retries || []).filter(r => r.state === 'pending' || r.state === 'running').length;
+  document.getElementById('tabs').innerHTML = [
+    '<button class="tab ' + (state.tab==='work'?'active':'') + '" data-action="goTab" data-id="work">' + ic('layers') + '工作台</button>',
+    '<button class="tab ' + (state.tab==='queue'?'active':'') + '" data-action="goTab" data-id="queue">' + ic('inbox') + '投递队列与重试' + (qCount ? '<span class="tab-badge warn">' + qCount + '</span>' : '') + '</button>',
+    '<button class="tab ' + (state.tab==='audit'?'active':'') + '" data-action="goTab" data-id="audit">' + ic('activity') + '审计事件流</button>'
+  ].join('');
+
+  const workers = allVisibleWorkers();
+  const cWorking = workers.filter(w => w.status === 'working').length;
+  const cBlocked = workers.filter(w => w.status === 'blocked').length;
+  const cRetry = workers.filter(w => w.status === 'retrying' || w.status === 'scheduled_retry').length;
+  const cUnbound = workers.filter(w => w.status === 'unbound').length;
+
+  document.getElementById('toolbar-right').innerHTML = state.tab !== 'work' ? '' :
+    '<div class="summary-inline">' +
+      '<span class="s-item"><span class="dot ok"></span>运行中 <b>' + cWorking + '</b></span>' +
+      '<span class="s-item"><span class="dot warn"></span>待授权 <b>' + cBlocked + '</b></span>' +
+      '<span class="s-item"><span class="dot retry"></span>重试 <b>' + cRetry + '</b></span>' +
+      '<span class="s-item"><span class="dot unbound"></span>待命 <b>' + cUnbound + '</b></span>' +
+    '</div>' +
+    '<div class="seg" role="group">' +
+      '<button class="' + (state.workMode==='dag'?'active':'') + '" data-action="setWorkMode" data-id="dag">' + ic('dag','sm') + '拓扑画布</button>' +
+      '<button class="' + (state.workMode==='cards'?'active':'') + '" data-action="setWorkMode" data-id="cards">' + ic('grid','sm') + '卡片视图</button>' +
+    '</div>';
+}
+
+/* ==================== DAG WORKSPACE ==================== */
+function renderDagView(){
+  const snap = getSnap();
+  const layout = computeDagLayout();
+  const nodeMap = new Map(layout.nodes.map(n => [n.id, n]));
+
+  let svgPaths = '', edgeBadges = '';
+  for (const e of layout.edges){
+    const a = nodeMap.get(e.from), b = nodeMap.get(e.to);
+    if (!a || !b) continue;
+    const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+    const x2 = b.x, y2 = b.y + b.h / 2;
+    const dx = Math.max(46, Math.abs(x2 - x1) * 0.45);
+    const d = 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' + (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+    const stroke = e.cls === 'blocked' ? 'var(--warn)' : e.cls === 'working' ? 'var(--accent)' : (e.cls === 'retry' || e.cls === 'fallback') ? 'var(--retry)' : 'var(--border-strong)';
+    svgPaths += '<path class="edge-path ' + e.cls + '" d="' + d + '"/>';
+    svgPaths += '<circle cx="' + x1 + '" cy="' + y1 + '" r="3.5" fill="var(--surface)" stroke="' + stroke + '" stroke-width="2"/>';
+    svgPaths += '<circle cx="' + x2 + '" cy="' + y2 + '" r="3.5" fill="' + stroke + '"/>';
+    edgeBadges += '<div class="edge-badge ' + e.cls + '" style="left:' + ((x1+x2)/2) + 'px;top:' + ((y1+y2)/2) + 'px">' + esc(e.label) + '</div>';
+  }
+
+  const lanesHtml = layout.lanes.map(l =>
+    '<div class="dag-lane" style="left:' + l.x + 'px;top:' + l.y + 'px;width:' + l.w + 'px;height:' + l.h + 'px">' +
+      '<div class="dag-lane-head">' +
+        '<div class="dag-lane-title">' + ic('folder') + '<span>' + esc(l.project.name) + '</span><span class="tag mono">' + esc(l.project.source || 'project') + '</span></div>' +
+        '<div class="dag-lane-meta"><span>' + l.ctrlCount + ' 主控</span><span>·</span><span>' + l.roleCount + ' 角色/工位</span><span class="mono">' + esc(shortPath(l.project.root)) + '</span></div>' +
+      '</div>' +
+      '<div class="dag-col-labels">' +
+        '<span class="dag-col-label" style="left:32px">' + ic('compass','sm') + '主控会话 (Controllers)</span>' +
+        '<span class="dag-col-label" style="left:454px">' + ic('layers','sm') + '项目角色与执行工位 (Roles)</span>' +
+        (l.hasFallback ? '<span class="dag-col-label" style="left:938px">' + ic('refresh','sm') + '活跃回退链 (Fallback)</span>' : '') +
+      '</div>' +
+    '</div>'
+  ).join('');
+
+  const nodesHtml = layout.nodes.map(n => {
+    const sel = state.drawer?.nodeId === n.id ? 'selected' : '';
+    if (n.kind === 'ctrl'){
+      const c = n.data;
+      const badgeCls = c.typing || c.paused ? 'warn' : 'ok';
+      const badgeTxt = c.paused ? '已暂停' : c.typing ? '输入中' : '就绪';
+      return '<div class="dag-node ctrl ' + sel + '" data-node-id="' + esc(c.nodeId) + '" data-node-kind="ctrl" style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
+        '<div class="dn-head"><div class="dn-title">' + ic('compass') + '<span>' + esc(c.name) + '</span></div><span class="pill ' + badgeCls + '">' + badgeTxt + '</span></div>' +
+        '<div class="dn-sub">' + esc(c.kind) + ' · <span class="mono">' + esc(c.paneId) + '</span></div>' +
+        '<div class="dn-foot"><span class="dn-foot-left">' + (c.queuedCount ? '候投回执 ' + c.queuedCount + ' 条' : '回执通道畅通') + '</span><span class="mono">' + esc(c.status) + '</span></div>' +
+      '</div>';
+    }
+    if (n.kind === 'fallback'){
+      const fb = n.data;
+      return '<div class="dag-node fallback" data-node-id="' + esc(n.id) + '" data-node-kind="fallback" data-worker-id="' + esc(n.workerId) + '" style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
+        '<div class="dn-head"><div class="dn-title">' + ic('refresh') + '<span>' + esc(fb.title) + '</span></div><span class="pill retry">#' + esc(fb.retries) + '</span></div>' +
+        '<div class="dn-sub" style="margin-top:6px">回退顺序：' + esc(fb.chain.join(' → ')) + '</div>' +
+        '<div class="dn-foot"><span>' + esc(fb.eta) + '</span><span style="color:var(--retry);font-weight:600">自动接管</span></div>' +
+      '</div>';
+    }
+    const w = n.data;
+    const st = ST[w.status] || ST.idle;
+    const stCls = w.status === 'blocked' ? 'st-blocked' : w.status === 'working' ? 'st-working' : (w.status === 'retrying' || w.status === 'scheduled_retry') ? 'st-retry' : w.status === 'offline' ? 'st-offline' : w.status === 'unbound' ? 'st-unbound' : '';
+    const bindText = w.bindingMode === 'unbound'
+      ? ic('link','sm') + '待命 · 默认 ' + esc(w.kind)
+      : w.bindingMode === 'headless'
+        ? ic('cpu','sm') + '无头 · ' + esc(w.kind) + (w.model ? ' · ' + esc(w.model) : '')
+        : ic('monitor','sm') + esc(w.kind) + (w.paneId ? ' · ' + esc(w.paneId) : '');
+
+    let mid = '';
+    if (w.status === 'blocked' && w.task){
+      mid = '<div class="dn-alert">' + ic('shield','sm') + '<span>' + esc(w.task.block?.reason || 'permission_prompt') + '</span></div>' +
+        '<div class="dn-actions"><button class="btn sm warn" data-action="openWorker" data-id="' + esc(w.nodeId) + '">' + ic('terminal','sm') + '查看现场</button><button class="btn sm" data-action="approveTask" data-id="' + esc(w.task.task) + '">' + ic('check','sm') + '批准</button></div>';
+    } else if ((w.status === 'scheduled_retry' || w.status === 'retrying') && w.task){
+      mid = '<div class="dn-task"><div class="dn-task-top"><span>' + esc(w.task.task) + '</span><span class="menu-meta">#' + esc(w.task.turn || 1) + '</span></div></div>' +
+        '<div class="dn-retry">' + ic('clock','sm') + '<span>' + esc(fmtEta(w.task.nextAt, snap.now)) + (w.task.reason ? ' · ' + esc(w.task.reason) : '') + '</span></div>';
+    } else if (w.status === 'unbound' && w.role){
+      mid = '<div class="dn-actions" style="margin-top:12px"><button class="btn sm primary" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('plus','sm') + '绑定或启动会话</button></div>';
+    } else if (w.task){
+      mid = '<div class="dn-task"><div class="dn-task-top"><span>' + esc(w.task.task) + '</span><span class="menu-meta">第 ' + esc(w.task.turn || 1) + ' 轮</span></div>' +
+        '<div class="dn-task-note">' + esc(w.task.note || w.task.reason || st.label) + '</div></div>';
+    } else {
+      mid = '<div class="dn-task"><div class="dn-task-note">' + (w.status === 'offline' ? '窗格已离线，可热替换新会话' : '空闲就绪，随时可派发任务') + '</div></div>';
+    }
+
+    return '<div class="dag-node role ' + stCls + ' ' + sel + '" data-node-id="' + esc(w.nodeId) + '" data-node-kind="worker" style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
+      '<div class="dn-head"><div class="dn-title"><span>' + esc(w.name) + '</span></div><span class="pill ' + st.c + '"><span class="dot ' + st.c + '"></span>' + st.label + '</span></div>' +
+      '<div class="dn-sub">' + esc(w.desc) + '</div>' +
+      mid +
+      '<div class="dn-foot"><span class="dn-foot-left">' + bindText + '</span><span class="tag">' + ic('shield','sm') + esc(w.perm === 'auto-workspace' ? 'auto-ws' : w.perm) + '</span></div>' +
+    '</div>';
+  }).join('');
+
+  const unm = (snap.unmanaged_live_agents || []).filter(a => {
+    if (state.project !== 'all' && a.project_id !== state.project) return false;
+    return !(snap.projects || []).some(p => (p.controllers || []).includes(a.pane_id));
+  });
+  const unmHtml = !unm.length ? '' : '<div class="unmanaged-box"><div class="unm-head"><div class="unm-title">' + ic('monitor') + '未纳管在线窗格（Herdr 实时在线）<span class="tag">' + unm.length + '</span></div><span style="font-size:13px;color:var(--text-3)">会话退出后自动移出；可一键纳管或绑定到项目角色</span></div><div class="unm-grid">' +
+    unm.map(a => '<div class="unm-item"><div class="unm-info"><div class="unm-name"><span class="dot ok"></span><span class="mono">' + esc(a.pane_id) + '</span><span>' + esc(a.kind) + '</span><span class="tag">' + esc(projectName(a.project_id)) + '</span></div><div class="unm-sub mono">' + esc(a.agent_status) + ' · ' + esc(shortPath(a.cwd)) + '</div></div><div style="display:flex;gap:6px"><button class="btn sm" data-action="openBindPane" data-pane="' + esc(a.pane_id) + '" data-proj="' + esc(a.project_id) + '">绑定角色</button><button class="btn sm primary" data-action="adoptPane" data-pane="' + esc(a.pane_id) + '" data-proj="' + esc(a.project_id) + '">纳管</button></div></div>').join('') +
+  '</div></div>';
+
+  const emptyHtml = layout.lanes.length ? '' :
+    '<div class="empty-canvas"><div class="empty-card"><div style="margin-bottom:10px;color:var(--accent)">' + ic('dag','lg') + '</div><div style="font-size:16px;font-weight:700;margin-bottom:6px">当前暂无项目角色或活跃派发</div><div style="font-size:13.5px;color:var(--text-3);margin-bottom:16px">点击右上角「新建角色」创建固定分工，或从下方未纳管窗格一键纳管，派发后这里将实时绘制主控与角色的拓扑结构。</div><div style="display:flex;justify-content:center;gap:8px"><button class="btn" data-action="openNewRole">' + ic('user-plus','sm') + '新建角色</button><button class="btn primary" data-action="openDispatch">' + ic('send','sm') + '派发任务</button></div></div></div>';
+
+  return '<div class="dag-shell ' + (state.dag.expanded ? 'expanded' : '') + '" id="dag-shell">' +
+    emptyHtml +
+    '<div class="dag-stage" id="dag-stage" style="transform:translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')">' +
+      lanesHtml + '<svg class="dag-svg">' + svgPaths + '</svg>' + edgeBadges + nodesHtml +
+    '</div>' +
+    '<div class="dag-hint">拖拽空白平移 · 滚轮缩放 · 拖动节点排布 · 点击查看详情 · 右键快捷操作</div>' +
+    '<div class="dag-controls">' +
+      '<button data-action="dagZoomOut" title="缩小">−</button>' +
+      '<span class="dag-zoom-val" id="dag-zoom-val">' + Math.round(state.dag.scale * 100) + '%</span>' +
+      '<button data-action="dagZoomIn" title="放大">+</button>' +
+      '<button data-action="dagFit">适配</button>' +
+      '<button data-action="dagReset">重置</button>' +
+      '<button data-action="dagExpand" title="' + (state.dag.expanded ? '退出全屏画布' : '全屏展开画布') + '">' + ic(state.dag.expanded ? 'minimize' : 'maximize','sm') + '</button>' +
+    '</div>' +
+  '</div>' + unmHtml;
+}
+
+function renderCardsView(){
+  const projs = visibleProjects();
+  if (!projs.length) return '<div class="box" style="color:var(--text-3)">暂无项目数据</div>';
+  return projs.map(p => {
+    const workers = buildProjectWorkers(p.project_id);
+    const ctrls = buildProjectControllers(p, workers);
+    return '<div class="proj-section">' +
+      '<div class="proj-head"><div class="proj-title">' + ic('folder','lg') + '<span>' + esc(p.name) + '</span><span class="proj-meta mono">' + esc(shortPath(p.root)) + '</span></div><div style="display:flex;gap:8px"><button class="btn sm" data-action="openNewRole">' + ic('plus','sm') + '新建角色</button><button class="btn sm" data-action="openDispatch">' + ic('send','sm') + '派发任务</button></div></div>' +
+      (ctrls.length ? '<div class="ctrl-row">' + ctrls.map(c => '<div class="ctrl-chip" data-action="openCtrl" data-id="' + esc(c.nodeId) + '">' + ic('compass','sm') + '<b>' + esc(c.name) + '</b><span>' + esc(c.kind) + ' · <span class="mono">' + esc(c.paneId) + '</span></span>' + (c.typing ? '<span class="pill warn">输入中</span>' : c.paused ? '<span class="pill warn">已暂停</span>' : '') + '</div>').join('') + '</div>' : '') +
+      '<div class="role-grid">' + (workers.length ? workers.map(w => {
+        const st = ST[w.status] || ST.idle;
+        return '<div class="role-card ' + (w.status==='blocked'?'st-blocked':w.status==='unbound'?'st-unbound':w.status==='offline'?'st-offline':'') + '" data-action="openWorker" data-id="' + esc(w.nodeId) + '">' +
+          '<div class="dn-head"><div class="dn-title">' + esc(w.name) + '</div><span class="pill ' + st.c + '"><span class="dot ' + st.c + '"></span>' + st.label + '</span></div>' +
+          '<div class="dn-sub">' + esc(w.desc) + '</div>' +
+          (w.task ? '<div class="dn-task"><div class="dn-task-top"><span>' + esc(w.task.task) + '</span><span class="menu-meta">第 ' + esc(w.task.turn || 1) + ' 轮</span></div><div class="dn-task-note">' + esc(w.task.block?.reason || w.task.note || w.task.reason || st.label) + '</div></div>'
+            : w.status === 'unbound' && w.role ? '<div style="margin-top:12px"><button class="btn sm primary" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('plus','sm') + '绑定或启动</button></div>' : '') +
+          '<div class="dn-foot" style="margin-top:auto"><span>' + (w.bindingMode==='unbound'?'未绑定':esc(w.kind + (w.paneId ? ' · ' + w.paneId : ' · 无头'))) + '</span><span class="tag">' + esc(w.perm === 'auto-workspace' ? 'auto-ws' : w.perm) + '</span></div>' +
+        '</div>';
+      }).join('') : '<div class="box" style="color:var(--text-3)">该项目尚未配置角色</div>') + '</div></div>';
+  }).join('');
+}
+
+function renderQueueView(){
+  const snap = getSnap();
+  const pending = (snap.queue || []).filter(q => PENDING_QUEUE.has(q.state));
+  const retries = (snap.scheduled_retries || []).filter(r => r.state === 'pending' || r.state === 'running');
+  const paused = snap.paused_recipients || [];
+  return '<h2 class="section-h">投递队列与重试</h2>' +
+    '<p class="section-sub">控制回执投递与退避重试。「强推」立即注入目标窗格；「仅阅」标记为已消费不打断终端输入；「丢弃」撤销投递。</p>' +
+    (paused.length ? '<div class="box warn" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>免打扰暂停中的收件窗格：</b>' + paused.map(p => '<span class="tag mono">' + esc(p) + '</span>').join(' ') + '</div><div style="display:flex;gap:6px">' + paused.map(p => '<button class="btn sm" data-action="resumeRecipient" data-pane="' + esc(p) + '">恢复 ' + esc(p) + '</button>').join('') + '</div></div>' : '') +
+    '<div class="q-group"><div class="q-group-title">' + ic('keyboard','sm') + '候投回执队列 · ' + pending.length + '</div>' +
+    (pending.length ? pending.map(q => '<div class="q-card"><div class="q-left"><div class="q-icon warn">' + ic('keyboard') + '</div><div><div class="q-title">' + esc(q.worker || q.task) + ' → ' + esc(q.recipient?.label || q.recipient?.pane || '') + ' <span class="tag">' + esc(q.task) + '#' + esc(q.turn || 1) + '</span></div><div class="q-desc">' + esc(q.note || q.status || q.type) + '</div><div class="q-meta"><span>状态：' + esc(q.state) + '</span><span>入队 ' + esc(fmtClock(q.created)) + '</span></div></div></div><div class="q-right"><span class="pill warn">' + esc(q.state) + '</span><div class="q-btns"><button class="btn sm danger-ghost" data-action="dropQueue" data-id="' + esc(q.event_id) + '">' + ic('trash','sm') + '丢弃</button><button class="btn sm" data-action="consumeQueue" data-id="' + esc(q.event_id) + '">' + ic('eye','sm') + '仅阅</button><button class="btn sm primary" data-action="pushQueue" data-id="' + esc(q.event_id) + '">' + ic('zap','sm') + '强推</button></div></div></div>').join('') : '<div class="box" style="color:var(--text-3)">当前无候投回执</div>') +
+    '</div>' +
+    '<div class="q-group"><div class="q-group-title">' + ic('refresh','sm') + '定时重试与回退计划 · ' + retries.length + '</div>' +
+    (retries.length ? retries.map(r => '<div class="q-card"><div class="q-left"><div class="q-icon retry">' + ic('clock') + '</div><div><div class="q-title">' + esc(r.task) + '</div><div class="q-desc">' + esc(r.reason || '按计划重试') + '</div><div class="q-meta"><span>预计 ' + esc(fmtEta(r.nextAt, snap.now)) + '</span><span>状态：' + esc(r.state) + '</span></div></div></div><div class="q-right"><span class="pill retry">' + esc(r.state) + '</span><div class="q-btns"><button class="btn sm danger-ghost" data-action="cancelRetry" data-id="' + esc(r.task) + '">' + ic('trash','sm') + '取消重试</button></div></div></div>').join('') : '<div class="box" style="color:var(--text-3)">当前无重试计划</div>') +
+    '</div>';
+}
+
+function renderAuditView(){
+  const logs = (getSnap().audit || []).slice().reverse().slice(0, 80);
+  return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px"><div><h2 class="section-h">审计事件流</h2><p class="section-sub" style="margin-bottom:0">记录派发、授权放行、角色换绑、会话离线清理与 Daemon 控制事件（已脱敏）。</p></div><button class="btn sm" data-action="pruneNow">' + ic('refresh','sm') + '整理离线与已结单记录</button></div>' +
+    (logs.length ? '<div class="audit-list">' + logs.map(e => {
+      const cls = /block|error|fail|offline/.test(e.event || '') ? 'warn' : /retry/.test(e.event || '') ? 'retry' : /succeed|submit/.test(e.event || '') ? 'ok' : 'idle';
+      return '<div class="audit-row"><span class="audit-time mono">' + esc(fmtClock(e.at)) + '</span><span class="pill ' + cls + '">' + esc(e.event) + '</span><span>' + (e.task ? '<b>' + esc(e.task) + '</b> · ' : '') + esc(e.detail || '') + '</span></div>';
+    }).join('') + '</div>' : '<div class="box" style="color:var(--text-3)">暂无审计记录</div>');
+}
+
+/* ==================== DRAWER ==================== */
+function findWorkerByNodeId(nodeId){
+  return allVisibleWorkers().find(w => w.nodeId === nodeId) || (getSnap().projects || []).flatMap(p => buildProjectWorkers(p.project_id)).find(w => w.nodeId === nodeId);
+}
+function findCtrlByNodeId(nodeId){
+  for (const p of (getSnap().projects || [])){
+    const c = buildProjectControllers(p, buildProjectWorkers(p.project_id)).find(x => x.nodeId === nodeId);
+    if (c) return c;
+  }
+  return null;
+}
+
+function renderDrawer(){
+  const scrim = document.getElementById('scrim'), drawer = document.getElementById('drawer');
+  if (!state.drawer){ scrim.classList.remove('open'); drawer.classList.remove('open'); return; }
+  scrim.classList.add('open'); drawer.classList.add('open');
+
+  if (state.drawer.kind === 'ctrl'){
+    const c = findCtrlByNodeId(state.drawer.nodeId);
+    if (!c){ state.drawer = null; return renderDrawer(); }
+    drawer.innerHTML = '<div class="dr-head"><div class="dr-top"><div><div class="dr-crumb">' + ic('folder','sm') + esc(projectName(c.projectId)) + ' · 主控会话</div><div class="dr-name">' + esc(c.name) + ' <span class="pill ' + (c.paused||c.typing?'warn':'ok') + '">' + (c.paused?'已暂停投递':c.typing?'正在输入':'投递就绪') + '</span></div><div class="dr-desc">' + esc(c.kind) + ' · <span class="mono">' + esc(c.paneId) + '</span></div></div><button class="btn icon ghost" data-action="closeDrawer">' + ic('x') + '</button></div><div class="dr-tabs"><button class="active">概览</button></div></div>' +
+      '<div class="dr-body"><div class="box"><div class="box-h">收件免打扰控制</div><p style="margin:0 0 12px;color:var(--text-2)">开启暂停后，所有发往该主控窗格的回执都会进入候投队列，不会自动注入终端。</p><div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      (c.paused ? '<button class="btn primary" data-action="resumeRecipient" data-pane="' + esc(c.paneId) + '">恢复自动投递</button>' : '<button class="btn" data-action="pauseRecipient" data-pane="' + esc(c.paneId) + '">开启免打扰暂停</button>') +
+      '<button class="btn" data-action="flushPane" data-pane="' + esc(c.paneId) + '">Flush 消费队列</button></div></div></div>';
+    return;
+  }
+
+  const w = findWorkerByNodeId(state.drawer.nodeId);
+  if (!w){ state.drawer = null; return renderDrawer(); }
+  const st = ST[w.status] || ST.idle;
+  const tab = state.drawer.tab || 'overview';
+  const task = w.task;
+  const targetForPerm = task?.task || w.paneId || w.name;
+  const permInfo = PERMS.find(p => p.id === w.perm) || PERMS[1];
+
+  let bodyHtml = '';
+  if (tab === 'overview'){
+    if (w.status === 'blocked' && task){
+      const diagKey = task.task + ':diag';
+      if (state.fileCache[diagKey] === undefined) void loadTaskFile(task.task, 'diag', task.turn || 1);
+      const diagText = state.fileCache[diagKey] || '正在加载脱敏终端诊断...';
+      bodyHtml += '<div class="box warn"><div class="box-h"><span style="display:flex;align-items:center;gap:7px;color:var(--warn)">' + ic('alert') + '等待你的授权</span><span class="tag">' + esc(task.block?.kind || 'blocked') + '</span></div>' +
+        '<div class="mono" style="font-size:13px">' + esc(task.block?.reason || '') + '</div>' +
+        '<div class="term">' + esc(diagText) + '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button class="btn primary" data-action="approveTask" data-id="' + esc(task.task) + '">' + ic('check','sm') + '批准一次 (Enter)</button>' +
+          '<button class="btn" data-action="setPerm" data-target="' + esc(targetForPerm) + '" data-perm="auto-workspace">升为工作区自动并放行</button>' +
+          '<button class="btn danger-ghost" data-action="denyTask" data-id="' + esc(task.task) + '">' + ic('x','sm') + '拒绝 (Esc)</button>' +
+        '</div>' +
+        (w.paneId ? '<div class="keybar"><span style="font-size:12.5px;color:var(--text-3);margin-right:4px">直控按键 (' + esc(w.paneId) + '):</span>' +
+          [['Enter','enter'],['Esc','esc'],['↑','up'],['↓','down'],['Tab','tab'],['Ctrl+C','ctrl+c']].map(([lbl,k]) => '<button class="keybtn" data-action="sendKey" data-target="' + esc(task.task) + '" data-key="' + k + '">' + lbl + '</button>').join('') +
+        '</div><div class="term-input-row"><input id="term-text-input" placeholder="向终端发送文本并回车..."><button class="btn sm primary" data-action="sendTermText" data-target="' + esc(task.task) + '">发送</button></div>' : '') +
+      '</div>';
+    }
+
+    bodyHtml += '<div class="box"><div class="box-h"><span>会话绑定与热替换</span>' +
+      (w.role ? '<button class="btn sm primary" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('swap','sm') + '热替换会话 / 模型</button>' : '') +
+      '</div><div style="font-size:14px;color:var(--text-2);display:grid;gap:6px">' +
+      '<div>底层方式：<b>' + (w.bindingMode==='unbound'?'未绑定（待命）':w.bindingMode==='headless'?'无头执行器':'Herdr 交互窗格 ' + esc(w.paneId || '')) + '</b></div>' +
+      '<div>Harness / 模型：<b>' + esc(w.kind) + (w.model ? ' · ' + esc(w.model) : '') + '</b></div>' +
+      '<div style="font-size:13px;color:var(--text-3)">热替换底层会话后，现有任务线程（--task）与 .chflow/ 信箱历史无缝保留。</div>' +
+    '</div></div>';
+
+    if (w.bindingMode !== 'unbound'){
+      bodyHtml += '<div class="box"><div class="box-h"><span>实时权限档位</span><span class="tag">' + esc(w.perm) + '</span></div><div class="perm-grid">' +
+        PERMS.map(p => '<button class="perm-btn ' + (w.perm===p.id?'active':'') + '" data-action="setPerm" data-target="' + esc(targetForPerm) + '" data-perm="' + p.id + '">' + p.zh + '</button>').join('') +
+      '</div><div style="font-size:13px;color:var(--text-3)">' + esc(permInfo.desc) + '</div></div>';
+    }
+
+    bodyHtml += '<div class="box"><div class="box-h"><span>' + (task ? '当前任务 · ' + esc(task.task) : '角色与工位操作') + '</span>' + (task ? '<button class="btn sm ghost" data-action="drawerTab" data-tab="mail">打开信箱 →</button>' : '') + '</div>' +
+      (task ? '<div style="font-size:13.5px;color:var(--text-2);margin-bottom:10px">状态：<b>' + esc(task.state) + '</b> · 第 ' + esc(task.turn || 1) + ' 轮' + (task.note ? ' · ' + esc(task.note) : '') + '</div>' : '<div style="font-size:13.5px;color:var(--text-3);margin-bottom:10px">当前无活跃任务，可直接派发新任务。</div>') +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn sm primary" data-action="openDispatch" data-target="' + esc(w.role ? w.role.role : (w.paneId || '')) + '" data-proj="' + esc(w.projectId) + '">' + ic('send','sm') + (task ? '继续追问' : '派发任务') + '</button>' +
+        (task ? '<button class="btn sm" data-action="finishTask" data-id="' + esc(task.task) + '">' + ic('check','sm') + '验收结单</button><button class="btn sm danger-ghost" data-action="cancelTask" data-id="' + esc(task.task) + '">取消任务</button>' : '') +
+        (w.role && w.bindingMode !== 'unbound' ? '<button class="btn sm danger-ghost" data-action="unbindRole" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">解绑会话</button>' : '') +
+        (w.role && w.role.source !== 'config' ? '<button class="btn sm danger-ghost" data-action="removeRole" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">移除角色</button>' : '') +
+      '</div></div>';
+  } else if (tab === 'mail'){
+    if (!task){
+      bodyHtml = '<div class="box" style="color:var(--text-3)">当前无关联任务信箱。</div>';
+    } else {
+      const maxTurn = Math.max(1, Number(task.turn || 1));
+      const curTurn = Math.min(maxTurn, Math.max(1, Number(state.drawer.turn || maxTurn)));
+      const bKey = task.task + ':brief:' + curTurn, oKey = task.task + ':out:' + curTurn;
+      if (state.fileCache[bKey] === undefined) void loadTaskFile(task.task, 'brief', curTurn);
+      if (state.fileCache[oKey] === undefined) void loadTaskFile(task.task, 'out', curTurn);
+      let btns = '';
+      for (let i = 1; i <= maxTurn; i++) btns += '<button class="btn sm ' + (i===curTurn?'primary':'') + '" data-action="drawerTurn" data-turn="' + i + '">第 ' + i + ' 轮</button>';
+      bodyHtml = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' + btns + '</div>' +
+        '<div class="box"><div class="box-h">任务书（t' + curTurn + '-brief.md）</div><div class="mail-pre">' + esc(state.fileCache[bKey] || '正在加载...') + '</div></div>' +
+        '<div class="box"><div class="box-h">交付回执（t' + curTurn + '-reply.md）</div><div class="mail-pre">' + esc(state.fileCache[oKey] || '正在加载...') + '</div></div>';
+    }
+  } else {
+    const logs = (getSnap().audit || []).filter(e => !task || e.task === task.task).slice().reverse().slice(0, 20);
+    bodyHtml = logs.length ? '<div class="audit-list">' + logs.map(e => '<div class="audit-row"><span class="audit-time mono">' + esc(fmtClock(e.at)) + '</span><span class="pill idle">' + esc(e.event) + '</span><span>' + esc(e.detail || '') + '</span></div>').join('') + '</div>'
+      : '<div class="box" style="color:var(--text-3)">暂无相关审计事件。</div>';
+  }
+
+  drawer.innerHTML = '<div class="dr-head"><div class="dr-top"><div>' +
+    '<div class="dr-crumb">' + ic('folder','sm') + esc(projectName(w.projectId)) + ' · ' + (w.role ? '项目角色' : '工位') + '</div>' +
+    '<div class="dr-name">' + esc(w.name) + ' <span class="pill ' + st.c + '"><span class="dot ' + st.c + '"></span>' + st.label + '</span></div>' +
+    '<div class="dr-desc">' + esc(w.desc) + '</div>' +
+    '</div><button class="btn icon ghost" data-action="closeDrawer">' + ic('x') + '</button></div>' +
+    '<div class="dr-tabs"><button class="' + (tab==='overview'?'active':'') + '" data-action="drawerTab" data-tab="overview">概览</button><button class="' + (tab==='mail'?'active':'') + '" data-action="drawerTab" data-tab="mail">任务信箱</button><button class="' + (tab==='activity'?'active':'') + '" data-action="drawerTab" data-tab="activity">活动记录</button></div></div>' +
+    '<div class="dr-body">' + bodyHtml + '</div>';
+}
+
+/* ==================== MODALS ==================== */
+function openModal(title, bodyHtml, footerHtml){
+  document.getElementById('modal-root').innerHTML = '<div class="modal-back" data-action="closeModal"><div class="modal" onclick="event.stopPropagation()"><div class="modal-h"><span>' + title + '</span><button class="btn icon ghost" data-action="closeModal">' + ic('x') + '</button></div><div class="modal-b">' + bodyHtml + '</div><div class="modal-f">' + footerHtml + '</div></div></div>';
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML = ''; }
+
+function openStopModal(){
+  const activeCount = (getSnap().tasks || []).filter(t => !TERMINAL_STATES.has(t.state)).length;
+  openModal('停止后台 Daemon 服务',
+    (activeCount ? '<div class="box warn" style="margin-bottom:14px"><b>注意：当前仍有 ' + activeCount + ' 个活跃任务。</b><div style="font-size:13px;color:var(--text-2);margin-top:4px">停止 Daemon 不会关闭 Herdr 终端窗格，但会中止回执队列投递与本控制台监听。</div></div>' : '<p style="margin:0 0 10px">当前无活跃任务，可以安全停止后台 Daemon。</p>') +
+    '<p style="margin:0;font-size:13.5px;color:var(--text-3)">停止后页面将断开连接且不再自动重连；CLI 中也可随时使用 <code>chflow stop</code> 或 <code>chflow quit</code>。</p>',
+    '<button class="btn" data-action="closeModal">取消</button><button class="btn danger" data-action="confirmStopDaemon" data-force="' + (activeCount ? '1' : '0') + '">' + ic('power','sm') + (activeCount ? '强制停止服务' : '确认停止服务') + '</button>'
+  );
+}
+
+function openSwapModal(role, projectId){
+  const r = (getSnap().roles || []).find(x => x.role === role && x.project_id === projectId);
+  const unm = getSnap().unmanaged_live_agents || [];
+  openModal('热替换角色会话 · ' + esc(role),
+    '<div class="field"><label>绑定方式</label><select id="sw-mode"><option value="spawn">新开 Herdr 交互窗格并绑定</option><option value="headless">切换至无头执行器 (Headless)</option>' + (unm.length ? '<option value="pane">绑定已有在线窗格</option>' : '') + '</select></div>' +
+    (unm.length ? '<div class="field"><label>已有在线窗格（仅“绑定已有窗格”生效）</label><select id="sw-pane">' + unm.map(a => '<option value="' + esc(a.pane_id) + '">' + esc(a.pane_id + ' · ' + a.kind + ' (' + shortPath(a.cwd) + ')') + '</option>').join('') + '</select></div>' : '') +
+    '<div class="field-row"><div class="field"><label>目标 Harness</label><select id="sw-kind">' + ['codex','claude','pi','agy'].map(k => '<option value="' + k + '" ' + ((r?.kind||r?.default_kind)===k?'selected':'') + '>' + k + '</option>').join('') + '</select></div>' +
+    '<div class="field"><label>模型（可选）</label><input id="sw-model" value="' + esc(r?.model || '') + '" placeholder="留空沿用默认"></div></div>' +
+    '<label class="check-row"><input type="checkbox" id="sw-close-old" checked> 替换完成后关闭旧的空闲窗格</label>',
+    '<button class="btn" data-action="closeModal">取消</button><button class="btn primary" data-action="confirmSwap" data-role="' + esc(role) + '" data-proj="' + esc(projectId) + '">' + ic('swap','sm') + '确认热替换</button>'
+  );
+}
+
+function openNewRoleModal(){
+  const projs = getSnap().projects || [];
+  const defProj = state.project !== 'all' ? state.project : (projs[0]?.project_id || '');
+  openModal('新建项目角色槽位',
+    '<div class="field"><label>所属项目</label><select id="nr-proj">' + (projs.length ? projs.map(p => '<option value="' + esc(p.project_id) + '" ' + (p.project_id===defProj?'selected':'') + '>' + esc(p.name) + '</option>').join('') : '<option value="">当前默认项目</option>') + '</select></div>' +
+    '<div class="field-row"><div class="field"><label>角色名（小写字母/数字/-）</label><input id="nr-name" placeholder="reviewer"></div><div class="field"><label>默认 Harness</label><select id="nr-kind"><option value="codex">codex</option><option value="claude">claude</option><option value="pi">pi</option><option value="agy">agy</option></select></div></div>' +
+    '<div class="field"><label>职责说明</label><input id="nr-desc" placeholder="异构代码与安全审查"></div>' +
+    '<div class="field-row"><div class="field"><label>默认权限档位</label><select id="nr-perm"><option value="ask">ask（逐项询问）</option><option value="readonly">readonly（只读）</option><option value="auto-workspace">auto-workspace（工作区自动）</option><option value="yolo">yolo（完全放行）</option></select></div><div class="field"><label>默认模型（可选）</label><input id="nr-model" placeholder="留空用默认"></div></div>' +
+    '<label class="check-row"><input type="checkbox" id="nr-wt"> 启动时默认启用独立 Git Worktree 隔离</label>',
+    '<button class="btn" data-action="closeModal">取消</button><button class="btn primary" data-action="confirmNewRole">创建角色</button>'
+  );
+}
+
+function openDispatchModal(preTarget, preProj){
+  const roles = getSnap().roles || [];
+  const panes = getSnap().managed_panes || [];
+  const opts = [
+    ...roles.map(r => '<option value="role:' + esc(r.project_id) + ':' + esc(r.role) + '" ' + (preTarget===r.role&&(!preProj||preProj===r.project_id)?'selected':'') + '>角色 ' + esc(projectName(r.project_id) + ' / ' + r.role + ' (' + r.binding_mode + ')') + '</option>'),
+    ...panes.filter(p => !p.role).map(p => '<option value="pane:' + esc(p.project_id) + ':' + esc(p.pane_id) + '" ' + (preTarget===p.pane_id?'selected':'') + '>窗格 ' + esc((p.alias || p.pane_id) + ' (' + p.kind + ')') + '</option>')
+  ];
+  openModal('派发任务',
+    '<div class="field"><label>目标角色或工位</label><select id="dp-target">' + (opts.length ? opts.join('') : '<option value="">请先创建角色或纳管窗格</option>') + '</select></div>' +
+    '<div class="field"><label>任务书正文（将自动写入 .chflow/ 文件信箱）</label><textarea id="dp-brief" placeholder="清晰描述目标、验收标准与可写范围..."></textarea></div>' +
+    '<label class="check-row"><input type="checkbox" id="dp-spawn" checked> 若角色处于待命（unbound），自动按预设拉起并绑定</label>',
+    '<button class="btn" data-action="closeModal">取消</button><button class="btn primary" data-action="confirmDispatch">' + ic('send','sm') + '立即派发</button>'
+  );
+}
+
+function openBindPaneModal(paneId, projectId){
+  const roles = (getSnap().roles || []).filter(r => !projectId || r.project_id === projectId);
+  openModal('绑定在线窗格 ' + esc(paneId) + ' 到角色',
+    roles.length
+      ? '<div class="field"><label>选择目标角色</label><select id="bp-role">' + roles.map(r => '<option value="' + esc(r.project_id) + '::' + esc(r.role) + '">' + esc(projectName(r.project_id) + ' / ' + r.role + ' (' + r.binding_mode + ')') + '</option>').join('') + '</select></div>'
+      : '<p style="margin:0;color:var(--text-2)">该项目暂无角色槽位，请先点击「新建角色」或直接「纳管」该窗格。</p>',
+    '<button class="btn" data-action="closeModal">取消</button>' + (roles.length ? '<button class="btn primary" data-action="confirmBindPane" data-pane="' + esc(paneId) + '">确认绑定</button>' : '')
+  );
+}
+
+/* ==================== MAIN RENDER & DAG INTERACTIONS ==================== */
+function render(){
+  renderTopbar();
+  renderFocus();
+  renderToolbar();
+  const view = document.getElementById('view');
+  if (state.tab === 'work'){
+    view.innerHTML = state.workMode === 'dag' ? renderDagView() : renderCardsView();
+    if (state.workMode === 'dag'){
+      if (!state.dag.fitted){
+        const shell = document.getElementById('dag-shell');
+        const layout = computeDagLayout();
+        const firstLane = layout.lanes[0];
+        if (firstLane && shell){
+          const sw = (shell.clientWidth || 1440) - 36, sh = (shell.clientHeight || 620) - 36;
+          const tw = firstLane.w + 36, th = firstLane.h + 36;
+          const s = Math.min(1.04, Math.max(0.72, Math.min(sw / tw, sh / th)));
+          state.dag.scale = s;
+          state.dag.tx = Math.max(16, Math.round((sw + 36 - tw * s) / 2));
+          state.dag.ty = 8;
+          state.dag.fitted = true;
+          const stage = document.getElementById('dag-stage');
+          if (stage) stage.style.transform = 'translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')';
+          const zv = document.getElementById('dag-zoom-val');
+          if (zv) zv.textContent = Math.round(state.dag.scale * 100) + '%';
+        }
+      }
+      bindDagInteractions();
+    }
+  } else if (state.tab === 'queue'){
+    view.innerHTML = renderQueueView();
+  } else {
+    view.innerHTML = renderAuditView();
+  }
+  renderDrawer();
+}
+
+function bindDagInteractions(){
+  const shell = document.getElementById('dag-shell'), stage = document.getElementById('dag-stage');
+  if (!shell || !stage) return;
+
+  shell.onwheel = ev => {
+    ev.preventDefault();
+    state.dag.scale = Math.min(1.5, Math.max(0.5, state.dag.scale * (ev.deltaY < 0 ? 1.08 : 0.92)));
+    stage.style.transform = 'translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')';
+    const zv = document.getElementById('dag-zoom-val');
+    if (zv) zv.textContent = Math.round(state.dag.scale * 100) + '%';
+  };
+
+  shell.onmousedown = ev => {
+    if (ev.button !== 0) return;
+    if (ev.target.closest('button') || ev.target.closest('.dag-controls')) return;
+    const nodeEl = ev.target.closest('.dag-node');
+    if (nodeEl){
+      const id = nodeEl.dataset.nodeId;
+      const sx = ev.clientX, sy = ev.clientY;
+      const orig = state.dag.offsets[id] || { dx: 0, dy: 0 };
+      let moved = false;
+      const onMove = me => {
+        const ddx = (me.clientX - sx) / state.dag.scale, ddy = (me.clientY - sy) / state.dag.scale;
+        if (!moved && Math.hypot(ddx, ddy) > 4){ moved = true; nodeEl.classList.add('dragging'); }
+        if (moved){ state.dag.offsets[id] = { dx: orig.dx + ddx, dy: orig.dy + ddy }; render(); }
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        if (!moved){
+          const kind = nodeEl.dataset.nodeKind;
+          if (kind === 'worker') { state.drawer = { kind: 'worker', nodeId: id, tab: 'overview' }; render(); }
+          else if (kind === 'ctrl') { state.drawer = { kind: 'ctrl', nodeId: id }; render(); }
+          else if (kind === 'fallback') { state.drawer = { kind: 'worker', nodeId: nodeEl.dataset.workerId, tab: 'overview' }; render(); }
+        }
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      return;
+    }
+
+    const px = ev.clientX - state.dag.tx, py = ev.clientY - state.dag.ty;
+    shell.classList.add('panning');
+    const onMove = me => {
+      state.dag.tx = me.clientX - px; state.dag.ty = me.clientY - py;
+      stage.style.transform = 'translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')';
+    };
+    const onUp = () => {
+      shell.classList.remove('panning');
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  shell.oncontextmenu = ev => {
+    const nodeEl = ev.target.closest('.dag-node[data-node-kind="worker"]');
+    if (!nodeEl) return;
+    ev.preventDefault();
+    const w = findWorkerByNodeId(nodeEl.dataset.nodeId);
+    if (!w) return;
+    document.getElementById('ctx-root').innerHTML = '<div class="ctx-menu" style="left:' + Math.min(ev.clientX, window.innerWidth - 210) + 'px;top:' + Math.min(ev.clientY, window.innerHeight - 210) + 'px">' +
+      '<button class="ctx-item" data-action="openWorker" data-id="' + esc(w.nodeId) + '">' + ic('eye','sm') + '查看详情</button>' +
+      (w.status === 'blocked' && w.task ? '<button class="ctx-item" data-action="approveTask" data-id="' + esc(w.task.task) + '">' + ic('check','sm') + '一键批准放行</button>' : '') +
+      (w.role ? '<button class="ctx-item" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('swap','sm') + '热替换会话 / 模型</button>' : '') +
+      (w.bindingMode !== 'unbound' ? '<button class="ctx-item" data-action="setPerm" data-target="' + esc(w.task?.task || w.paneId || w.name) + '" data-perm="auto-workspace">' + ic('shield','sm') + '切为工作区自动</button>' : '') +
+      (w.role && w.bindingMode !== 'unbound' ? '<button class="ctx-item danger" data-action="unbindRole" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('x','sm') + '解绑当前会话</button>' : '') +
+    '</div>';
+  };
+}
+
+document.addEventListener('click', async ev => {
+  if (!ev.target.closest('.ctx-menu')) document.getElementById('ctx-root').innerHTML = '';
+  if (!ev.target.closest('.proj-wrap') && state.projMenuOpen){ state.projMenuOpen = false; renderTopbar(); }
+
+  const btn = ev.target.closest('[data-action]');
+  if (!btn) return;
+  const act = btn.dataset.action, id = btn.dataset.id;
+
+  try {
+    if (act === 'toggleProjMenu'){ state.projMenuOpen = !state.projMenuOpen; renderTopbar(); }
+    else if (act === 'selectProject'){ state.project = id; state.projMenuOpen = false; state.dag.fitted = false; render(); }
+    else if (act === 'toggleTheme'){ document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; renderTopbar(); }
+    else if (act === 'toggleFocus'){ state.focusCollapsed = !state.focusCollapsed; state.dag.fitted = false; render(); }
+    else if (act === 'goTab'){ state.tab = id; render(); }
+    else if (act === 'setWorkMode'){ state.workMode = id; render(); }
+    else if (act === 'openWorker'){ state.drawer = { kind: 'worker', nodeId: id, tab: 'overview' }; render(); }
+    else if (act === 'openCtrl'){ state.drawer = { kind: 'ctrl', nodeId: id }; render(); }
+    else if (act === 'openTask'){
+      const w = allVisibleWorkers().find(x => x.task?.task === id);
+      if (w){ state.drawer = { kind: 'worker', nodeId: w.nodeId, tab: 'overview' }; render(); }
+    }
+    else if (act === 'closeDrawer'){ state.drawer = null; render(); }
+    else if (act === 'drawerTab'){ if (state.drawer){ state.drawer.tab = btn.dataset.tab; renderDrawer(); } }
+    else if (act === 'drawerTurn'){ if (state.drawer){ state.drawer.turn = Number(btn.dataset.turn); renderDrawer(); } }
+    else if (act === 'approveTask'){ await apiAction('terminal_control', id, { keys: ['enter'] }); toast('已发送 Enter 放行 ' + id); }
+    else if (act === 'denyTask'){ await apiAction('terminal_control', id, { keys: ['esc'] }); toast('已发送 Esc 拒绝 ' + id); }
+    else if (act === 'sendKey'){ await apiAction('terminal_control', btn.dataset.target, { keys: [btn.dataset.key] }); toast('已发送按键 ' + btn.dataset.key); }
+    else if (act === 'sendTermText'){
+      const input = document.getElementById('term-text-input');
+      const txt = (input?.value || '').trim();
+      if (!txt) return;
+      await apiAction('terminal_control', btn.dataset.target, { text: txt, submit_key: 'enter' });
+      input.value = ''; toast('已向终端发送文本');
+    }
+    else if (act === 'setPerm'){ await apiAction('set_perm', btn.dataset.target, { perm: btn.dataset.perm }); toast('权限已切换为 ' + btn.dataset.perm); }
+    else if (act === 'finishTask'){ await apiAction('finish', id, { ok: true }); toast('任务 ' + id + ' 已验收结单'); }
+    else if (act === 'cancelTask'){ await apiAction('cancel', id, {}); toast('已取消任务 ' + id); }
+    else if (act === 'unbindRole'){ await apiAction('role_unbind', btn.dataset.role, { project: btn.dataset.proj }); toast('已解绑角色 ' + btn.dataset.role); }
+    else if (act === 'removeRole'){ await apiAction('role_remove', btn.dataset.role, { project: btn.dataset.proj }); state.drawer = null; toast('已移除角色 ' + btn.dataset.role); }
+    else if (act === 'pushQueue'){ await apiAction('queue_deliver_now', undefined, { event_id: id }); toast('已立即强推回执'); }
+    else if (act === 'consumeQueue'){ await apiAction('queue_consume', undefined, { event_id: id }); toast('已标记仅阅消费'); }
+    else if (act === 'dropQueue'){ await apiAction('queue_drop', undefined, { event_id: id }); toast('已丢弃该回执'); }
+    else if (act === 'cancelRetry'){ await apiAction('cancel_retry', id, {}); toast('已取消重试计划'); }
+    else if (act === 'pauseRecipient'){ await apiAction('queue_pause', btn.dataset.pane, {}); toast('已暂停向 ' + btn.dataset.pane + ' 自动投递'); }
+    else if (act === 'resumeRecipient'){ await apiAction('queue_resume', btn.dataset.pane, {}); toast('已恢复向 ' + btn.dataset.pane + ' 自动投递'); }
+    else if (act === 'flushPane'){ await apiAction('flush', btn.dataset.pane, {}); toast('已消费 ' + btn.dataset.pane + ' 队列'); }
+    else if (act === 'adoptPane'){ await apiAction('adopt', btn.dataset.pane, { project: btn.dataset.proj || undefined }); toast('已纳管窗格 ' + btn.dataset.pane); }
+    else if (act === 'openBindPane'){ openBindPaneModal(btn.dataset.pane, btn.dataset.proj); }
+    else if (act === 'confirmBindPane'){
+      const val = document.getElementById('bp-role')?.value || '';
+      const [proj, role] = val.split('::');
+      if (!role) return;
+      await apiAction('role_bind', role, { project: proj, pane: btn.dataset.pane });
+      closeModal(); toast('已绑定至角色 ' + role);
+    }
+    else if (act === 'pruneNow'){ const res = await apiAction('prune', undefined, { tasks: true }); toast('清理完成：窗格 ' + (res?.pruned_panes || 0) + '，归档任务 ' + (res?.pruned_tasks || 0)); }
+    else if (act === 'openStopModal'){ openStopModal(); }
+    else if (act === 'confirmStopDaemon'){
+      closeModal();
+      await apiAction('daemon_stop', undefined, { force: btn.dataset.force === '1' });
+      state.daemonStopped = true; state.stopReason = 'manual'; state.drawer = null;
+      if (es){ es.close(); es = null; }
+      toast('Daemon 服务已停止'); render();
+    }
+    else if (act === 'reconnect'){
+      if (BOOT.mode === 'preview'){ state.daemonStopped = false; state.stopReason = null; toast('已恢复预览'); render(); }
+      else { toast('正在尝试重新连接...'); void connectLive(); }
+    }
+    else if (act === 'openSwap'){ openSwapModal(btn.dataset.role, btn.dataset.proj); }
+    else if (act === 'confirmSwap'){
+      const mode = document.getElementById('sw-mode').value;
+      const opts = { project: btn.dataset.proj, kind: document.getElementById('sw-kind').value, close_old: document.getElementById('sw-close-old').checked };
+      const m = document.getElementById('sw-model').value.trim();
+      if (m) opts.model = m;
+      if (mode === 'headless') opts.headless = true;
+      else if (mode === 'pane') opts.pane = document.getElementById('sw-pane').value;
+      else { opts.spawn = true; if (opts.kind === 'agy') opts.attended = true; }
+      await apiAction('role_bind', btn.dataset.role, opts);
+      closeModal(); toast('角色 ' + btn.dataset.role + ' 热替换完成');
+    }
+    else if (act === 'openNewRole'){ openNewRoleModal(); }
+    else if (act === 'confirmNewRole'){
+      const name = (document.getElementById('nr-name').value || '').trim();
+      if (!name){ toast('请输入角色名', true); return; }
+      const opts = { kind: document.getElementById('nr-kind').value, perm: document.getElementById('nr-perm').value };
+      const proj = document.getElementById('nr-proj').value;
+      const desc = document.getElementById('nr-desc').value.trim();
+      const model = document.getElementById('nr-model').value.trim();
+      if (proj) opts.project = proj;
+      if (desc) opts.desc = desc;
+      if (model) opts.model = model;
+      if (document.getElementById('nr-wt').checked) opts.worktree = true;
+      await apiAction('role_set', name, opts);
+      closeModal(); toast('已创建角色 ' + name);
+    }
+    else if (act === 'openDispatch'){ openDispatchModal(btn.dataset.target, btn.dataset.proj); }
+    else if (act === 'confirmDispatch'){
+      const raw = document.getElementById('dp-target').value;
+      const brief = (document.getElementById('dp-brief').value || '').trim();
+      if (!raw || !brief){ toast('请选择目标并填写任务正文', true); return; }
+      const [kind, proj, target] = raw.split(':');
+      const opts = { brief };
+      if (proj) opts.project = proj;
+      if (kind === 'role' && document.getElementById('dp-spawn').checked) opts.spawn = true;
+      await apiAction('send', target, opts);
+      closeModal(); toast('任务已派发至 ' + target);
+    }
+    else if (act === 'closeModal'){ closeModal(); }
+    else if (act === 'dagExpand'){ state.dag.expanded = !state.dag.expanded; state.dag.fitted = false; render(); }
+    else if (act === 'dagZoomIn'){ state.dag.scale = Math.min(1.5, state.dag.scale + 0.1); render(); }
+    else if (act === 'dagZoomOut'){ state.dag.scale = Math.max(0.5, state.dag.scale - 0.1); render(); }
+    else if (act === 'dagFit'){
+      const shell = document.getElementById('dag-shell'), layout = computeDagLayout();
+      const sw = (shell?.clientWidth || 1440) - 36, sh = (shell?.clientHeight || 620) - 36;
+      state.dag.scale = Math.min(1.05, Math.max(0.52, Math.min(sw / layout.totalW, sh / layout.totalH)));
+      state.dag.tx = Math.max(16, Math.round((sw + 36 - layout.totalW * state.dag.scale) / 2));
+      state.dag.ty = 10; render();
+    }
+    else if (act === 'dagReset'){ state.dag = { tx: 24, ty: 14, scale: 0.85, offsets: {}, fitted: false, expanded: state.dag.expanded }; render(); }
+  } catch (e){
+    toast(e?.message || '操作失败', true);
+  }
+});
+
+if (BOOT.mode === 'live') void connectLive();
+else render();
+})();
+`;
+
+function renderAuthHtml(config: UiBootConfig): string {
+  const safeBoot = JSON.stringify({ mode: 'auth', version: config.version, authError: config.authError }).replace(/</g, '\\u003c');
+  const errHtml = config.authError
+    ? `<div class="auth-err">${config.authError.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]!))}</div>`
+    : '';
+  return `<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chflow — Access Verification (v${config.version})</title>
+<style>${CSS}</style>
+</head>
+<body>
+${SVG_SPRITE}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div class="logo"><svg class="ic lg"><use href="#i-logo"/></svg></div>
+      <div>
+        <div class="brand-name">chflow 控制台访问校验</div>
+        <div style="font-size:13px;color:var(--text-3)">v${config.version} · 非回环安全访问模式</div>
+      </div>
+    </div>
+    ${errHtml}
+    <form id="auth-form">
+      <div class="field">
+        <label for="token-input">访问令牌（Access Token）</label>
+        <input id="token-input" name="token" type="password" autocomplete="off" placeholder="请输入启动控制台时生成的 48 位访问令牌" required>
+      </div>
+      <div id="auth-msg" style="display:none" class="auth-err"></div>
+      <button type="submit" class="btn primary" style="width:100%"><svg class="ic sm"><use href="#i-lock"/></svg>验证并进入控制台</button>
+    </form>
+  </div>
+</div>
+<script>
+window.__CHFLOW_BOOT__ = ${safeBoot};
+document.getElementById('auth-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const token = document.getElementById('token-input').value.trim();
+  const msg = document.getElementById('auth-msg');
+  msg.style.display = 'none';
+  try {
+    const res = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+    const body = await res.json();
+    if (res.ok && body.ok) { location.href = '/'; return; }
+    msg.textContent = body.error?.message || 'Invalid access token.';
+    msg.style.display = 'block';
+  } catch (e) {
+    msg.textContent = e?.message || 'Network error.';
+    msg.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>`;
+}
+
+export function renderUiHtml(config: UiBootConfig): string {
+  if (config.mode === 'auth') return renderAuthHtml(config);
+  const bootPayload = {
+    mode: config.mode,
+    version: config.version,
+    ...(config.mode === 'live' && config.csrfToken ? { csrfToken: config.csrfToken } : {}),
+    ...(config.defaultRoute ? { defaultRoute: config.defaultRoute } : {}),
+  };
+  const safeBoot = JSON.stringify(bootPayload).replace(/</g, '\\u003c');
+  return `<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chflow — Cross-Harness Orchestrator (v${config.version})</title>
+<style>${CSS}</style>
+</head>
+<body>
+${SVG_SPRITE}
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <div class="logo"><svg class="ic lg"><use href="#i-logo"/></svg></div>
+      <span class="brand-name">chflow</span>
+      <span class="brand-sub">多 Agent 协同控制台</span>
+    </div>
+    <div class="proj-wrap">
+      <button class="btn" id="proj-btn" data-action="toggleProjMenu">
+        <svg class="ic"><use href="#i-grid"/></svg><span id="proj-label">全部项目</span><svg class="ic sm"><use href="#i-chevron-down"/></svg>
+      </button>
+      <div class="menu-pop" id="proj-menu" style="display:none"></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" data-action="openNewRole"><svg class="ic"><use href="#i-user-plus"/></svg>新建角色</button>
+    <button class="btn primary" data-action="openDispatch"><svg class="ic"><use href="#i-send"/></svg>派发任务</button>
+    <div class="vsep"></div>
+    <button class="btn icon ghost" id="theme-btn" data-action="toggleTheme" title="切换浅色 / 深色"></button>
+    <div class="daemon" id="daemon"></div>
+  </div>
+</header>
+<main>
+  <div id="offbanner"></div>
+  <div id="focus"></div>
+  <div class="toolbar-row" id="toolbar-row">
+    <nav class="tabs" id="tabs"></nav>
+    <div class="toolbar-right" id="toolbar-right"></div>
+  </div>
+  <section id="view"></section>
+</main>
+<div class="scrim" id="scrim" data-action="closeDrawer"></div>
+<aside class="drawer" id="drawer"></aside>
+<div id="modal-root"></div>
+<div id="ctx-root"></div>
+<div class="toasts" id="toasts"></div>
+<script>
+window.__CHFLOW_BOOT__ = ${safeBoot};
+${APP_JS}
+</script>
+</body>
+</html>`;
 }

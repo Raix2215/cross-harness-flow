@@ -12,7 +12,7 @@ compatibility: 'chflow v3, Node.js >=22.13.0; Herdr >=0.9.5 for interactive work
 - `agy` 保留有人在场的交互，非前台路由须 `--attended`；禁止 `--unattended`、`--bg`、外层自动/定时重试及作为自动回退目标。无人值守无头任务使用合规的 Codex、Claude 或 Pi 渠道。凭据与真实邮箱留在宿主管理。
 
 ## 双轨入口
-- 先用 `command -v chflow` 检查；缺失时请用户确认在 `packages/chflow/` 执行 `npm ci && npm run build`，再用 `npm install -g --prefix ~/.local .`（或先 `npm pack` 再 `pnpm add -g --offline ./chflow-3.3.0.tgz`）以用户权限安装。建立 Herdr 工位前，可用 `herdr --skill` 阅读其操作约定。
+- 先用 `command -v chflow` 检查；缺失时请用户确认在 `packages/chflow/` 执行 `npm ci && npm run build`，再用 `npm install -g --prefix ~/.local .`（或先 `npm pack` 再 `pnpm add -g --offline ./chflow-3.4.0.tgz`）以用户权限安装。建立 Herdr 工位前，可用 `herdr --skill` 阅读其操作约定。
 - CLI `chflow`、可选 Stdio MCP `chflow mcp` 与随 Daemon 常驻的本地控制台 `chflow ui` 共享每用户 Daemon，首次业务操作时懒启动。推荐按项目挂载 MCP：Antigravity `.agents/plugins/` 或 `.agents/plugins.json`；Claude Code `.mcp.json`；Codex `.codex/config.toml` 或 `-c`；Pi `builtin:mcp` + `codemode` 或直接走 CLI。[安装及模板](references/operations.md)
 
 ## 派发、回执与核验

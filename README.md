@@ -4,7 +4,7 @@
 
 简体中文 · [English](./README.en.md)
 
-[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](#安装)
+[![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)](#安装)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.13.0-339933.svg)](#依赖与-herdr-耦合说明)
 [![Herdr](https://img.shields.io/badge/herdr-%3E%3D0.9.5-4b5563.svg)](#依赖与-herdr-耦合说明)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
@@ -13,7 +13,7 @@
 
 ---
 
-`cross-harness-flow` 是一套**以 [Herdr](https://github.com/herdrdev/herdr) 为核心构建**的本地多 Agent 协同 **通用 Skill 与运行时（`chflow` v3.3.0）**。它依托 Herdr 的多窗格终端控制面，将 **Pi、Codex、Claude Code、Antigravity** 统一到同一套文件信箱、每用户常驻 Daemon、稳定项目角色与实时 Web/CLI 控制面中（同时支持无头一次性任务的独立运行），让主控 Agent 按项目角色派发任务、随时热替换底层会话与模型，同时把关键审批与全局观测权留给人类。
+`cross-harness-flow` 是一套**以 [Herdr](https://github.com/herdrdev/herdr) 为核心构建**的本地多 Agent 协同 **通用 Skill 与运行时（`chflow` v3.4.0）**。它依托 Herdr 的多窗格终端控制面，将 **Pi、Codex、Claude Code、Antigravity** 统一到同一套文件信箱、每用户常驻 Daemon、稳定项目角色与实时 Web/CLI 控制面中（同时支持无头一次性任务的独立运行），让主控 Agent 按项目角色派发任务、随时热替换底层会话与模型，同时把关键审批与全局观测权留给人类。
 
 ## 快速上手
 
@@ -51,7 +51,7 @@ chflow finish <task-id> --ok --note "审查与回归全部通过" && chflow prun
 
 ### 随 Daemon 常驻的多项目角色拓扑控制台（WebUI）
 
-内置控制台随每用户 Daemon 自动启动（默认 `http://127.0.0.1:4317`，端口冲突自动回退）。支持顶部**多项目 / 多主控视角切换**、鼠标拖拽平移/滚轮缩放/自由排布画布、稳定角色槽位（含待命卡片）与右键一键换绑会话或放行阻塞。
+内置控制台随每用户 Daemon 自动启动（默认 `http://127.0.0.1:4317`，端口冲突自动回退）。采用百分比宽屏布局、清晰大字号与统一线性 SVG 图标（零 Emoji），提供**全宽零交叉 DAG 派发画布 / 卡片视图双切换**、条件置顶的「需要你介入」焦点待办、滑出式角色详情抽屉（一键热替换、实时权限切换、脱敏终端现场与信箱查看）以及顶栏显式 **「停止服务」** 按钮。
 
 ![chflow WebUI 多项目角色拓扑与实时控制台](./assets/webui-preview.png)
 
@@ -67,7 +67,8 @@ chflow finish <task-id> --ok --note "审查与回归全部通过" && chflow prun
 
 - **稳定项目角色与会话热替换（`chflow role`）**：把“项目中的固定分工（如 `backend`、`reviewer`、`docs`）”与“底层运行中的 Harness/会话窗格”解耦。额度耗尽或需要切换模型时，直接 `role bind` 热替换底层窗格或切至无头执行器，原有任务线程（`--task`）与 `.chflow/` 信箱历史无缝延续。
 - **多项目与多主控视图（`--project`）**：三层项目归组优先级——显式指定（`--project` / WebUI 归组 / 可选 `.chflow/project.yaml`）> Git 关联工作树自动合并到主仓库（独立嵌套仓库保持独立）> 工作目录兜底。同一项目天然支持多个主控会话并发工作、各自独立接收回执。
-- **与 Herdr 实时状态强同步**：以 Herdr `agent list`（`pane_id` + `terminal_id`）为在线真值；已关闭且无活跃任务的临时窗格自动移出，已关闭但仍绑定固定角色的槽位自动回到 `unbound` 待命，活跃任务关联窗格离线时显式标为 `offline` 而非陈旧 `idle`，并支持 `chflow prune [--tasks]` 手动整理。
+- **与 Herdr 实时状态强同步**：以 Herdr `agent list`（`pane_id` + `terminal_id` + 在线运行态）为真值；无论是关闭窗格还是窗格内会话已退出（`exited` 但窗格未关），均即时同步移出临时窗格、将绑定角色回退为 `unbound` 待命，有活跃任务的离线窗格显式标为 `offline`，并支持 `chflow prune [--tasks]` 手动整理。
+- **可控的 Daemon 生命周期与显式退出**：支持双层空闲自动退出——无客户端静置满 `CHFLOW_IDLE_TIMEOUT_SEC`（默认 30 分钟），或仅剩浏览器被动 WebUI 标签页且无任何在线会话与活跃任务静置满 `CHFLOW_UI_IDLE_TIMEOUT_SEC`（默认 60 分钟）时，Daemon 主动推送 `shutdown` 事件优雅退出且前端不再死循环重连；同时支持 `chflow stop` / `chflow quit`（活跃任务保护 + `--force`）、WebUI 顶栏「停止服务」按钮及 `chflow top` 快捷键 `x` 显式停机。
 - **零上下文污染的文件信箱协议**：长文本任务书与交付正文全部落盘工作区 `.chflow/tasks/<task>/t<N>-brief.md` 与 `t<N>-reply.md`（Git 仓库自动通过 `.git/info/exclude` 忽略），跨会话唤醒仅传递 3–5 行纯文本路由与路径。
 - **防打断投递与最小读屏**：收件窗格忙时自动入队防抖合并；检测到用户聚焦打字或底部草稿时自动暂缓（`deferred_user_typing`），可用 `chflow inbox` / `chflow flush` 无侵入查看消费。常规监看零读屏，仅在 `blocked` 时按状态序列自动读屏一次并将脱敏快照写入 `diag`。
 - **智能重试与合规回退链**：默认提供 4 档指数退避重试，支持 `--retry-after` / `--at` 定时恢复与 `--fallback` 有序回退链（自动排除主渠道自身，且 WebUI 仅在实际进入 `retrying` / `scheduled_retry` 时展示回退节点），并显式区分人机交互（`--attended`）与无人值守自动化边界。
@@ -102,7 +103,7 @@ cross-harness-flow/
 │   ├── webui-preview-en.png               # Web 控制台多项目与角色拓扑预览（英文）
 │   ├── cli-dashboard.png                  # CLI 实时状态看板预览（中文）
 │   └── cli-dashboard-en.png               # CLI 实时状态看板预览（英文）
-├── packages/chflow/                       # chflow v3.3.0 运行时源码与黑盒 E2E 套件
+├── packages/chflow/                       # chflow v3.4.0 运行时源码与黑盒 E2E 套件
 │   ├── LICENSE
 │   ├── README.md
 │   ├── package.json
@@ -136,17 +137,17 @@ npm install -g --prefix "$HOME/.local" .
 ```sh
 cd packages/chflow
 npm ci && npm run build && npm pack
-pnpm add -g --offline ./chflow-3.3.0.tgz
+pnpm add -g --offline ./chflow-3.4.0.tgz
 ```
 
-跨机离线分发只需复制 `chflow-3.3.0.tgz` 到目标机并执行：
+跨机离线分发只需复制 `chflow-3.4.0.tgz` 到目标机并执行：
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.3.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.4.0.tgz
 
 # Windows（PowerShell，确保用户级 npm prefix 位于 PATH）
-npm install --offline -g .\chflow-3.3.0.tgz
+npm install --offline -g .\chflow-3.4.0.tgz
 ```
 
 ### 2. 安装 Skill 文档
@@ -193,7 +194,8 @@ roles:
 - **随 Daemon 自动常驻**：首次执行任意业务命令时，Daemon 自动在 `http://127.0.0.1:4317` 启动内置 Web 控制台（端口冲突自动回退空闲端口）。
 - **常用终端快捷命令**：
   - `chflow` / `chflow status [--project ID]`：彩色紧凑全局状态与 Web 控制台地址
-  - `chflow top [--project ID]`：基于 Daemon 推送的实时终端看板（`q` 退出、`o` 开控制台、`a` 放行阻塞、`p` 切权限、`f` 消费队列、`r` 刷新）
+  - `chflow top [--project ID]`：基于 Daemon 推送的实时终端看板（`q` 退出、`o` 开控制台、`a` 放行阻塞、`p` 切权限、`f` 消费队列、`r` 刷新、`x` 两次确认停止 Daemon）
+  - `chflow stop [--force]` / `chflow quit`：显式停止常驻 Daemon（存在活跃任务时默认拦截提示）
   - `chflow open` / `chflow ui --open`：用系统浏览器打开内置控制台
   - `chflow approve` / `perm` / `queue` / `view`：人类交互终端专属快捷接管命令
 - **局域网 / Tailnet 跨设备安全访问**：

@@ -102,6 +102,13 @@ export class Engine {
     }
   }
   isBusy(){return !!this.running.size||!!this.pending.size||this.db.tasks().some(active)||!!this.db.events().length||!!this.db.plans().length;}
+  activeTaskCount(){return this.db.tasks().filter(active).length;}
+  hasLiveSessions(){
+    for(const state of this.uiRoutes.values()){
+      if(state.current?.herdr==='reachable'&&state.current.agents.length>0)return true;
+    }
+    return false;
+  }
   async stop(){
     this.stopping=true;
     for(const proc of this.running.values()) proc.controller.abort();

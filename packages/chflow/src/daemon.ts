@@ -41,13 +41,14 @@ export async function serve(){
   let db:Store|undefined,engine:Engine|undefined;
   let ui:Awaited<ReturnType<typeof startUiServer>>|undefined;
   let uiError=failure(new FlowError('ui_disabled','The embedded Web UI is disabled.'));
-  let closing=false,last=Date.now(),keep=0,seq=0;
+  let closing=false,last=Date.now(),lastActive=Date.now(),keep=0,seq=0;
   let loop:NodeJS.Timeout|undefined,notify:NodeJS.Timeout|undefined;
   const sockets=new Set<Socket>();
   const subscribers=new Set<Socket>();
   const uiListeners=new Set<()=>void>();
   const jobs=new Set<Promise<unknown>>();
   const idle=seconds(process.env.CHFLOW_IDLE_TIMEOUT_SEC,1800,0)*1000;
+  const uiIdle=seconds(process.env.CHFLOW_UI_IDLE_TIMEOUT_SEC,3600,0)*1000;
   const poll=seconds(process.env.CHFLOW_POLL_MS,250,20,60000);
   const meta:DaemonInfo={pid:process.pid,version:VERSION,protocol:PROTOCOL,endpoint:sockPath,started_at:new Date().toISOString(),key:win?randomBytes(32).toString('hex'):undefined};
   const publicMeta=()=>{
@@ -56,6 +57,7 @@ export async function serve(){
   };
   const changed=(count=1)=>{
     seq+=count;
+    if(engine?.hasLiveSessions()||engine?.isBusy())lastActive=Date.now();
     if(closing||notify||(!subscribers.size&&!uiListeners.size))return;
     notify=setTimeout(()=>{
       notify=undefined;
@@ -75,6 +77,15 @@ export async function serve(){
         const data=await engine!.uiSnapshot(inv,()=>seq);
         return success({...data,daemon:publicMeta()});
       }
+      if(method==='daemon.stop'){
+        const force=inv.opts?.force===true,checkActive=inv.opts?.check_active===true;
+        const activeCount=engine!.activeTaskCount();
+        if(checkActive&&!force&&activeCount>0)
+          return failure(new FlowError('active_tasks',`There are ${activeCount} active task(s). Pass --force to stop the Daemon anyway.`,1,{active_tasks:activeCount}));
+        setImmediate(()=>void stop('manual'));
+        return success({running:false,pid:process.pid,stopping:true,reason:'manual'});
+      }
+      lastActive=Date.now();
       const reply=await engine!.invoke(method,inv,signal);
       if(method==='health'&&reply.ok)
         return success({...reply.data as object,daemon:publicMeta()});
@@ -120,7 +131,18 @@ export async function serve(){
       }
       if(method==='mcp.attach'){if(!mcp){keep++;mcp=true;}send(id,success({attached:true}));return;}
       if(method==='daemon.logs'){send(id,success({audit:db!.logs()}));return;}
-      if(method==='daemon.stop'){send(id,success({running:false,pid:process.pid}));setImmediate(()=>void stop());return;}
+      if(method==='daemon.stop'){
+        const opts=(params&&typeof params==='object'&&(params as Record<string,unknown>).opts) as Record<string,unknown>|undefined;
+        const force=opts?.force===true,checkActive=opts?.check_active===true;
+        const activeCount=engine!.activeTaskCount();
+        if(checkActive&&!force&&activeCount>0){
+          send(id,failure(new FlowError('active_tasks',`There are ${activeCount} active task(s). Pass --force to stop the Daemon anyway.`,1,{active_tasks:activeCount})));
+          return;
+        }
+        send(id,success({running:false,pid:process.pid,stopping:true,reason:'manual'}));
+        setImmediate(()=>void stop('manual'));
+        return;
+      }
       if(!params?.ctx?.route||typeof params.ctx.cwd!=='string'||!params.opts||typeof params.opts!=='object'||pending.has(id)){
         send(id,failure(new FlowError('invalid_args','Invalid invocation.')));return;
       }
@@ -140,9 +162,11 @@ export async function serve(){
       void invoke(method,inv,abort.signal).then(r=>send(id,r)).finally(()=>pending.delete(id));
     });
   });
-  const close=async()=>{
+  const close=async(reason:'idle'|'manual'='manual')=>{
     if(loop)clearInterval(loop);
     if(notify)clearTimeout(notify);
+    ui?.notifyShutdown(reason);
+    if(ui?.hasClients())await new Promise<void>(ok=>setTimeout(ok,40));
     for(const sock of sockets)sock.destroy();
     await ui?.close();
     if(server.listening)await new Promise<void>(ok=>server.close(()=>ok()));
@@ -152,10 +176,10 @@ export async function serve(){
     if(!win)unlink(sockPath);
     unlink(path);unlink(lock);
   };
-  const stop=async()=>{
+  const stop=async(reason:'idle'|'manual'='manual')=>{
     if(closing)return;
     closing=true;
-    try{await close();}catch{process.exitCode=1;}
+    try{await close(reason);}catch{process.exitCode=1;}
   };
   try{
     if(!win)unlink(sockPath);
@@ -191,7 +215,10 @@ export async function serve(){
     atomic(path,JSON.stringify(meta)+'\n');
     process.once('SIGTERM',()=>void stop());process.once('SIGINT',()=>void stop());
     loop=setInterval(()=>{
-      if(idle&&!keep&&!subscribers.size&&!ui?.hasClients()&&!jobs.size&&!engine!.isBusy()&&Date.now()-last>=idle){void stop();return;}
+      const idleBase=!keep&&!subscribers.size&&!jobs.size&&!engine!.isBusy();
+      const noClients=idle&&idleBase&&!ui?.hasClients()&&Date.now()-last>=idle;
+      const passiveUiOnly=uiIdle&&idleBase&&!!ui?.hasClients()&&!engine!.hasLiveSessions()&&Date.now()-lastActive>=uiIdle;
+      if(noClients||passiveUiOnly){void stop('idle');return;}
       engine!.tick();
     },poll);
     engine.tick();

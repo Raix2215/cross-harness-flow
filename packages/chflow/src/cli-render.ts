@@ -178,6 +178,7 @@ export function renderHelp(
       `  ${c.cyan('chflow status')} / ${c.cyan('health')}     输出多项目、角色、在线工位与 Daemon 状态`,
       `  ${c.cyan('chflow ui')} [${c.dim('--open')}]        打印或打开 Daemon 内置常驻控制台（传 --port/--host 起独立实例）`,
       `  ${c.cyan('chflow open')}                在浏览器直接打开常驻 Web 控制台`,
+      `  ${c.cyan('chflow stop')} [${c.dim('--force')}]     显式停止常驻 Daemon（别名 quit）`,
       '',
       `${c.bold('项目角色与维护')}`,
       `  ${c.cyan('chflow role')} <action>       管理项目角色槽位与热换绑（list|set|bind|unbind|remove）`,
@@ -200,7 +201,7 @@ export function renderHelp(
     ].join('\n');
   }
 
-  const noTarget = ['ui', 'open', 'top', 'status', 'daemon', 'mcp', 'prune'].includes(method);
+  const noTarget = ['ui', 'open', 'top', 'status', 'daemon', 'mcp', 'prune', 'stop', 'quit'].includes(method);
   const targetHint = method === 'perm'
     ? ' <target> <readonly|ask|auto-workspace|yolo>'
     : method === 'queue'
@@ -227,8 +228,10 @@ export function renderHelp(
     lines.push('Remove stale offline pane records. Pass --tasks to also archive-clean terminal tasks with no pending deliveries.');
   } else if (method === 'ui') {
     lines.push('Default prints the Daemon built-in WebUI URL (--open launches browser). Pass --port/--host/--session/--machine/--standalone to start a dedicated gateway; non-loopback hosts require --allow-remote (access token + HttpOnly cookie enabled automatically).');
+  } else if (method === 'stop' || method === 'quit') {
+    lines.push('Gracefully stop the background chflow Daemon. Refuses when active tasks exist unless --force is passed.');
   } else if (method === 'top') {
-    lines.push('Subscribes to live Daemon updates without reading screens. Hotkeys: q quit, o open WebUI, a approve first blocked task, p pause/resume delivery, f flush inbox, r refresh.');
+    lines.push('Subscribes to live Daemon updates without reading screens. Hotkeys: q quit, o open WebUI, a approve first blocked task, p pause/resume delivery, f flush inbox, r refresh, x stop Daemon (press twice).');
   } else if (method === 'approve') {
     lines.push('Interactive TTY only. Defaults to sending Enter; auto-targets when exactly one task is blocked.');
   } else if (method === 'perm') {
@@ -282,7 +285,7 @@ export function renderStatusSnapshot(
     `阻塞 ${blockedTasks.length ? c.yellow(c.bold(String(blockedTasks.length))) : c.dim('0')}`,
     `候投 ${pendingQueue.length ? c.cyan(c.bold(String(pendingQueue.length))) : c.dim('0')}`,
     `重试 ${activeRetries.length ? c.magenta(c.bold(String(activeRetries.length))) : c.dim('0')}`,
-    paused.length ? c.yellow(`🔕 DND(${paused.join(',')})`) : c.green('● 投递就绪'),
+    paused.length ? c.yellow(`! DND(${paused.join(',')})`) : c.green('● 投递就绪'),
   ].join('  │  '));
 
   // Multi-project overview bar
@@ -585,6 +588,7 @@ export async function runTopDashboard(deps: TopDashboardDeps): Promise<number> {
   let latest: UiSnapshotData | undefined;
   let flash = '';
   let flashTimer: NodeJS.Timeout | undefined;
+  let stopArmedUntil = 0;
   let fetching = false;
   let dirty = false;
   let closed = false;
@@ -609,7 +613,7 @@ export async function runTopDashboard(deps: TopDashboardDeps): Promise<number> {
       compact: true,
     });
     const footer = `${c.dim('─'.repeat(72))}\n` +
-      `${c.bold('热键:')} ${c.cyan('[q]')} 退出  ${c.cyan('[o]')} 打开 WebUI  ${c.cyan('[a]')} 放行阻塞  ${c.cyan('[p]')} 暂停/恢复投递  ${c.cyan('[f]')} Flush  ${c.cyan('[r]')} 刷新  ${c.dim('seq=' + latest.seq)}\n`;
+      `${c.bold('热键:')} ${c.cyan('[q]')} 退出  ${c.cyan('[o]')} WebUI  ${c.cyan('[a]')} 放行阻塞  ${c.cyan('[p]')} 暂停/恢复  ${c.cyan('[f]')} Flush  ${c.cyan('[r]')} 刷新  ${c.red('[x]')} 停止 Daemon  ${c.dim('seq=' + latest.seq)}\n`;
     if (outTty) {
       process.stdout.write('\x1b[H\x1b[2J' + body + '\n' + footer);
     } else {
@@ -714,6 +718,20 @@ export async function runTopDashboard(deps: TopDashboardDeps): Promise<number> {
           const data = r.data as Record<string, unknown> | undefined;
           setFlash(r.ok ? `Flush ${pane}: 已消费 ${String(data?.consumed ?? 0)} 条` : `Flush 失败: ${r.error?.message ?? ''}`);
           void refresh();
+        });
+        return;
+      }
+      if (ch === 'x' || ch === 'X') {
+        const now = Date.now();
+        if (now > stopArmedUntil) {
+          stopArmedUntil = now + 3500;
+          setFlash('再次按 x 确认停止后台 Daemon 服务');
+          return;
+        }
+        stopArmedUntil = 0;
+        void deps.runAction('daemon.stop', undefined, { force: true }).then(r => {
+          if (r.ok) finish(0);
+          else setFlash(`停止失败: ${r.error?.message ?? ''}`);
         });
       }
     };

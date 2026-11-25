@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { invalid, type Kind } from './types.js';
 const question = /ask[_ -]user[_ -]question|pi-ask-user|request[_ -]user[_ -]input|type something|space to toggle|tab to switch|select an option|enter to submit|your answer:|user question|question prompt/i;
-const permission = /would you like to run|yes, proceed|allow bash|do you want to allow|allow once|type yes to approve|permission (?:request|required|prompt)|approval required|approve (?:this|the) (?:command|action)|allow (?:this|the) (?:tool|command|action)|\[y\/n\]/i;
+const permission = /would you like to run|yes, proceed|allow bash|do you want to allow|allow once|type yes to approve|permission (?:request|required|prompt)|requesting permission for|run this command\?|approval required|approve (?:this|the) (?:command|action)|allow (?:this|the) (?:tool|command|action)|\[y\/n\]/i;
 const disallowed = /\b(?:sudo|doas|pkexec|mkfs(?:\.[\w-]+)?|shutdown|reboot)\b|\bdd\s+[^\n]*\b(?:if|of)=|\bgit\b[^\n]*\bpush\b[^\n]*(?:--force(?:-with-lease)?\b|\s-f\b|\s\+\S+:)|\.(?:ssh|aws|gnupg|env)(?:\b|\/)|(?:oauth_creds|auth)\.json\b|(?:\/etc\/|\/dev\/|\$\{?HOME\}?|~\/)|\b(?:curl|wget)\b[^\n]*\|\s*(?:ba|z|da)?sh\b/i;
 export function classifyBlock(raw:string){
   const s=raw.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'').replace(/\s+/g,' ');
@@ -27,8 +27,8 @@ export function approveKey(kind:Kind,screen:string):string|undefined {
     return /\btype yes to approve\b/i.test(screen)?undefined:'y';
   if(/(?:❯|›|>)\s*(?:\d+\.\s*)?(?:no\b|deny\b|cancel\b|always\b|yes,?\s+(?:and|don't))/i.test(screen))
     return undefined;
-  if(kind==='codex'||kind==='claude') return 'enter';
-  if(/\b(?:allow once|yes, proceed|press enter to confirm)\b/i.test(screen)) return 'enter';
+  if(kind==='codex'||kind==='claude'||kind==='agy') return 'enter';
+  if(/\b(?:allow once|yes, proceed|yes, run command|press enter to confirm)\b/i.test(screen)) return 'enter';
   return undefined;
 }
 export function keyArg(s:string) {

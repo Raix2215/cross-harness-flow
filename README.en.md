@@ -4,7 +4,7 @@
 
 [简体中文](./README.md) · English
 
-[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](#installation)
+[![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)](#installation)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.13.0-339933.svg)](#dependencies--herdr-coupling)
 [![Herdr](https://img.shields.io/badge/herdr-%3E%3D0.9.5-4b5563.svg)](#dependencies--herdr-coupling)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
@@ -13,7 +13,7 @@
 
 ---
 
-`cross-harness-flow` is a reusable **Agent Skill + runtime (`chflow` v3.3.0)** fundamentally **designed around [Herdr](https://github.com/herdrdev/herdr)** for local multi-agent orchestration. Built on Herdr's multi-pane terminal control plane, it unifies **Pi, Codex, Claude Code, and Antigravity** behind a single `.chflow/` file mailbox, a lazily started per-user Daemon, stable project roles, and real-time Web/CLI operator surfaces (while also supporting standalone headless runs), letting controller agents delegate by role and hot-swap underlying sessions or models while keeping human oversight and approvals effortless.
+`cross-harness-flow` is a reusable **Agent Skill + runtime (`chflow` v3.4.0)** fundamentally **designed around [Herdr](https://github.com/herdrdev/herdr)** for local multi-agent orchestration. Built on Herdr's multi-pane terminal control plane, it unifies **Pi, Codex, Claude Code, and Antigravity** behind a single `.chflow/` file mailbox, a lazily started per-user Daemon, stable project roles, and real-time Web/CLI operator surfaces (while also supporting standalone headless runs), letting controller agents delegate by role and hot-swap underlying sessions or models while keeping human oversight and approvals effortless.
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ chflow finish <task-id> --ok --note "Review and regression checks passed" && chf
 
 ### Daemon-Embedded Multi-Project Role Topology Console (WebUI)
 
-The embedded Web console starts automatically with the per-user Daemon (default `http://127.0.0.1:4317`, with automatic free-port fallback). It provides top-level **multi-project & multi-controller switching**, an interactive pan/zoom/draggable DAG canvas, stable role slots (including `unbound` standby cards), and right-click controls for session hot-swapping and permission approvals.
+The embedded Web console starts automatically with the per-user Daemon (default `http://127.0.0.1:4317`, with automatic free-port fallback). Featuring a responsive percentage-width layout, comfortable typography, and crisp inline SVG icons (zero emojis), it offers a **full-width zero-crossing DAG dispatch canvas & card-grid switcher**, a conditional "Needs Attention" focus strip, a slide-over detail drawer (one-click session hot-swap, live permission tiers, redacted terminal inspection, mailbox turns), and an explicit topbar **"Stop Service"** control.
 
 ![chflow WebUI — Multi-project role topology & live operator console](./assets/webui-preview-en.png)
 
@@ -67,7 +67,8 @@ Run `chflow` in an interactive terminal to inspect projects, role bindings, acti
 
 - **Stable Project Roles & Hot Session Swapping (`chflow role`)**: Decouple long-lived project responsibilities (such as `backend`, `reviewer`, `docs`) from transient Harness panes. When quota runs out or you want a different model/Harness, run `role bind` to hot-swap the underlying pane or switch to a headless runner while preserving the task thread (`--task`) and `.chflow/` mailbox history.
 - **Multi-Project & Multi-Controller Views (`--project`)**: Three-tier project resolution precedence: explicit assignment (`--project`, WebUI override, or optional `.chflow/project.yaml`) > Git linked worktrees merged into their primary repository (independent nested repos remain separate) > normalized working directory fallback. Multiple controllers can collaborate concurrently within the same project, each receiving its own receipts.
-- **Strict Live State Sync with Herdr**: Treats Herdr `agent list` (`pane_id` + `terminal_id`) as the single source of truth. Closed temporary panes without active tasks are auto-pruned; closed panes bound to a fixed role revert to `unbound` standby; offline panes with active tasks explicitly report `offline` rather than stale `idle`; and `chflow prune [--tasks]` cleans up stale records on demand.
+- **Strict Live State Sync with Herdr**: Treats Herdr `agent list` (`pane_id` + `terminal_id` + active running state) as the single source of truth. Whether a pane is closed or its inner agent session exits (`exited` while the Herdr pane remains open), temporary panes auto-prune immediately, idle role bindings revert to `unbound` standby, active-task offline panes explicitly report `offline`, and `chflow prune [--tasks]` cleans stale records on demand.
+- **Predictable Daemon Lifecycle & Explicit Shutdown**: Supports two-tier idle auto-exit — exiting after `CHFLOW_IDLE_TIMEOUT_SEC` (default 30 min) with no clients, or after `CHFLOW_UI_IDLE_TIMEOUT_SEC` (default 60 min) when only passive WebUI tabs remain with zero live sessions or active tasks (emitting an SSE `shutdown` event so browsers stop reconnecting). Explicit stop controls are available via `chflow stop` / `chflow quit` (guarded against active tasks unless `--force`), the WebUI topbar "Stop Service" button, and `x` (twice) in `chflow top`.
 - **Context-Clean File Mailbox Protocol**: Briefs and deliverables are written to workspace `.chflow/tasks/<task>/t<N>-brief.md` and `t<N>-reply.md` (automatically ignored via `.git/info/exclude`), while cross-pane wakeups inject only 3–5 plain-text lines of routing metadata and file paths.
 - **Non-Intrusive Delivery & Minimal Screen Reads**: Receipts queue and debounce while a recipient pane is busy. When a focused pane has active typing or a bottom-line draft, delivery defers (`deferred_user_typing`) and can be inspected/consumed cleanly via `chflow inbox` / `chflow flush`. Routine monitoring never reads screens; on `blocked`, the Daemon captures at most one redacted diagnostic snapshot per state sequence.
 - **Smart Retries & Compliant Fallbacks**: Defaults to 4-step exponential backoff with `--retry-after` / `--at` scheduled recovery and ordered `--fallback` chains (automatically filtering out the primary channel, and only showing fallback nodes in WebUI during active `retrying` / `scheduled_retry`), while clearly separating attended (`--attended`) and unattended automation boundaries.
@@ -102,7 +103,7 @@ cross-harness-flow/
 │   ├── webui-preview-en.png               # WebUI multi-project role topology preview (English)
 │   ├── cli-dashboard.png                  # CLI live status dashboard preview (Chinese)
 │   └── cli-dashboard-en.png               # CLI live status dashboard preview (English)
-├── packages/chflow/                       # chflow v3.3.0 runtime source & black-box E2E suite
+├── packages/chflow/                       # chflow v3.4.0 runtime source & black-box E2E suite
 │   ├── LICENSE
 │   ├── README.md
 │   ├── package.json
@@ -136,17 +137,17 @@ Ensure `$HOME/.local/bin` is on `PATH`. With **pnpm (including pnpm 12+)** and a
 ```sh
 cd packages/chflow
 npm ci && npm run build && npm pack
-pnpm add -g --offline ./chflow-3.3.0.tgz
+pnpm add -g --offline ./chflow-3.4.0.tgz
 ```
 
-For cross-machine offline distribution, copy `chflow-3.3.0.tgz` to the target host and run:
+For cross-machine offline distribution, copy `chflow-3.4.0.tgz` to the target host and run:
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.3.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.4.0.tgz
 
 # Windows (PowerShell, with a user-writable npm prefix on PATH)
-npm install --offline -g .\chflow-3.3.0.tgz
+npm install --offline -g .\chflow-3.4.0.tgz
 ```
 
 ### 2. Install the Skill
@@ -193,7 +194,8 @@ roles:
 - **Always-On Embedded WebUI**: Starts automatically with the Daemon at `http://127.0.0.1:4317` (falling back to a free port on conflict).
 - **Interactive CLI Controls**:
   - `chflow` / `chflow status [--project ID]`: compact colored global status and WebUI URL
-  - `chflow top [--project ID]`: push-driven live terminal dashboard (`q` quit, `o` open WebUI, `a` approve block, `p` switch perm, `f` flush queue, `r` refresh)
+  - `chflow top [--project ID]`: push-driven live terminal dashboard (`q` quit, `o` open WebUI, `a` approve block, `p` switch perm, `f` flush queue, `r` refresh, `x` twice to stop Daemon)
+  - `chflow stop [--force]` / `chflow quit`: explicitly stop the background Daemon (guards active tasks unless `--force`)
   - `chflow open` / `chflow ui --open`: launch the embedded console in your default browser
   - `chflow approve` / `perm` / `queue` / `view`: human TTY-only operator shortcuts
 - **Secure LAN / Tailnet Access**:

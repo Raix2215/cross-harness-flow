@@ -158,7 +158,7 @@ test('E2E-12 MCP shared daemon, compact schema, EOF, and isolated offline packag
   const {stdout}=await execFile(installed,['health','--json'],{env:fx.env,cwd:fx.workspace,shell:process.platform==='win32'});
   assert.equal(JSON.parse(stdout).daemon.pid,pid);
   const packed=mcp(t,fx,{executable:installed});
-  assert.equal((await packed.call(1,'initialize',{protocolVersion:'2025-06-18'})).object.result.serverInfo.version,'3.3.0');
+  assert.equal((await packed.call(1,'initialize',{protocolVersion:'2025-06-18'})).object.result.serverInfo.version,'3.4.0');
   await packed.eof();
   t.diagnostic(`MCP compact tools/list: ${bytes} bytes; npm pack + offline install + health/MCP passed`);
 });

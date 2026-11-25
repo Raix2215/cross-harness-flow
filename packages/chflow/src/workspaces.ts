@@ -29,7 +29,7 @@ export function paneView(p:ManagedPane){
 // Herdr can leave a newly launched Harness blocked on its folder trust menu.
 async function startWithTrust(inv:Invocation,r:Route,name:string,launch:Launch,flags:string[]){
   const o=inv.opts,k=launch.kind;
-  const authorized=(k==='codex'||k==='claude')&&(o.trust_repository||launch.perm==='auto-workspace'||launch.perm==='yolo');
+  const authorized=(k==='codex'||k==='claude'||k==='agy')&&(o.trust_repository||launch.perm==='auto-workspace'||launch.perm==='yolo');
   const unused=authorized&&await get(r,name).then(()=>false,(e:unknown)=>e instanceof FlowError&&missing.test(e.code));
   try{return await startPane(inv,r,name,k,flags);}
   catch(e){
@@ -39,9 +39,9 @@ async function startWithTrust(inv:Invocation,r:Route,name:string,launch:Launch,f
     if(!agent||agent.name!==name||agent.agent!==k||agent.agent_status!=='blocked'||(place==='pane'&&agent.pane_id!==target))throw e;
     const raw=await screen(r,agent.pane_id,25).catch(()=>'');
     const visible=raw.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'');
-    const selection=visible.split(/\r?\n/).filter(line=>/^\s*[›❯]/.test(line));
-    if(!/trust this folder|do you trust the files in this folder/i.test(visible)||selection.length!==1||
-      !/^\s*[›❯]\s*(?:\d+[.)]\s*)?(?:yes|trust|continue|allow)\b/i.test(selection[0])||
+    const selection=visible.split(/\r?\n/).filter(line=>/^\s*[›❯>]/.test(line));
+    if(!/trust this folder|do you trust the files in this folder|do you trust the contents of this project/i.test(visible)||selection.length!==1||
+      !/^\s*[›❯>]\s*(?:\d+[.)]\s*)?(?:yes|trust|continue|allow)\b/i.test(selection[0])||
       /\b(?:without trusting|don't trust|do not trust)\b/i.test(selection[0]))throw e;
     const sameLaunch=(a:Agent)=>a.pane_id===agent.pane_id&&a.terminal_id===agent.terminal_id&&a.name===name&&a.agent===k;
     const result=(a:Agent)=>({agent:a,place,worktree_path:o.worktree?a.foreground_cwd??a.cwd:undefined});
@@ -64,6 +64,7 @@ async function startWithTrust(inv:Invocation,r:Route,name:string,launch:Launch,f
 
 const liveView=(a:Agent)=>({pane_id:a.pane_id,name:a.name,kind:a.agent,terminal_id:a.terminal_id,agent_status:a.agent_status,
   cwd:a.foreground_cwd??a.cwd,state_change_seq:a.state_change_seq,agent_session:a.agent_session,workspace_id:a.workspace_id,tab_id:a.tab_id});
+const isLiveStatus=(status:string)=>!['exited','stopped','closed','offline','dead'].includes(status.toLowerCase());
 export type LiveTopology={
   herdr:string;
   agents:ReturnType<typeof liveView>[];
@@ -100,6 +101,8 @@ export class Workspaces {
     const aliases=this.db.panes().filter(p=>same(r,p.route)&&p.alias===target);
     const saved=aliases.find(p=>p.project_id===project)??aliases[0];
     const a=await get(r,saved?.agent.pane_id??target);
+    if(!isLiveStatus(a.agent_status))
+      throw new FlowError('agent_not_running','The target agent session has exited.');
     kindOf(a.agent);
     const p=this.db.pane(r,a.pane_id);
     if(p&&(p.agent.terminal_id!==a.terminal_id||p.agent.agent!==a.agent||!sessionsEqual(p.agent.agent_session,a.agent_session)))
@@ -390,7 +393,8 @@ export class Workspaces {
       const entries:unknown=(await herdr(r,['agent','list'])).agents;
       if(!Array.isArray(entries))throw new FlowError('invalid_response','Herdr returned no agent list.');
       // Reject an incomplete sample before it can erase registered identities.
-      const agents=entries.map(a=>liveView(checkedAgent(a)));
+      // Exclude exited/stopped agent processes even when their Herdr pane remains open.
+      const agents=entries.map(a=>liveView(checkedAgent(a))).filter(a=>isLiveStatus(a.agent_status));
       return {agents,herdr:'reachable',checkedPanes,checkedRoles};
     }catch(e){return {agents:[],herdr:e instanceof FlowError?e.code:'unreachable'};}
   }

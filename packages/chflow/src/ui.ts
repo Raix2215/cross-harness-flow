@@ -38,15 +38,16 @@ const actionOptions=new Map<string,string[]>([
   ['cancel_retry',[]],
   ['assign_project',['project','machine','session']],
   ['prune',['tasks','project','machine','session']],
+  ['daemon_stop',['force']],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,roleActionOptions(action)!.split(' ')] as [string,string[]]),
 ]);
 const operatorCommands=new Map([
-  ['assign_project','ui.assign_project'],['prune','ui.prune'],
+  ['assign_project','ui.assign_project'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,'ui.role.'+action] as const),
   ['set_perm','ui.set_perm'],['terminal_control','ui.terminal'],['inspect_screen','ui.screen'],['cancel_retry','ui.cancel_retry'],
   ...['queue_pause','queue_resume','queue_deliver_now','queue_consume','queue_drop','queue_reroute'].map(a=>[a,'ui.'+a] as const),
 ]);
-const conflicts=new Set(['attempt_mismatch','block_changed','close_in_progress','delivery_in_flight',
+const conflicts=new Set(['active_tasks','attempt_mismatch','block_changed','close_in_progress','delivery_in_flight',
   'expectation_mismatch','identity_changed','no_pane','not_managed','pane_busy','pane_not_ready',
   'missing_session_id','task_busy','task_inactive','task_terminal','role_busy','role_unbound']);
 const record=(o:unknown):o is Record<string,unknown>=>!!o&&typeof o==='object'&&!Array.isArray(o);
@@ -190,6 +191,12 @@ export async function startUiServer(settings:UiSettings,ctx:Context,connect:()=>
   let backend:UiBackend|undefined,release:(()=>void)|undefined,heartbeat:NodeJS.Timeout|undefined;
   let publishing=false,dirty=false;
   const snapshot=(project?:string)=>backend!.call('ui.snapshot',{ctx,opts:project===undefined?{}:{project}});
+  const notifyShutdown=(reason:'idle'|'manual')=>{
+    const frame='event: shutdown\ndata: '+JSON.stringify({reason})+'\n\n';
+    for(const res of streams.keys()){
+      try{if(!res.destroyed&&res.writable)res.write(frame);}catch{/* ignore */}
+    }
+  };
   const endStreams=()=>{
     for(const res of streams.keys())res.end();
     streams.clear();
@@ -283,6 +290,15 @@ export async function startUiServer(settings:UiSettings,ctx:Context,connect:()=>
         (body.target!==undefined&&typeof body.target!=='string'))return invalid('Invalid UI action or options.');
       const command=operatorCommands.get(action)??action;
       const options:Opts={...opts as Opts};
+      if(action==='daemon_stop'){
+        if(body.target!==undefined)return invalid('daemon_stop does not take a target.');
+        if(options.force!==undefined&&typeof options.force!=='boolean')return invalid('force must be a boolean.');
+        const abort=new AbortController();
+        if(res.destroyed)abort.abort();
+        res.once('close',()=>abort.abort());
+        respond(res,await backend.call('daemon.stop',{ctx,opts:{check_active:true,force:options.force===true}},abort.signal),true);
+        return;
+      }
       if(action==='start'&&options.kind==='agy'&&options.attended===undefined)options.attended=true;
       if(action==='run'&&options.bg===undefined)options.bg=true;
       const requested=await invocation(command,ctx,body.target,options);
@@ -344,7 +360,7 @@ export async function startUiServer(settings:UiSettings,ctx:Context,connect:()=>
       access.searchParams.set('token',accessToken!);
       info.access_url=access.href;
     }
-    return {info,close,hasClients:()=>streams.size>0};
+    return {info,close,hasClients:()=>streams.size>0,notifyShutdown};
   }catch(e){
     await close();
     const code=(e as NodeJS.ErrnoException).code;

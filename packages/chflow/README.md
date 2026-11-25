@@ -1,4 +1,4 @@
-# chflow v3.3.0
+# chflow v3.4.0
 
 `chflow` coordinates Pi, Codex, Claude Code, and Antigravity sessions across multiple projects and stable roles. It requires Node.js **22.13.0+** and has **zero third-party runtime dependencies**.
 
@@ -19,19 +19,19 @@ Put `$HOME/.local/bin` on `PATH`. With pnpm (including pnpm 12+), pack first and
 
 ```sh
 npm pack
-pnpm add -g --offline ./chflow-3.3.0.tgz
+pnpm add -g --offline ./chflow-3.4.0.tgz
 ```
 
-For cross-machine offline distribution, copy `chflow-3.3.0.tgz` and run:
+For cross-machine offline distribution, copy `chflow-3.4.0.tgz` and run:
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.3.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.4.0.tgz
 ```
 
 ```powershell
 # Windows (with a user-writable npm prefix on PATH)
-npm install --offline -g .\chflow-3.3.0.tgz
+npm install --offline -g .\chflow-3.4.0.tgz
 ```
 
 ## Quick Start
@@ -51,7 +51,9 @@ chflow start worker-1 --kind codex --place split --perm readonly
 chflow send worker-1 --brief-file task-brief.md
 ```
 
-Use `chflow health`, `chflow status`, or `chflow list --panes` to view live projects, roles, managed panes, and unmanaged agents. Herdr `agent list` is treated as the live source of truth: closed panes without active tasks are auto-pruned, closed panes bound to a role revert to `unbound` standby, and `chflow prune [--tasks]` cleans up stale entries on demand.
+Use `chflow health`, `chflow status`, or `chflow list --panes` to view live projects, roles, managed panes, and unmanaged agents. Herdr `agent list` is treated as the live source of truth (including exited agent sessions whose Herdr pane remains open): exited/closed panes without active tasks are auto-pruned, role bindings revert to `unbound` standby, and `chflow prune [--tasks]` cleans up stale entries on demand.
+
+Explicit Daemon shutdown is available via `chflow stop` / `chflow quit` (pass `--force` when active tasks exist), WebUI topbar "Stop Service", or `x` (twice) in `chflow top`. Idle Daemons auto-exit after `CHFLOW_IDLE_TIMEOUT_SEC` (default 1800s with no clients) or `CHFLOW_UI_IDLE_TIMEOUT_SEC` (default 3600s when only passive WebUI tabs remain with zero live sessions or active tasks).
 
 `chflow adopt <pane> --name <alias>` registers an existing pane; `chflow handoff <pane_or_task> --to <pane>` transfers ownership and queued receipts; `chflow start <alias> --kind <kind> --resume <id|last>` migrates an external native session into Herdr.
 

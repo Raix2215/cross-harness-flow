@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-export const VERSION = '3.3.0';
+export const VERSION = '3.4.0';
 export const PROTOCOL = 1;
 export const kinds = ['codex', 'claude', 'pi', 'agy'] as const;
 export const perms = ['readonly', 'ask', 'auto-workspace', 'yolo'] as const;

@@ -53,6 +53,7 @@ async function events(t, url, headers = {}) {
   assert.equal(response.headers.connection, 'keep-alive');
   response.setEncoding('utf8');
   const frames = [];
+  const shutdowns = [];
   const read = (async () => {
     let buffer = '';
     for await (const chunk of response) {
@@ -62,6 +63,11 @@ async function events(t, url, headers = {}) {
         const frame = buffer.slice(0, end);
         buffer = buffer.slice(end + 2);
         if (frame.startsWith(':')) continue;
+        if (frame.startsWith('event: shutdown\n')) {
+          const dataLine = frame.split('\n')[1] || 'data: {}';
+          shutdowns.push(JSON.parse(dataLine.slice('data: '.length)));
+          continue;
+        }
         const [id, event, data] = frame.split('\n');
         assert.equal(event, 'event: snapshot');
         const state = JSON.parse(data.slice('data: '.length));
@@ -74,10 +80,14 @@ async function events(t, url, headers = {}) {
   let error;
   void read.catch(e => { if (!closing) error = e; });
   return {
-    close, ended: read,
+    close, ended: read, shutdowns,
     next: (predicate, message) => eventually(() => {
       if (error) throw error;
       return frames.find(predicate);
+    }, { message }),
+    nextShutdown: (message = 'SSE did not emit shutdown event') => eventually(() => {
+      if (error) throw error;
+      return shutdowns[0];
     }, { message }),
   };
 }
@@ -141,7 +151,7 @@ test('E2E-15 Web UI leases, live SSE updates without read-screen, and bounded ma
   await stream.next(s => s.herdr === 'reachable', 'SSE did not include the initial Herdr discovery');
   assert.equal(first.route.socket, fx.socketPath);
   assert.equal(first.daemon.pid, ui.daemon_pid);
-  assert.equal(first.daemon.version, '3.3.0');
+  assert.equal(first.daemon.version, '3.4.0');
   assert.ok(Number.isFinite(Date.parse(first.daemon.started_at)));
   assert.ok(Number.isSafeInteger(first.now));
 
@@ -1178,4 +1188,83 @@ test('E2E-21 role lifecycle, guarded spawn, hot rebinding and UI/MCP actions', {
   assert.equal(set.result.structuredContent.data.role, 'mcp-slot');
   mcp.stdin.end();
   assert.equal(await ended, 0);
+});
+
+test('E2E-22 exited-agent live UI sync, passive WebUI idle exit, and explicit stop controls', { timeout: 45_000 }, async t => {
+  // 1. Exited agent still present in Herdr pane list must sync out immediately via SSE.
+  const fx = await createFixture(t, { env: { CHFLOW_IDLE_TIMEOUT_SEC: '0', CHFLOW_UI_IDLE_TIMEOUT_SEC: '0' } });
+  const started = await command(fx, ['daemon', 'start']);
+  const uiUrl = started.data.ui_url;
+  const pageHtml = await (await fetch(uiUrl + '/')).text();
+  assert.doesNotMatch(pageHtml, /[\u{1F300}-\u{1FAFF}]/u, 'Web UI HTML must use SVG icons instead of emojis');
+  const csrf = pageHtml.match(/"csrfToken"\s*:\s*"([0-9a-f]{64})"/)?.[1];
+  assert.ok(csrf);
+  const stream = await events(t, uiUrl);
+  const initial = await stream.next(s => s.herdr === 'reachable', 'Initial SSE snapshot missing');
+
+  const strayPane = 'w1:p91';
+  const rolePane = 'w1:p92';
+  const busyPane = 'w1:p93';
+  fx.herdr.addAgent(strayPane, { agent: 'codex', agent_status: 'idle' });
+  fx.herdr.addAgent(rolePane, { agent: 'claude', agent_status: 'idle' });
+  fx.herdr.addAgent(busyPane, { agent: 'pi', agent_status: 'idle' });
+  const seenOnline = await stream.next(s => s.seq > initial.seq &&
+    s.unmanaged_live_agents.some(a => a.pane_id === strayPane) &&
+    s.unmanaged_live_agents.some(a => a.pane_id === rolePane), 'Live agents were not pushed');
+
+  await command(fx, ['role', 'set', 'reviewer', '--kind', 'claude']);
+  await command(fx, ['role', 'bind', 'reviewer', '--pane', rolePane]);
+  const busyTask = await command(fx, ['send', busyPane, '--task', 'active-exit', '--brief', 'Keep running'], { pane: '' });
+  assert.equal(busyTask.state, 'submitted');
+
+  // Agent processes exit while Herdr panes remain open (agent_status === 'exited').
+  fx.herdr.setAgent(strayPane, { agent_status: 'exited' });
+  fx.herdr.setAgent(rolePane, { agent_status: 'exited' });
+  fx.herdr.setAgent(busyPane, { agent_status: 'exited' });
+
+  const synced = await stream.next(s => s.seq > seenOnline.seq &&
+    !s.unmanaged_live_agents.some(a => a.pane_id === strayPane) &&
+    !s.managed_panes.some(p => p.pane_id === rolePane) &&
+    s.roles.some(r => r.role === 'reviewer' && r.binding_mode === 'unbound') &&
+    s.managed_panes.some(p => p.pane_id === busyPane && p.live === false && p.agent_status === 'offline'),
+    'Exited agent sessions did not sync immediately to UI');
+  assert.equal(synced.roles.find(r => r.role === 'reviewer').live, false);
+
+  // 2. Explicit stop guards active tasks unless forced (both CLI chflow stop and WebUI daemon_stop).
+  const cliRefused = await command(fx, ['stop'], undefined, [1]);
+  assert.equal(cliRefused.error.code, 'active_tasks');
+  const headers = { Origin: uiUrl, 'X-Chflow-Token': csrf, 'Content-Type': 'application/json' };
+  const uiRefused = await jsonRequest(uiUrl, '/api/action', {
+    method: 'POST', headers, body: JSON.stringify({ action: 'daemon_stop', opts: {} }),
+  });
+  assert.equal(uiRefused.status, 409);
+  assert.equal(uiRefused.body.error.code, 'active_tasks');
+
+  const uiForced = await jsonRequest(uiUrl, '/api/action', {
+    method: 'POST', headers, body: JSON.stringify({ action: 'daemon_stop', opts: { force: true } }),
+  });
+  assert.equal(uiForced.status, 200);
+  const manualShutdown = await stream.nextShutdown('Manual daemon_stop did not emit SSE shutdown');
+  assert.equal(manualShutdown.reason, 'manual');
+  await eventually(() => access(join(fx.stateDir, 'daemon.json')).then(() => false, e => e.code === 'ENOENT'),
+    { message: 'Daemon did not stop cleanly after WebUI daemon_stop' });
+
+  // 3. Passive WebUI SSE tab with zero live sessions (all exited or closed) must auto-exit after CHFLOW_UI_IDLE_TIMEOUT_SEC.
+  const idleFx = await createFixture(t, { env: { CHFLOW_IDLE_TIMEOUT_SEC: '2', CHFLOW_UI_IDLE_TIMEOUT_SEC: '2' } });
+  for (const paneId of [...idleFx.herdr.agents.keys()]) idleFx.herdr.setAgent(paneId, { agent_status: 'exited' });
+  const idleStart = await command(idleFx, ['daemon', 'start']);
+  const idleStream = await events(t, idleStart.data.ui_url);
+  await idleStream.next(s => s.herdr === 'reachable' && s.unmanaged_live_agents.length === 0, 'Idle fixture SSE did not connect');
+  const idleShutdown = await idleStream.nextShutdown('Passive WebUI SSE did not receive idle shutdown event');
+  assert.equal(idleShutdown.reason, 'idle');
+  await eventually(() => access(join(idleFx.stateDir, 'daemon.json')).then(() => false, e => e.code === 'ENOENT'),
+    { message: 'Daemon did not exit after passive WebUI idle timeout' });
+
+  // 4. CLI chflow quit stops an idle daemon cleanly without --force.
+  const quitFx = await createFixture(t, { env: { CHFLOW_IDLE_TIMEOUT_SEC: '0' } });
+  await command(quitFx, ['daemon', 'start']);
+  const stopped = await command(quitFx, ['quit']);
+  assert.equal(stopped.running, false);
+  await eventually(() => access(join(quitFx.stateDir, 'daemon.json')).then(() => false, e => e.code === 'ENOENT'),
+    { message: 'Daemon did not stop cleanly after chflow quit' });
 });

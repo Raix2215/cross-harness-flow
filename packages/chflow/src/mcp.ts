@@ -6,7 +6,7 @@ import { kinds, perms, workspaceModes, PROTOCOL, VERSION, json, type Opts } from
 const versions=['2025-06-18','2025-03-26','2024-11-05'];
 const descriptions:Record<string,string>={start:'Start or migrate a Herdr agent.',adopt:'Register or take over a live agent.',handoff:'Transfer control and queued receipts.',switch:'Change model, effort or native scope.',send:'Dispatch a mailbox brief.',reply:'Write a result or progress receipt.',wait:'Wait for a state change.',watch:'Check daemon monitoring.',run:'Run a headless worker.',respond:'Answer the verified blocked prompt.',inspect:'Read task state; screen is explicit.',resume:'Continue the same session.',retry:'Retry, schedule or switch channels.',finish:'Confirm the reviewed outcome.',cancel:'Cancel a task and its plans.',list:'List tasks, queues and panes.',health:'Check daemon and agents.',inbox:'List waiting receipts for a pane.',flush:'Read and consume queued receipts.',role:'List or manage project role slots.'};
 const numeric=new Set(['timeout','lines','max_retries']);
-const hidden=new Set(['name','brief_file','file','stdin','force','auto_restart']);
+const hidden=new Set(['name','brief_file','file','stdin','force','auto_restart','as_controller']);
 function fields(method:string){
   return Object.fromEntries(optionsFor(method)!.split(' ').filter(n=>n&&!hidden.has(n)).map(n=>[n,
     n==='kind'?{enum:method==='run'?kinds.slice(0,3):kinds}:n==='perm'?{enum:perms}:n==='workspace_mode'?{enum:workspaceModes}:n==='transport'?{enum:['exec','print','rpc']}:n==='key'?{type:'array',items:{type:'string'}}:flag(n,method)?{type:'boolean'}:numeric.has(n)?{type:'number'}:{type:'string'}]));

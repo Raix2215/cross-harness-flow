@@ -34,6 +34,7 @@ export function renderHelp(
       `  ${c.cyan('chflow stop')} [${c.dim('--force')}]     显式停止常驻 Daemon（别名 quit）`,
       '',
       `${c.bold('项目角色与维护')}`,
+      `  ${c.cyan('chflow project init')}        初始化/持久化 .chflow/project.yaml（固化项目 ID、名称与角色）`,
       `  ${c.cyan('chflow role')} <action>       管理项目角色槽位与热换绑（list|set|bind|unbind|remove）`,
       `  ${c.cyan('chflow prune')} [${c.dim('--tasks')}]    清理离线残留与已结单归档任务`,
       '',
@@ -61,7 +62,9 @@ export function renderHelp(
       ? ' <pause|resume|push|drop|consume|reroute> [pane]'
       : method === 'role'
         ? ' <list|set|bind|unbind|remove> [role]'
-        : method === 'view'
+        : method === 'project'
+          ? ' init [project-id]'
+          : method === 'view'
           ? ' <task> [brief|reply|out|diag]'
           : method === 'approve'
             ? ' [task]'

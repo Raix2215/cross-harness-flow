@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-export const VERSION = '3.6.1';
+export const VERSION = '3.6.3';
 export const PROTOCOL = 1;
 export const kinds = ['codex', 'claude', 'pi', 'agy'] as const;
 export const perms = ['readonly', 'ask', 'auto', 'auto-workspace', 'yolo'] as const;
@@ -24,7 +24,9 @@ export interface PendingRestart {
   perm: Perm; workspace_mode?: WorkspaceMode; model?: string; effort?: string; provider?: string;
   allow_last?: boolean; attended?: boolean; requested_at: number;
 }
-export interface ManagedPane {agent:Agent; launch:Launch; route:Route; alias:string; controller?:Recipient; adopted:boolean; native_perm:Perm|'unknown'; native_workspace_mode?:WorkspaceMode; auto_guard?:boolean; pending_restart?:PendingRestart; last_restart_error?:string; adopted_sent?:boolean; project_id?:string; pre_role_alias?:string}
+export interface ManagedPane {agent:Agent; launch:Launch; route:Route; alias:string; controller?:Recipient; adopted:boolean; native_perm:Perm|'unknown'; native_workspace_mode?:WorkspaceMode; auto_guard?:boolean; pending_restart?:PendingRestart; last_restart_error?:string; restart_failed?:boolean; adopted_sent?:boolean; project_id?:string; pre_role_alias?:string}
+export interface ProjectOverrideMeta { kind?: Kind; session?: Session | null; cwd?: string }
+export interface ProjectOverrideRecord extends ProjectOverrideMeta { pane: string; terminal: string; project: string }
 export interface Context { cwd: string; route: Route; caller?: Recipient; workspace?: string; tty?: boolean; operator?: boolean }
 export interface Launch { kind: Kind; perm: Perm; workspace_mode?: WorkspaceMode; model?: string; effort?: string; provider?: string; attended?: boolean; channel?: string }
 export interface Project {

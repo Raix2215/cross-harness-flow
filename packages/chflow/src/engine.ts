@@ -9,14 +9,14 @@ import { closePane, controlDelays, focusAgent, get, herdr, idle, keys, literal, 
 import { readConfig } from './ipc.js';
 import { diagnostic, fileText, mailbox, mailboxDirectory, readMailboxFile, writeMailboxFile } from './mailbox.js';
 import { dispatch, note } from './protocol.js';
-import { globalRole, paneCwd, projectId, readGlobalRoles, removeGlobalRole, roleActive, roleDefaults, roleName, samePane, saveGlobalRole } from './projects.js';
+import { globalRole, isManagedProjectConfig, paneCwd, projectId, readGlobalRoles, removeGlobalRole, roleActive, roleDefaults, roleName, samePane, saveGlobalRole } from './projects.js';
 import { DeliveryQueue, sessionsEqual } from './queue.js';
 import { backoff, classify, recovery, schedule } from './retry.js';
 import { clean, input, redact } from './sensitive.js';
 import type { Store } from './store.js';
 import { received, SnapshotViews } from './snapshots.js';
 import { FlowError, VERSION, alive, invalid, routeKey, seconds, str, success, terminal, type Agent, type Context, type Delivery, type Invocation, type Launch, type ManagedPane, type Opts, type ProgressProbe, type Project, type Recipient, type Reply, type Role, type Route, type Task } from './types.js';
-import { matches, paneKey, paneView, safeTarget, Workspaces, type LiveTopology } from './workspaces.js';
+import { matches, paneKey, paneView, safeTarget, sameSession, Workspaces, type LiveTopology, type SessionSnapshot } from './workspaces.js';
 
 const ms=(name:string,def:number,min=0,max=86400000)=>seconds(process.env[name],def,min,max);
 const idRx=/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
@@ -729,13 +729,18 @@ export class Engine {
       if(action==='set'){
         const base=old??globalRole(name);
         const defaults=roleDefaults(o,ctx.cwd,base);
-        const configOverrides=old?.source==='config'?{
+        const managedConfig=project.source==='config'&&isManagedProjectConfig(project.root);
+        const configOverrides=!managedConfig&&old?.source==='config'?{
           ...old.config_overrides,
           ...Object.fromEntries(Object.entries(defaults).filter(([key,value])=>value!==old![key as keyof Role])),
         }:undefined;
-        const role:Role={...(old??{project_id:project.project_id,role:name,source:'manual',binding_mode:'unbound'}),
-          ...defaults,config_overrides:configOverrides};
+        const role:Role=managedConfig
+          ?{...(old??{project_id:project.project_id,role:name,source:'config' as const,config_root:project.root,binding_mode:'unbound' as const}),
+            ...defaults,source:'config',config_root:project.root,config_overrides:undefined}
+          :{...(old??{project_id:project.project_id,role:name,source:'manual' as const,binding_mode:'unbound' as const}),
+            ...defaults,config_overrides:configOverrides};
         this.db.saveRole(role);
+        if(managedConfig)this.work.projects.syncConfigFile(project.project_id);
         return this.singleRoleView(role,inv);
       }
       if(!old&&action==='bind')old=this.instantiateGlobalRole(project,name);
@@ -744,8 +749,10 @@ export class Engine {
       this.roleFree(old);
       await this.work.owns(this.work.boundPane(old)?.controller??old.controller,await this.work.caller(ctx),false,ctx.operator);
       this.roleFree(old);
-      const remove=action==='remove'&&old.source==='manual';
+      const managedConfig=project.source==='config'&&isManagedProjectConfig(project.root);
+      const remove=action==='remove'&&(old.source==='manual'||managedConfig);
       const next=this.db.transaction(()=>this.work.detach(old,remove));
+      if(remove&&managedConfig)this.work.projects.syncConfigFile(project.project_id);
       return next?this.singleRoleView(next,inv):{project_id:project.project_id,role:name,removed:true};
     });
   }
@@ -825,7 +832,7 @@ export class Engine {
       const fingerprint=JSON.stringify({herdr:topology.herdr,agents,labels:topology.labels});
       state.current=topology;
       for(const p of this.db.panes().filter(p=>same(p.route,r))){
-        const a=agents.find(a=>a.pane_id===p.agent.pane_id&&a.terminal_id===p.agent.terminal_id);
+        const a=agents.find(a=>sameSession(p.agent,a));
         if(a&&p.pending_restart)this.schedulePendingRestart(p,a);
         if(a?.agent_status==='blocked'&&p.auto_guard&&!p.pending_restart)this.schedulePaneGuard(p,a);
       }
@@ -864,18 +871,18 @@ export class Engine {
       p.native_perm!=='readonly'&&
       !this.db.tasks().some(t=>t.pane===p.agent.pane_id&&same(t.route,p.route)&&!terminal(t.state));
   }
-  private schedulePaneGuard(p:ManagedPane,a:Pick<Agent,'pane_id'|'terminal_id'|'state_change_seq'|'agent_status'|'cwd'>){
+  private schedulePaneGuard(p:ManagedPane,a:SessionSnapshot&Pick<Agent,'agent_status'>){
     const key=paneKey(p.route,p.agent.pane_id),state=this.paneGuardState.get(key);
-    if(!this.paneGuardEnabled(p)||this.paneGuardPending.has(key)||
+    if(!this.paneGuardEnabled(p)||this.paneGuardPending.has(key)||!sameSession(p.agent,a)||
       state?.terminal===a.terminal_id&&state.lastSeq===a.state_change_seq)return;
     this.paneGuardPending.add(key);
     this.track(this.observePaneGuard(p,a).finally(()=>this.paneGuardPending.delete(key)));
   }
-  private async observePaneGuard(saved:ManagedPane,a:Pick<Agent,'pane_id'|'terminal_id'|'state_change_seq'|'agent_status'|'cwd'>){
+  private async observePaneGuard(saved:ManagedPane,a:SessionSnapshot&Pick<Agent,'agent_status'>){
     const r=saved.route,pane=saved.agent.pane_id,key=paneKey(r,pane);
     await this.work.lock(r,pane,async()=>{
       const p=this.db.pane(r,pane),prior=this.paneGuardState.get(key);
-      if(!p||!this.paneGuardEnabled(p)||p.agent.terminal_id!==a.terminal_id||a.agent_status!=='blocked'||
+      if(!p||!this.paneGuardEnabled(p)||!sameSession(p.agent,a)||a.agent_status!=='blocked'||
         prior?.terminal===a.terminal_id&&prior.lastSeq===a.state_change_seq)return;
       const raw=await screen(r,pane,40),sig=signature(raw);
       const state={terminal:a.terminal_id,lastSeq:a.state_change_seq,signature:sig,
@@ -889,8 +896,8 @@ export class Engine {
       if(state.count>=3){this.db.audit(null,'pane_auto_approve_skipped',pane+' approval_loop');return;}
       if(!approve){this.db.audit(null,'pane_auto_approve_skipped',pane+' unsafe_selection');return;}
       const latest=await get(r,pane);
-      if(latest.terminal_id!==a.terminal_id||latest.agent!==p.launch.kind||latest.agent_status!=='blocked'||
-        latest.state_change_seq!==a.state_change_seq||!sessionsEqual(p.agent.agent_session,latest.agent_session)||
+      if(!sameSession(p.agent,latest)||latest.agent!==p.launch.kind||latest.agent_status!=='blocked'||
+        latest.state_change_seq!==a.state_change_seq||
         !this.paneGuardEnabled(this.db.pane(r,pane)??p))return;
       state.count++;
       await keys(r,pane,[approve]);
@@ -898,9 +905,9 @@ export class Engine {
       this.onLiveChange();
     });
   }
-  private schedulePendingRestart(p:ManagedPane,a:Pick<Agent,'pane_id'|'terminal_id'|'agent_status'|'interactive_ready'|'launch_pending'>){
+  private schedulePendingRestart(p:ManagedPane,a:SessionSnapshot&Pick<Agent,'agent_status'|'interactive_ready'|'launch_pending'>){
     const key=paneKey(p.route,p.agent.pane_id);
-    if(this.stopping||!p.pending_restart||a.terminal_id!==p.agent.terminal_id||!idle(a)||this.work.isLocked(p.route,p.agent.pane_id)||
+    if(this.stopping||!p.pending_restart||!sameSession(p.agent,a)||!idle(a)||this.work.isLocked(p.route,p.agent.pane_id)||
       this.pendingRestartInFlight.has(key)||this.db.tasks().some(t=>t.pane===p.agent.pane_id&&same(t.route,p.route)&&!terminal(t.state)))return;
     this.pendingRestartInFlight.add(key);
     this.track(this.runPendingRestart(p).finally(()=>this.pendingRestartInFlight.delete(key)));
@@ -1249,9 +1256,22 @@ export class Engine {
         return success(await this.roleCommand(method.split('.').at(-1)!,inv));
       case 'prune':case 'ui.prune':return success(await this.prune(inv));
       case 'ui.assign_project': {
+        if(o.reset===true){
+          const reset=await this.work.assignProject(inv,undefined);
+          this.onLiveChange();
+          return success(reset);
+        }
         const project=str(o,'project');
         if(!project)return invalid('Select a destination project.');
-        return success(await this.work.assignProject(inv,this.resolvedProject(inv)));
+        const assigned=await this.work.assignProject(inv,this.resolvedProject(inv));
+        this.onLiveChange();
+        return success(assigned);
+      }
+      case 'project.init':case 'ui.project_persist': {
+        const dir=str(o,'cwd')?localCwd(inv.ctx.cwd,str(o,'cwd')):inv.ctx.cwd;
+        const persisted=this.work.projects.persist(dir,str(o,'project'),str(o,'name'));
+        this.onLiveChange();
+        return success(persisted);
       }
       case 'ui.release_pane': {
         const released=await this.work.release(inv);

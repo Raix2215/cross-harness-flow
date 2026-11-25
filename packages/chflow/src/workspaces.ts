@@ -66,7 +66,31 @@ async function startWithTrust(inv:Invocation,r:Route,name:string,launch:Launch,f
 }
 
 const liveView=(a:Agent)=>({pane_id:a.pane_id,name:a.name,kind:a.agent,terminal_id:a.terminal_id,agent_status:a.agent_status,
-  cwd:a.foreground_cwd??a.cwd,interactive_ready:a.interactive_ready,launch_pending:a.launch_pending,state_change_seq:a.state_change_seq,agent_session:a.agent_session,workspace_id:a.workspace_id,tab_id:a.tab_id});
+  cwd:a.foreground_cwd??a.cwd,launch_cwd:a.cwd,interactive_ready:a.interactive_ready,launch_pending:a.launch_pending,state_change_seq:a.state_change_seq,revision:a.revision,agent_session:a.agent_session,workspace_id:a.workspace_id,tab_id:a.tab_id});
+export type SessionSnapshot=Pick<Agent,'pane_id'|'terminal_id'|'cwd'|'name'|'agent_session'|'state_change_seq'|'revision'>&{agent?:string;kind?:string;launch_cwd?:string};
+export function sameSession(stored:SessionSnapshot,live:SessionSnapshot){
+  if(stored.pane_id!==live.pane_id||stored.terminal_id!==live.terminal_id)return false;
+  const sk=stored.agent??stored.kind,lk=live.agent??live.kind;
+  if(sk&&lk&&sk!==lk)return false;
+  if(stored.agent_session&&live.agent_session){
+    return stored.agent_session.kind===live.agent_session.kind&&stored.agent_session.value===live.agent_session.value;
+  }
+  const scwd=stored.launch_cwd??stored.cwd,lcwd=live.launch_cwd??live.cwd;
+  if(scwd&&lcwd&&scwd!==lcwd)return false;
+  if(stored.name&&stored.name!==stored.pane_id&&live.name!==stored.name)return false;
+  if(!stored.agent_session&&live.state_change_seq<stored.state_change_seq)return false;
+  return true;
+}
+export function sameRecipientAgent(rec:Recipient,live:Pick<Agent,'pane_id'|'terminal_id'|'agent_session'>&{agent?:string;kind?:string}){
+  if(rec.pane!==live.pane_id)return false;
+  if(rec.terminal&&rec.terminal!==live.terminal_id)return false;
+  const lk=live.agent??live.kind;
+  if(rec.kind&&lk&&rec.kind!==lk)return false;
+  if(rec.session&&live.agent_session){
+    return rec.session.kind===live.agent_session.kind&&rec.session.value===live.agent_session.value;
+  }
+  return true;
+}
 const isLiveStatus=(status:string)=>!['exited','stopped','closed','offline','dead'].includes(status.toLowerCase());
 const HARNESS_NAMES:Record<string,string>={agy:'Antigravity',claude:'Claude Code',codex:'Codex',pi:'Pi'};
 export const harnessLabel=(kind?:string)=>kind?HARNESS_NAMES[kind]??kind:'Agent';
@@ -117,7 +141,13 @@ export class Workspaces {
   async caller(ctx:Context){
     if(!ctx.caller) return undefined;
     const c=ctx.caller;
-    try{return recipient(c.route,await get(c.route,safeTarget(c.pane)),c.label===c.pane?undefined:c.label);}
+    try{
+      const a=await get(c.route,safeTarget(c.pane));
+      if(!isLiveStatus(a.agent_status))throw new FlowError('agent_not_running','The caller agent session has exited.');
+      if(c.terminal&&a.terminal_id!==c.terminal||c.session&&!sessionsEqual(c.session,a.agent_session))
+        throw new FlowError('identity_changed','The caller agent session changed.');
+      return recipient(c.route,a,c.label===c.pane?undefined:c.label);
+    }
     catch(e){if(ctx.operator!==true)throw e;}
   }
   async recipient(r:Route,pane:string){
@@ -135,7 +165,7 @@ export class Workspaces {
       throw new FlowError('agent_not_running','The target agent session has exited.');
     kindOf(a.agent);
     const p=this.db.pane(r,a.pane_id);
-    if(p&&(p.agent.terminal_id!==a.terminal_id||p.agent.agent!==a.agent||!sessionsEqual(p.agent.agent_session,a.agent_session??p.agent.agent_session)))
+    if(p&&!sameSession(p.agent,a))
       throw new FlowError('identity_changed','The tracked pane identity changed; explicitly adopt the verified pane to register it again.');
     return {agent:a,p};
   }
@@ -143,7 +173,7 @@ export class Workspaces {
     if(operator===true || !owner || (caller&&sameRecipient(owner,caller)) || takeover) return;
     try {
       const a=await get(owner.route,owner.pane);
-      if(!sameRecipient(owner,recipient(owner.route,a)) || a.agent_status==='exited') return;
+      if(!sameRecipient(owner,recipient(owner.route,a)) || !isLiveStatus(a.agent_status)) return;
     } catch(e) {if(e instanceof FlowError&&missing.test(e.code)) return;}
     throw new FlowError('pane_owned_by_other','The pane is controlled by another live session.',1,{controller:owner});
   }
@@ -209,22 +239,29 @@ export class Workspaces {
       const existingName=[p?.alias,a.name].find((s):s is string=>!!s&&/^[a-z][a-z0-9_-]{0,31}$/.test(s));
       const name=alias(str(o,'name')??existingName??(k+'-'+randomUUID().slice(0,6)));
       this.aliasUnique(r,a.pane_id,name);
-      const sameIdentity=p&&matches({terminal:p.agent.terminal_id,session:p.agent.agent_session??undefined,launch:p.launch},a);
+      const sameIdentity=p&&sameSession(p.agent,a);
       if(p&&!sameIdentity)this.assertFree(undefined,r,a.pane_id);
       const existing=p&&this.binding(p);
       if(existing&&(role&&(existing.role!==role.role||existing.project_id!==role.project_id)||p?.agent.terminal_id!==a.terminal_id))
         throw new FlowError('role_busy','Unbind the role before replacing its pane.');
       if(role)this.assertFree(undefined,r,a.pane_id);
-      const project=this.projects.pane(r,a,inv.ctx.cwd,str(o,'project'),p,true);
+      const explicitProject=str(o,'project');
+      const inferred=this.projects.inferredPane(r,a,inv.ctx.cwd);
+      const project=this.projects.pane(r,a,inv.ctx.cwd,explicitProject,sameIdentity?p:undefined,true);
       if(existing&&existing.project_id!==project.project_id)
         throw new FlowError('role_busy','Unbind the role before reassigning its project.');
-      const entry:ManagedPane={route:r,agent:a,launch:l,alias:name,controller:p?.controller,adopted:true,
+      const pinProject=explicitProject!==undefined&&project.project_id!==inferred.project_id;
+      const entry:ManagedPane={route:r,agent:{...a,agent_session:a.agent_session??(sameIdentity?p.agent.agent_session:undefined)??null},launch:l,alias:name,controller:sameIdentity?p?.controller:undefined,adopted:true,
         native_perm:p&&sameIdentity?p.native_perm:'unknown',native_workspace_mode:sameIdentity?p?.native_workspace_mode:undefined,
         auto_guard:!['auto-workspace','yolo'].includes(l.perm)?false:o.perm!==undefined?true:sameIdentity?p?.auto_guard:undefined,
-        adopted_sent:sameIdentity?p?.adopted_sent:undefined,project_id:str(o,'project')===undefined?p?.project_id:project.project_id,pre_role_alias:p?.pre_role_alias};
-      const owner=clearOwner?undefined:newOwner??p?.controller;
-      this.transfer(entry,owner,undefined,false,clearOwner);
-      if(str(o,'project')!==undefined)this.projects.assign(r,a,project);
+        restart_failed:undefined,
+        adopted_sent:sameIdentity?p?.adopted_sent:undefined,
+        project_id:pinProject?project.project_id:(explicitProject!==undefined||!sameIdentity?undefined:p?.project_id),
+        pre_role_alias:sameIdentity?p?.pre_role_alias:undefined};
+      const owner=o.as_controller===true?recipient(r,entry.agent):o.as_controller===false?undefined:clearOwner?undefined:newOwner??entry.controller;
+      this.transfer(entry,owner,undefined,false,clearOwner||o.as_controller===false);
+      if(pinProject)this.projects.assign(r,entry.agent,project);
+      else if(explicitProject!==undefined||!sameIdentity)this.projects.clearOverride(r,a.pane_id);
       if(role??existing)this.attach({...entry,controller:owner},(role??existing)!);
       return {...paneView({...entry,controller:owner}),alias:role?.role??existing?.role??name,project_id:project.project_id,role:role?.role??existing?.role,hint:'Use chflow switch '+name+' --perm '+l.perm+' --restart to install native permission settings.'};
     });
@@ -240,6 +277,7 @@ export class Workspaces {
       this.assertFree(undefined,r,pane);
       this.db.transaction(()=>{
         this.db.removePane(p);
+        this.projects.clearOverride(p.route,pane);
         this.db.audit(null,'pane_released',pane);
       });
       return {pane_id:pane,released:true};
@@ -407,12 +445,17 @@ export class Workspaces {
         const key=paneKey(r,pane),timeout=seconds(o.timeout,30,4,300),name=a.name??k+'-'+randomUUID().slice(0,6);
         const errorCode=(e:unknown)=>e instanceof FlowError?e.code:'restart_error';
         const save=(agent:Agent,targetLaunch:Launch,rollback=false,error?:string)=>{
-          const entry:ManagedPane={...base,agent:{...agent,agent_session:agent.agent_session??session??null},launch:targetLaunch,controller,
+          const savedAgent={...agent,agent_session:agent.agent_session??session??null};
+          const nextController=controller&&same(controller.route,r)&&controller.pane===pane?
+            recipient(r,savedAgent,controller.label===pane?undefined:controller.label):controller;
+          const entry:ManagedPane={...base,agent:savedAgent,launch:targetLaunch,controller:nextController,
             native_perm:rollback?base.native_perm:targetLaunch.perm,
             native_workspace_mode:rollback?base.native_workspace_mode:targetLaunch.perm==='auto-workspace'?targetLaunch.workspace_mode??defaultWorkspaceMode(k):undefined,
             auto_guard:rollback?(['auto-workspace','yolo'].includes(targetLaunch.perm)?base.auto_guard:false):targetLaunch.perm==='auto-workspace'||targetLaunch.perm==='yolo',
-            pending_restart:undefined,last_restart_error:error};
+            pending_restart:undefined,last_restart_error:error,restart_failed:undefined};
           if(binding)this.attach(entry,binding);else this.db.savePane(entry);
+          const ov=this.db.projectOverrideRecord(r,pane,savedAgent.terminal_id);
+          if(ov)this.projects.assign(r,savedAgent,{project_id:ov.project});
           return entry;
         };
         const cleanup=async()=>{
@@ -447,7 +490,7 @@ export class Workspaces {
             const recovered=await this.startInSafe(r,pane,a,name,prevLaunch,[...rollbackRs,...rollbackFlags],timeout);
             save(recovered,prevLaunch,true,errorCode(cause));
           }catch(rollbackError){
-            this.db.savePane({...base,pending_restart:undefined,last_restart_error:errorCode(cause)+'; rollback='+errorCode(rollbackError)});
+            this.db.savePane({...base,pending_restart:undefined,last_restart_error:errorCode(cause)+'; rollback='+errorCode(rollbackError),restart_failed:true});
             this.db.audit(null,'pane_restart_rollback_failed',pane+' '+errorCode(rollbackError));
             throw new FlowError('restart_failed','Restart and rollback failed.',1,{pane_id:pane,rolled_back:false,cause:errorCode(cause),rollback_error:errorCode(rollbackError)});
           }
@@ -480,10 +523,13 @@ export class Workspaces {
       throw new FlowError('role_busy','The pane is already bound to another role.');
     const next:Role={...role,binding_mode:'pane',pane_id:p.agent.pane_id,terminal_id:p.agent.terminal_id,
       route:p.route,launch:p.launch,controller:p.controller,launch_cwd:undefined};
+    const inferred=this.projects.inferredPane(p.route,p.agent,paneCwd(p.agent)??'.');
+    const pinProject=role.project_id!==inferred.project_id;
     this.db.transaction(()=>{
       if(!other)this.restoreAlias(this.boundPane(role));
-      this.db.savePane({...p,alias:role.role,project_id:role.project_id,pre_role_alias:p.pre_role_alias??p.alias});
-      this.projects.assign(p.route,p.agent,{project_id:role.project_id});
+      this.db.savePane({...p,alias:role.role,project_id:pinProject?role.project_id:undefined,pre_role_alias:p.pre_role_alias??p.alias});
+      if(pinProject)this.projects.assign(p.route,p.agent,{project_id:role.project_id});
+      else this.projects.clearOverride(p.route,p.agent.pane_id);
       this.db.saveRole(next);
     });
     return next;
@@ -495,8 +541,12 @@ export class Workspaces {
   }
 
   private restoreAlias(p:ManagedPane|undefined){
-    if(p?.pre_role_alias===undefined)return;
-    this.db.savePane({...p,alias:p.pre_role_alias,pre_role_alias:undefined});
+    if(!p)return;
+    const nextAlias=p.pre_role_alias!==undefined?p.pre_role_alias:p.alias;
+    if(nextAlias!==p.alias||p.pre_role_alias!==undefined||p.project_id!==undefined){
+      this.db.savePane({...p,alias:nextAlias,pre_role_alias:undefined,project_id:undefined});
+    }
+    this.projects.clearOverride(p.route,p.agent.pane_id);
   }
 
   detach(role:Role,remove=false){
@@ -544,23 +594,27 @@ export class Workspaces {
     });
   }
 
-  async assignProject(inv:Invocation,project:Project){
+  async assignProject(inv:Invocation,project?:Project){
     const r=route(inv);
     const {agent}=await this.target(r,safeTarget(inv.target));
     return this.lock(r,agent.pane_id,async()=>{
       const {agent:a,p}=await this.target(r,agent.pane_id);
       await this.assertOnline(r,a);
       const bound=p&&this.binding(p);
+      const inferred=this.projects.inferredPane(r,a,paneCwd(a)??'.');
+      const target=project??inferred;
+      const pinProject=target.project_id!==inferred.project_id;
       this.db.transaction(()=>{
-        if(bound&&bound.project_id!==project.project_id){
+        if(bound&&bound.project_id!==target.project_id){
           if(roleActive(bound,this.db.tasks()))throw new FlowError('role_busy','Wait for the role task before reassigning its pane.');
           this.detach(bound);
         }
-        this.projects.assign(r,a,project);
+        if(pinProject)this.projects.assign(r,a,target);
+        else this.projects.clearOverride(r,a.pane_id);
         const current=p&&this.db.pane(r,a.pane_id);
-        if(current)this.db.savePane({...current,project_id:project.project_id});
+        if(current)this.db.savePane({...current,project_id:pinProject?target.project_id:undefined});
       });
-      return {pane_id:a.pane_id,terminal_id:a.terminal_id,project_id:project.project_id};
+      return {pane_id:a.pane_id,terminal_id:a.terminal_id,project_id:target.project_id,overridden:pinProject};
     });
   }
 
@@ -592,26 +646,92 @@ export class Workspaces {
 
   sync(r:Route,{agents,herdr,checkedPanes,checkedRoles}:LiveTopology,project?:string){
     if(herdr!=='reachable')return 0;
-    const online=new Map(agents.map(a=>[a.pane_id,a.terminal_id]));
+    const online=new Map(agents.map(a=>[a.pane_id,a]));
     const tasks=this.db.tasks().filter(t=>!terminal(t.state));
+    const activeControllers=new Set<string>([
+      ...tasks.filter(t=>t.controller&&same(t.controller.route,r)).map(t=>t.controller!.pane),
+      ...this.db.events().filter(e=>same(e.recipient.route,r)).map(e=>e.recipient.pane),
+    ]);
     let pruned=0;
     this.db.transaction(()=>{
-      for(const role of this.db.roles()){
-        if(role.binding_mode==='pane'&&role.route&&same(role.route,r)&&role.pane_id&&
-           checkedRoles?.has(bindingIdentity(role))&&online.get(role.pane_id)!==role.terminal_id&&
-           !this.locks.has(paneKey(r,role.pane_id))&&!this.isRestarting(r,role.pane_id)&&!this.db.pane(r,role.pane_id)?.last_restart_error&&(!project||role.project_id===project)&&!roleActive(role,tasks)){
-          this.detach(role);
-          this.db.audit(null,'role_offline',role.project_id+'/'+role.role);
+      // 1. Latch delayed agent_session/cwd onto live matching panes and clear restart_failed once live again.
+      for(const p of this.db.panes()){
+        if(!same(p.route,r))continue;
+        const live=online.get(p.agent.pane_id);
+        if(!live||!sameSession(p.agent,live))continue;
+        let dirty=false;
+        const agent={...p.agent};
+        if(!agent.agent_session&&live.agent_session){agent.agent_session=live.agent_session;dirty=true;}
+        if(!agent.cwd&&live.launch_cwd){agent.cwd=live.launch_cwd;dirty=true;}
+        let controller=p.controller;
+        if(controller&&same(controller.route,r)&&sameRecipientAgent(controller,live)&&!controller.session&&live.agent_session){
+          controller={...controller,session:live.agent_session};dirty=true;
         }
+        if(p.restart_failed){dirty=true;}
+        if(dirty)this.db.savePane({...p,agent,controller,restart_failed:undefined});
       }
+      // 2. Detach roles whose bound pane went offline or switched to a different session.
+      for(const role of this.db.roles()){
+        if(role.binding_mode!=='pane'||!role.route||!same(role.route,r)||!role.pane_id||!checkedRoles?.has(bindingIdentity(role)))continue;
+        const saved=this.db.pane(r,role.pane_id),live=online.get(role.pane_id);
+        const matchesLive=!!live&&(saved?sameSession(saved.agent,live):live.terminal_id===role.terminal_id&&(!role.launch?.kind||live.kind===role.launch.kind));
+        if(matchesLive)continue;
+        if(this.locks.has(paneKey(r,role.pane_id))||this.isRestarting(r,role.pane_id)||(saved?.restart_failed&&!live)||
+          (project&&role.project_id!==project)||roleActive(role,tasks))continue;
+        this.detach(role);
+        this.db.audit(null,live?'role_session_changed':'role_offline',role.project_id+'/'+role.role);
+      }
+      // 3. Prune managed panes that went offline or switched to a different session.
       for(const p of this.db.panes()){
         const {pane_id:id,terminal_id:terminalId}=p.agent;
-        if(!same(p.route,r)||!checkedPanes?.has(paneIdentity(id,terminalId))||online.get(id)===terminalId||
-           this.locks.has(paneKey(r,id))||this.isRestarting(r,id)||p.last_restart_error||this.binding(p)||tasks.some(t=>t.pane===id&&same(t.route,r))||
-           project&&this.projects.pane(r,p.agent,paneCwd(p.agent)??'.',undefined,p).project_id!==project)continue;
+        if(!same(p.route,r)||!checkedPanes?.has(paneIdentity(id,terminalId)))continue;
+        const live=online.get(id);
+        if(live&&sameSession(p.agent,live))continue;
+        if(this.locks.has(paneKey(r,id))||this.isRestarting(r,id)||(p.restart_failed&&!live)||this.binding(p)||
+          tasks.some(t=>t.pane===id&&same(t.route,r))||
+          (project&&this.projects.pane(r,p.agent,paneCwd(p.agent)??'.',undefined,p).project_id!==project))continue;
         this.db.removePane(p);
-        this.db.audit(null,'pane_pruned',id);
+        this.projects.clearOverride(r,id);
+        this.db.audit(null,live?'pane_session_changed':'pane_pruned',id);
         pruned++;
+      }
+      // 4. Latch or prune stale/exited/replaced controller references on remaining panes & roles.
+      const keepCtrl=(ctrl:Recipient)=>{
+        if(!same(ctrl.route,r))return {live:true,latched:ctrl};
+        const cLive=online.get(ctrl.pane);
+        if(cLive&&sameRecipientAgent(ctrl,cLive)){
+          const latched=!ctrl.session&&cLive.agent_session?{...ctrl,session:cLive.agent_session}:ctrl;
+          return {live:true,latched};
+        }
+        const protectedCtrl=this.locks.has(paneKey(r,ctrl.pane))||this.isRestarting(r,ctrl.pane)||
+          !!this.db.pane(r,ctrl.pane)?.pending_restart||activeControllers.has(ctrl.pane);
+        return {live:protectedCtrl,latched:ctrl};
+      };
+      for(const p of this.db.panes()){
+        if(!same(p.route,r)||!p.controller||!same(p.controller.route,r))continue;
+        const {live,latched}=keepCtrl(p.controller);
+        if(!live)this.db.savePane({...p,controller:undefined});
+        else if(latched!==p.controller)this.db.savePane({...p,controller:latched});
+      }
+      for(const role of this.db.roles()){
+        if(!role.controller||!same(role.controller.route,r))continue;
+        const {live,latched}=keepCtrl(role.controller);
+        if(!live)this.db.saveRole({...role,controller:undefined});
+        else if(latched!==role.controller)this.db.saveRole({...role,controller:latched});
+      }
+      // 5. Prune dead/session-changed project_overrides and latch delayed agent_session onto valid overrides.
+      for(const ov of this.db.projectOverrides(r)){
+        if(this.locks.has(paneKey(r,ov.pane))||this.isRestarting(r,ov.pane))continue;
+        const saved=this.db.pane(r,ov.pane);
+        const live=online.get(ov.pane);
+        if(saved?.restart_failed&&!live)continue;
+        if(!live||!this.projects.isOverrideValid(r,live,ov)){
+          this.projects.clearOverride(r,ov.pane);
+          continue;
+        }
+        if(!ov.session&&live.agent_session&&ov.kind===live.kind&&(!ov.cwd||!live.launch_cwd||ov.cwd===live.launch_cwd)){
+          this.projects.assign(r,live,{project_id:ov.project});
+        }
       }
     });
     return pruned;
@@ -622,7 +742,7 @@ export class Workspaces {
     const online=new Map(agents.map(a=>[a.pane_id,a]));
     const managed_panes=this.db.panes().filter(p=>same(p.route,r)).map(p=>{
       const a=online.get(p.agent.pane_id);
-      const live=a!==undefined&&a.terminal_id===p.agent.terminal_id;
+      const live=a!==undefined&&sameSession(p.agent,a);
       if(live)online.delete(a.pane_id);
       const current=live?a:p.agent;
       const resolvedCwd=(live?a.cwd:undefined)??paneCwd(p.agent);

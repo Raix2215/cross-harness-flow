@@ -167,7 +167,10 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
     const record = { method, pane, route, argv, params, at };
     const id = requests.push(record);
     const failure = failures.get(method)?.shift();
-    if (failure) return errorResult(failure.code, failure.message ?? failure.code);
+    if (failure) {
+      if (failure.rawStdout !== undefined) return { code: failure.code ?? 0, stdout: failure.rawStdout, stderr: failure.stderr ?? '' };
+      return errorResult(failure.code, failure.message ?? failure.code);
+    }
 
     switch (method) {
       case '--version':
@@ -209,19 +212,23 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
         keys.push({ ...record, keys: params.slice(1) });
         const config = restartOptions.get(pane) ?? {};
         if (found && config.exitOn && config.exitOn !== 'never' && params.slice(1).includes(config.exitOn)) exitAgent(pane);
-        return ok(id, {});
+        return { code: 0, stdout: '' };
+      }
+      case 'pane.send-text': {
+        if (!panes.has(pane)) return errorResult('pane_not_found', pane);
+        return { code: 0, stdout: '' };
       }
       case 'agent.send-keys':
         if (!found) return errorResult('pane_not_found', `No agent at ${target}`);
         keys.push({ ...record, keys: params.slice(1) });
         if (restartOptions.get(pane)?.trust && found.agent_status === 'blocked') setAgent(pane, { agent_status: 'idle', screen: '' });
         else if (found.unblockOnKey && found.agent_status === 'blocked') setAgent(pane, { agent_status: 'working' });
-        return ok(id, {});
+        return { code: 0, stdout: '' };
       case 'agent.focus':
         if (!found) return errorResult('pane_not_found', `No agent at ${target}`);
         focuses.push({ ...record, pane: found.pane_id });
         for (const a of agents.values()) a.focused = a.pane_id === found.pane_id;
-        return ok(id, {});
+        return { code: 0, stdout: '' };
       case 'workspace.list':
         return ok(id, { workspaces: [...workspaces.values()] });
       case 'tab.list':
@@ -236,10 +243,10 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
         return ok(id, { root_pane: newPane(params) });
       case 'pane.close':
         removeAgent(pane);
-        return ok(id, {});
+        return { code: 0, stdout: '' };
       case 'notification.show':
         notifications.push(record);
-        return ok(id, {});
+        return { code: 0, stdout: '' };
       default:
         return errorResult('invalid_args', `Unsupported Herdr command: ${method}`);
     }

@@ -27,7 +27,7 @@ compatibility: 'chflow v3.6+, Node.js >=22.13.0; Herdr >=0.9.5 for interactive w
 - `agy` 仅用于有人在场的交互（非前台路由或提权含 `readonly`/`auto`/`auto-workspace`/`yolo` 须 `--attended`），禁止 `--unattended`、`--bg`、自动/定时重试及自动回退。无人值守无头任务使用合规 Codex / Claude / Pi 渠道。凭据与真实邮箱严禁落盘。
 
 ## 双轨入口
-- 先检查 `command -v chflow`；缺失时请用户确认在 `packages/chflow/` 执行 `npm ci && npm run build && npm install -g --prefix ~/.local .`（或 `npm pack` 后 `pnpm add -g --offline ./chflow-3.6.1.tgz`）以用户权限安装。建立 Herdr 工位前可用 `herdr --skill` 查阅工位约定。
+- 先检查 `command -v chflow`；缺失时请用户确认在 `packages/chflow/` 执行 `npm ci && npm run build && npm install -g --prefix ~/.local .`（或 `npm pack` 后 `pnpm add -g --offline ./chflow-3.6.3.tgz`）以用户权限安装。建立 Herdr 工位前可用 `herdr --skill` 查阅工位约定。
 - CLI `chflow`、可选 Stdio MCP `chflow mcp` 与常驻控制台 `chflow ui` 共享每用户 Daemon，首次业务操作懒启动；可用 `chflow stop` / `chflow quit` 显式停机。项目级 MCP 挂载见[操作手册](references/operations.md)。
 
 ## 派发、回执与核验

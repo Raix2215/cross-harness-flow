@@ -5,7 +5,7 @@ import { FlowError, type Context, type Invocation, type Opts } from './types.js'
 
 export const commandOptions:Record<string,string>={
   start:'kind name perm workspace_mode readonly resume place worktree base worktree_path trust_repository workspace direction label focus pane cwd model effort provider machine session attended unattended bg timeout matrix channel controller project role',
-  adopt:'name perm workspace_mode readonly controller takeover machine session attended unattended bg matrix channel project role',
+  adopt:'name perm workspace_mode readonly controller takeover as_controller machine session attended unattended bg matrix channel project role',
   handoff:'to to_machine to_session notify_old machine session',
   switch:'model effort provider perm workspace_mode readonly restart force auto_restart allow_last machine session timeout attended unattended bg matrix channel',
   send:'task brief brief_file perm workspace_mode readonly watch wait cwd machine session attended unattended bg model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn',
@@ -27,6 +27,7 @@ const roleOptions=new Map([
 export const roleActionOptions=(action:string)=>roleOptions.get(action);
 const cliOptions=new Map([
   ['role','project global desc kind model effort provider channel perm workspace_mode worktree cwd pane spawn headless controller close_old attended machine session timeout matrix'],
+  ['project','project name cwd'],
   ['prune','tasks project machine session'],
   ['ui','port host open session machine allow_remote standalone'],
   ['open','port host session machine allow_remote standalone'],
@@ -35,13 +36,13 @@ const cliOptions=new Map([
   ['queue','event to to_session to_machine'],['view','turn'],
 ]);
 export const optionsFor=(method:string)=>cliOptions.get(method)??
-  (method.startsWith('role.')?roleOptions.get(method.slice(5)):
+  (method==='project.init'?cliOptions.get('project'):method.startsWith('role.')?roleOptions.get(method.slice(5)):
     Object.hasOwn(commandOptions,method)?commandOptions[method]:undefined);
 const operatorOptions=new Map([
   ['respond',commandOptions.respond+' force'],['ui.set_perm','perm workspace_mode auto_restart'],['ui.terminal','keys text submit_key prompt'],
   ['ui.screen','lines'],['ui.queue_pause',''],['ui.queue_resume',''],['ui.queue_deliver_now','event_id'],
   ['ui.queue_consume','event_id'],['ui.queue_drop','event_id'],['ui.queue_reroute','event_id to to_session to_machine'],
-  ['ui.cancel_retry',''],['ui.assign_project','project machine session'],['ui.focus_pane','machine session'],
+  ['ui.cancel_retry',''],['ui.assign_project','project reset machine session'],['ui.project_persist','project name cwd'],['ui.focus_pane','machine session'],
   ['ui.release_pane','machine session'],['ui.cancel_restart','machine session'],
   ['ui.prune',cliOptions.get('prune')!],
   ...[...roleOptions].filter(([action])=>action!=='list').map(([action,opts])=>['ui.role.'+action,opts] as const),
@@ -51,7 +52,7 @@ const operatorOptional=new Set([
   'ui.queue_pause','ui.queue_resume','ui.queue_deliver_now','ui.queue_consume','ui.queue_drop','ui.queue_reroute',
 ]);
 export const flag=(name:string,method?:string)=>booleanOptions.has(name)||name==='worktree'&&(method==='role'||!!method?.includes('role.'));
-const booleanOptions=new Set('readonly takeover notify_old restart auto_restart allow_last watch wait attended unattended bg ok fail question progress stdin screen diag close_pane reconcile all panes enable_respond no_respond trust_repository focus open force allow_remote standalone spawn headless close_old tasks global'.split(' '));
+const booleanOptions=new Set('readonly takeover as_controller reset notify_old restart auto_restart allow_last watch wait attended unattended bg ok fail question progress stdin screen diag close_pane reconcile all panes enable_respond no_respond trust_repository focus open force allow_remote standalone spawn headless close_old tasks global'.split(' '));
 const repeatable=new Set(['key','keys']);
 const required=new Set('adopt handoff switch send reply wait watch respond inspect resume retry finish cancel'.split(' '));
 export const acceptsTarget=(method:string)=>required.has(method)||['start','health','inbox','flush'].includes(method);
@@ -134,8 +135,16 @@ export async function parse(method:string,args:string[],ctx:Context){
     }
   }
   const [target,value,...rest]=positional;
-  if((value!==undefined&&!['perm','queue','view','role'].includes(method))||rest.length)
+  if((value!==undefined&&!['perm','queue','view','role','project'].includes(method))||rest.length)
     return syntax('Unexpected positional argument.');
+  if(method==='project'){
+    if(target!=='init')return syntax('Choose project init.');
+    if(value!==undefined){
+      if(opts.project!==undefined)return syntax('Provide one project ID.');
+      opts.project=value;
+    }
+    return {method:'project.init',inv:await invocation('project.init',ctx,undefined,opts,extra,true)};
+  }
   if(method==='role'){
     if(!target||!roleOptions.has(target))return syntax('Choose role list, set, bind, unbind or remove.');
     const action='role.'+target;

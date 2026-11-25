@@ -3,15 +3,16 @@ function makePreviewSnapshot(){
   const now = Date.now(), min = 60000;
   return {
     seq: 42, now, herdr: 'reachable',
-    daemon: { pid: 48213, version: BOOT.version || '3.6.1', started_at: new Date(now - (3*60+12)*min).toISOString(), ui_url: 'http://127.0.0.1:4317', running: true },
+    daemon: { pid: 48213, version: BOOT.version || '3.6.3', started_at: new Date(now - (3*60+12)*min).toISOString(), ui_url: 'http://127.0.0.1:4317', running: true },
     global_roles: [
       { role: 'implementer', description: '通用功能实现与单元测试', default_kind: 'codex', default_perm: 'auto-workspace', worktree: true },
       { role: 'reviewer', description: '异构代码与安全审阅', default_kind: 'claude', default_perm: 'readonly', worktree: false },
       { role: 'researcher', description: '架构调研与方案对比', default_kind: 'pi', default_perm: 'readonly', worktree: false }
     ],
     projects: [
-      { project_id: 'acme-api', name: 'acme-api', root: '~/workspace/acme-api', source: 'config', controllers: ['w1:p2','w1:p5'], roles_count: 4, live_panes: 4, active_tasks: 3, blocked_count: 1 },
-      { project_id: 'web-portal', name: 'web-portal', root: '~/workspace/web-portal', source: 'git', controllers: ['w3:p1'], roles_count: 2, live_panes: 2, active_tasks: 2, blocked_count: 0 }
+      { project_id: 'acme-api', name: 'acme-api', root: '~/workspace/acme-api', source: 'config', config_managed: true, controllers: ['w1:p2','w1:p5'], roles_count: 4, live_panes: 4, active_tasks: 3, blocked_count: 1 },
+      { project_id: 'web-portal', name: 'web-portal', root: '~/workspace/web-portal', source: 'folder', config_managed: false, controllers: ['w3:p1'], roles_count: 2, live_panes: 3, active_tasks: 2, blocked_count: 0 },
+      { project_id: 'infra-ops', name: 'infra-ops', root: '~/workspace/infra-ops', source: 'config', config_managed: true, controllers: [], roles_count: 1, live_panes: 0, active_tasks: 0, blocked_count: 0 }
     ],
     roles: [
       { project_id: 'acme-api', role: 'backend', description: '服务端实现与单元测试', source: 'config', binding_mode: 'pane', pane_id: 'w2:p1', kind: 'codex', default_kind: 'codex', perm: 'auto-workspace', model: 'codex-model', live: true, agent_status: 'working', active_task: 'feat-rate-limit', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' } },
@@ -19,7 +20,8 @@ function makePreviewSnapshot(){
       { project_id: 'acme-api', role: 'reviewer', description: '异构代码审阅与测试复核', source: 'config', binding_mode: 'pane', pane_id: 'w2:p3', kind: 'claude', default_kind: 'claude', perm: 'ask', model: 'sonnet', live: true, agent_status: 'blocked', active_task: 'review-pr-87', controller: { pane: 'w1:p5', label: '主控 B', kind: 'codex' } },
       { project_id: 'acme-api', role: 'auditor', description: '依赖与安全合规审计', source: 'config', binding_mode: 'unbound', kind: 'pi', default_kind: 'pi', perm: 'readonly', model: 'pi-fast', live: false, agent_status: 'unbound' },
       { project_id: 'web-portal', role: 'frontend', description: '页面交互与样式实现', source: 'manual', binding_mode: 'pane', pane_id: 'w3:p2', kind: 'agy', default_kind: 'agy', perm: 'auto-workspace', model: 'primary-interactive', live: true, agent_status: 'working', active_task: 'checkout-ux', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } },
-      { project_id: 'web-portal', role: 'tester', description: '黑盒 E2E 与回归测试', source: 'manual', binding_mode: 'headless', kind: 'codex', default_kind: 'codex', perm: 'auto-workspace', model: 'codex-mini', live: true, agent_status: 'retrying', active_task: 'checkout-e2e', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } }
+      { project_id: 'web-portal', role: 'tester', description: '黑盒 E2E 与回归测试', source: 'manual', binding_mode: 'headless', kind: 'codex', default_kind: 'codex', perm: 'auto-workspace', model: 'codex-mini', live: true, agent_status: 'retrying', active_task: 'checkout-e2e', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } },
+      { project_id: 'infra-ops', role: 'devops', description: '部署清单与 CI 巡检', source: 'config', binding_mode: 'unbound', kind: 'codex', default_kind: 'codex', perm: 'readonly', model: 'codex-mini', live: false, agent_status: 'unbound' }
     ],
     managed_panes: [
       { pane_id: 'w2:p1', alias: 'backend', role: 'backend', display_name: 'backend', harness_label: 'Codex', location_label: 'WORK / API 研发', kind: 'codex', model: 'codex-model', perm: 'auto-workspace', native_perm: 'auto-workspace', perm_mode: 'native', project_id: 'acme-api', live: true, agent_status: 'working', cwd: '~/workspace/acme-api', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' } },
@@ -27,9 +29,10 @@ function makePreviewSnapshot(){
       { pane_id: 'w3:p2', alias: 'frontend', role: 'frontend', display_name: 'frontend', harness_label: 'Antigravity', location_label: 'Web / 结算页', kind: 'agy', model: 'primary-interactive', perm: 'auto-workspace', native_perm: 'ask', perm_mode: 'proxy', project_id: 'web-portal', live: true, agent_status: 'working', cwd: '~/workspace/web-portal', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } }
     ],
     controller_views: [
-      { project_id: 'acme-api', pane_id: 'w1:p2', live: true, display_name: '主控 A', kind: 'claude', harness_label: 'Claude Code', model: 'sonnet', location_label: 'WORK / API 主控', cwd: '~/workspace/acme-api', agent_status: 'idle', managed: true, perm: 'auto-workspace', native_perm: 'ask', perm_mode: 'proxy', paused: false, typing: true, queued_count: 1, managed_roles_count: 2, managed_workers_count: 0, active_tasks_count: 2, blocked_tasks_count: 0 },
-      { project_id: 'acme-api', pane_id: 'w1:p5', live: true, display_name: '主控 B', kind: 'codex', harness_label: 'Codex', model: 'codex-model', location_label: 'WORK / 审查主控', cwd: '~/workspace/acme-api', agent_status: 'idle', managed: false, paused: false, typing: false, queued_count: 0, managed_roles_count: 1, managed_workers_count: 0, active_tasks_count: 1, blocked_tasks_count: 1 },
-      { project_id: 'web-portal', pane_id: 'w3:p1', live: true, display_name: '主控 A', kind: 'agy', harness_label: 'Antigravity', location_label: 'Web / 交互主控', cwd: '~/workspace/web-portal', agent_status: 'working', managed: true, perm: 'yolo', native_perm: 'ask', perm_mode: 'proxy', paused: false, typing: false, queued_count: 0, managed_roles_count: 2, managed_workers_count: 0, active_tasks_count: 2, blocked_tasks_count: 0 }
+      { project_id: 'acme-api', pane_id: 'w1:p2', live: true, observed: false, display_name: '主控 A', kind: 'claude', harness_label: 'Claude Code', model: 'sonnet', location_label: 'WORK / API 主控', cwd: '~/workspace/acme-api', agent_status: 'idle', managed: true, perm: 'auto-workspace', native_perm: 'ask', perm_mode: 'proxy', paused: false, typing: true, queued_count: 1, managed_roles_count: 2, managed_workers_count: 0, active_tasks_count: 2, blocked_tasks_count: 0 },
+      { project_id: 'acme-api', pane_id: 'w1:p5', live: true, observed: false, display_name: '主控 B', kind: 'codex', harness_label: 'Codex', model: 'codex-model', location_label: 'WORK / 审查主控', cwd: '~/workspace/acme-api', agent_status: 'idle', managed: false, paused: false, typing: false, queued_count: 0, managed_roles_count: 1, managed_workers_count: 0, active_tasks_count: 1, blocked_tasks_count: 1 },
+      { project_id: 'web-portal', pane_id: 'w3:p1', live: true, observed: false, display_name: '主控 A', kind: 'agy', harness_label: 'Antigravity', location_label: 'Web / 交互主控', cwd: '~/workspace/web-portal', agent_status: 'working', managed: true, perm: 'yolo', native_perm: 'ask', perm_mode: 'proxy', paused: false, typing: false, queued_count: 0, managed_roles_count: 2, managed_workers_count: 0, active_tasks_count: 2, blocked_tasks_count: 0 },
+      { project_id: 'web-portal', pane_id: 'w4:p1', live: true, observed: true, display_name: 'web-portal · Claude Code', kind: 'claude', harness_label: 'Claude Code', location_label: 'DevOps / 调试标签', cwd: '~/workspace/web-portal', agent_status: 'idle', managed: false, paused: false, typing: false, queued_count: 0, managed_roles_count: 0, managed_workers_count: 0, active_tasks_count: 0, blocked_tasks_count: 0 }
     ],
     unmanaged_live_agents: [
       { pane_id: 'w1:p2', name: '主控 A', display_name: '主控 A', harness_label: 'Claude Code', location_label: 'WORK / API 主控', kind: 'claude', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' },
@@ -196,20 +199,46 @@ function handlePreviewAction(action, target, opts){
   } else if (action === 'adopt'){
     const a = snap.unmanaged_live_agents.find(x => x.pane_id === target);
     const cv = (snap.controller_views || []).find(x => x.pane_id === target);
+    const asCtrl = opts.as_controller === true || (opts.as_controller === undefined && Boolean(cv && !cv.observed));
+    if (opts.as_controller === false && cv){
+      snap.controller_views = (snap.controller_views || []).filter(x => x.pane_id !== target);
+      for (const pr of snap.projects) pr.controllers = (pr.controllers || []).filter(id => id !== target);
+    }
     if (a){
       snap.unmanaged_live_agents = snap.unmanaged_live_agents.filter(x => x.pane_id !== target);
-      snap.managed_panes.push({ ...a, alias: opts.name || a.display_name || a.pane_id, perm: opts.perm || 'ask', native_perm: 'unknown', perm_mode: effectivePermMode(a.kind, opts.perm || 'ask', 'unknown'), adopted: true, live: true, is_controller: Boolean(cv) });
+      const existing = snap.managed_panes.find(x => x.pane_id === target);
+      if (!existing) snap.managed_panes.push({ ...a, alias: opts.name || a.display_name || a.pane_id, perm: opts.perm || 'ask', native_perm: 'unknown', perm_mode: effectivePermMode(a.kind, opts.perm || 'ask', 'unknown'), adopted: true, live: true, is_controller: asCtrl });
     }
-    if (cv){
-      cv.managed = true;
+    if (asCtrl && cv){
+      cv.managed = true; cv.observed = false;
       cv.perm = opts.perm || cv.perm || 'ask';
       cv.perm_mode = effectivePermMode(cv.kind, cv.perm, cv.native_perm);
     }
+  } else if (action === 'assign_project'){
+    const nextProj = opts.reset ? (snap.projects[0]?.project_id || 'acme-api') : opts.project;
+    if (nextProj){
+      if (!snap.projects.some(p => p.project_id === nextProj)){
+        snap.projects.push({ project_id: nextProj, name: nextProj, root: '~/workspace/' + nextProj, source: 'override', config_managed: false, controllers: [], roles_count: 0, live_panes: 1, active_tasks: 0, blocked_count: 0 });
+      }
+      for (const list of [snap.managed_panes, snap.unmanaged_live_agents, snap.controller_views]){
+        for (const item of (list || [])) if (item.pane_id === target){ item.project_id = nextProj; item.overridden_project = !opts.reset; }
+      }
+      for (const pr of snap.projects) pr.controllers = (pr.controllers || []).filter(id => id !== target);
+    }
+  } else if (action === 'project_persist'){
+    const pid = opts.project || 'persisted-proj';
+    let pr = snap.projects.find(p => p.root === opts.cwd || p.project_id === pid);
+    if (pr){ pr.project_id = pid; pr.name = opts.name || pr.name; pr.source = 'config'; pr.config_managed = true; }
+    else snap.projects.push({ project_id: pid, name: opts.name || pid, root: opts.cwd || '~/workspace/' + pid, source: 'config', config_managed: true, controllers: [], roles_count: 0, live_panes: 1, active_tasks: 0, blocked_count: 0 });
+    render(); return { project: pr || { project_id: pid } };
   } else if (action === 'release_pane'){
     const p = snap.managed_panes.find(x => x.pane_id === target);
     if (p && !p.role){
       snap.managed_panes = snap.managed_panes.filter(x => x.pane_id !== target);
       snap.unmanaged_live_agents.push({ pane_id: p.pane_id, display_name: p.display_name, harness_label: p.harness_label, location_label: p.location_label, kind: p.kind, agent_status: p.agent_status || 'idle', cwd: p.cwd, project_id: p.project_id });
+      const cv = (snap.controller_views || []).find(x => x.pane_id === target);
+      if (cv){ cv.managed = false; cv.observed = true; cv.perm = undefined; cv.perm_mode = undefined; }
+      else snap.controller_views.push({ project_id: p.project_id, pane_id: p.pane_id, live: true, observed: true, display_name: p.display_name, kind: p.kind, harness_label: p.harness_label, location_label: p.location_label, cwd: p.cwd, agent_status: p.agent_status || 'idle', managed: false, paused: false, typing: false, queued_count: 0, managed_roles_count: 0, managed_workers_count: 0, active_tasks_count: 0, blocked_tasks_count: 0 });
     }
   } else if (action === 'send'){
     const pid = opts.project || snap.projects[0]?.project_id;

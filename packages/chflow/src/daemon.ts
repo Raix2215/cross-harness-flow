@@ -187,7 +187,7 @@ export async function serve(){
     try{
       const settings=uiSettings({},true);
       if(settings){
-        const ctx={...context(),operator:true};
+        const ctx={...context(),caller:undefined,workspace:undefined,operator:true};
         ui=await startUiServer(settings,ctx,()=>({
           call:(method,inv,signal)=>invoke(method,inv,signal??new AbortController().signal),
           subscribe:listener=>{

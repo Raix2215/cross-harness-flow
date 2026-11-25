@@ -41,12 +41,15 @@ export function controlDelays() {
   if(!a?.length||a.some(n=>!Number.isFinite(n)||n<0)) return [1000,2000,4000];
   return a.length===1?[a[0],a[0]*2,a[0]*4]:a;
 }
-export async function herdr(r:Route,args:string[], options:{timeout?:number;mutate?:boolean;ctx?:Context}={}):Promise<any>{
+export async function herdr(r:Route,args:string[], options:{timeout?:number;mutate?:boolean;ctx?:Context;allowEmpty?:boolean}={}):Promise<any>{
   const delays=controlDelays();
   for(let i=0;;i++){
     try {
-      const v=json(await raw(r,args,options.timeout??12000,options.ctx));
+      const text=(await raw(r,args,options.timeout??12000,options.ctx)).trim();
+      if(!text && options.allowEmpty) return {};
+      const v=json(text);
       if(v?.result && typeof v.result==='object') return v.result;
+      if(v && typeof v==='object' && 'result' in v && !v.error && (v.result===null || typeof v.result==='boolean') && options.allowEmpty) return {};
       const code=v?.error?.code;
       if(typeof code==='string' && /^[a-z0-9_]{1,64}$/i.test(code)) throw new FlowError(code,'Herdr request failed ('+code+').',code==='agent_blocked'?2:1);
       throw new FlowError('invalid_response','Herdr returned an unexpected JSON envelope.');
@@ -83,13 +86,13 @@ export async function hasDraft(r:Route,pane:string) {
   return /^\s*[❯>›]\s*\S/.test(box[0])||box.slice(1).some(line=>/\S/.test(line));
 }
 export async function notifyTyping(r:Route,count:number) {
-  await herdr(r,['notification','show',`chflow: ${count} 条回执待投递`,'--body','清空草稿后自动送达，或执行 chflow flush。','--sound','none'],{mutate:true});
+  await herdr(r,['notification','show',`chflow: ${count} 条回执待投递`,'--body','清空草稿后自动送达，或执行 chflow flush。','--sound','none'],{mutate:true,allowEmpty:true});
 }
-export async function prompt(r:Route,pane:string,text:string) {return herdr(r,['agent','prompt',pane,text],{mutate:true});}
-export async function keys(r:Route,pane:string,k:string[]) {if(k.length) await herdr(r,['agent','send-keys',pane,...k],{mutate:true});}
-export async function literal(r:Route,pane:string,text:string) {await herdr(r,['pane','send-text',pane,...(text.startsWith('-')?['--']:[]),text],{mutate:true});}
-export async function closePane(r:Route,pane:string) {return herdr(r,['pane','close',pane],{mutate:true});}
-export async function focusAgent(r:Route,pane:string) {return herdr(r,['agent','focus',pane],{mutate:true});}
+export async function prompt(r:Route,pane:string,text:string) {return herdr(r,['agent','prompt',pane,text],{mutate:true,allowEmpty:true});}
+export async function keys(r:Route,pane:string,k:string[]) {if(k.length) await herdr(r,['agent','send-keys',pane,...k],{mutate:true,allowEmpty:true});}
+export async function literal(r:Route,pane:string,text:string) {await herdr(r,['pane','send-text',pane,...(text.startsWith('-')?['--']:[]),text],{mutate:true,allowEmpty:true});}
+export async function closePane(r:Route,pane:string) {return herdr(r,['pane','close',pane],{mutate:true,allowEmpty:true});}
+export async function focusAgent(r:Route,pane:string) {return herdr(r,['agent','focus',pane],{mutate:true,allowEmpty:true});}
 export interface HerdrLabels { workspaces:Record<string,string>; tabs:Record<string,string>; }
 export async function listHerdrLabels(r:Route):Promise<HerdrLabels> {
   const workspaces:Record<string,string>={}, tabs:Record<string,string>={};
@@ -144,9 +147,9 @@ export async function startPane(inv:Invocation,r:Route,name:string,kind:string,n
   return {agent,place,worktree_path:layout.worktree?.path as string|undefined};
 }
 export async function paneKeys(r:Route,pane:string,k:string[]){
-  await herdr(r,['pane','send-keys',pane,...k],{mutate:true});
+  await herdr(r,['pane','send-keys',pane,...k],{mutate:true,allowEmpty:true});
 }
 export async function startIn(r:Route,pane:string,name:string,kind:string,native:string[],timeout=30){
-  const res=await herdr(r,['agent','start',name,'--kind',kind,'--pane',pane,'--timeout',String(Math.round(timeout*1000)),...(native.length?['--',...native]:[])],{mutate:true,timeout:timeout*1000+5000});
+  const res=await herdr(r,['agent','start',name,'--kind',kind,'--pane',pane,'--timeout',String(Math.round(timeout*1000)),...(native.length?['--',...native]:[])],{mutate:true,allowEmpty:true,timeout:timeout*1000+5000});
   return res.agent?.terminal_id? checkedAgent(res.agent):get(r,pane);
 }

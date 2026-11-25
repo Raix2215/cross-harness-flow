@@ -138,7 +138,7 @@ export function compliance(l:Launch,r:Route,o:Opts,ctx:Context,headless=false, m
   if(o.unattended&&o.attended) return invalid('Choose attended or unattended operation.');
   if(l.kind==='agy'){
     if(o.bg||o.unattended||headless) throw new FlowError('compliance_blocked','agy requires a supervised interactive pane; background, unattended and headless execution are disabled.');
-    const foreground=!!ctx.caller&&same(r,ctx.caller.route)||!!ctx.tty&&!('machine' in r);
+    const foreground=!!ctx.caller&&same(r,ctx.caller.route)||(!!ctx.tty||ctx.operator===true)&&!('machine' in r);
     if ((!foreground || ['readonly','auto','auto-workspace','yolo'].includes(l.perm))&&!l.attended)
       throw new FlowError('compliance_blocked','Pass --attended for supervised agy.');
     if(o.retry_at||o.retry_after||o.at||o.after||o.retry_backoff||Number(o.max_retries??0)>0)

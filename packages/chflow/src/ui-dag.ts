@@ -147,8 +147,10 @@ function renderDagView(){
   const lanesHtml = layout.lanes.map(l =>
     '<div class="dag-lane" data-lane-id="' + esc(l.id) + '" style="left:' + l.x + 'px;top:' + l.y + 'px;width:' + l.w + 'px;height:' + l.h + 'px">' +
       '<div class="dag-lane-head" data-lane-drag="' + esc(l.id) + '" title="按住拖动可移动整个项目容器">' +
-        '<div class="dag-lane-title"><span class="dag-lane-grip">' + ic('grip','sm') + '</span>' + ic('folder') + '<span>' + esc(l.project.name) + '</span><span class="tag mono">' + esc(l.project.source || 'project') + '</span></div>' +
-        '<div class="dag-lane-meta"><span>' + l.ctrlCount + ' 主控</span><span>·</span><span>' + l.roleCount + ' 角色/工位</span><span class="mono">' + esc(shortPath(l.project.root)) + '</span></div>' +
+        '<div class="dag-lane-title"><span class="dag-lane-grip">' + ic('grip','sm') + '</span>' + ic('folder') + '<span>' + esc(l.project.name) + '</span><span class="tag mono">' + esc(l.project.source === 'config' ? '已持久化' : (l.project.source || 'folder')) + '</span></div>' +
+        '<div class="dag-lane-meta"><span>' + l.ctrlCount + ' 主控</span><span>·</span><span>' + l.roleCount + ' 角色/工位</span><span class="mono">' + esc(shortPath(l.project.root)) + '</span>' +
+          (l.project.source !== 'config' && l.project.root ? '<button class="btn sm ghost" data-action="openPersistProject" data-proj="' + esc(l.project.project_id) + '" data-cwd="' + esc(l.project.root) + '" title="写入 .chflow/project.yaml 持久化项目归属与角色定义">持久化</button>' : '') +
+        '</div>' +
       '</div>' +
       '<div class="dag-col-labels">' +
         '<span class="dag-col-label" style="left:32px">' + ic('compass','sm') + '主控会话 (Controllers)</span>' +
@@ -171,17 +173,20 @@ function renderDagView(){
         : { label: '就绪', c: 'ok' };
       const cPermMeta = c.managed && c.perm ? permModeMeta(c.kind, c.perm, c.nativePerm, c.permMode) : null;
       const permShort = c.perm === 'auto-workspace' ? 'auto-ws' : (c.perm || '');
-      const ownSummary = '管辖 ' + c.managedRolesCount + ' 角色' + (c.managedWorkersCount ? ' · ' + c.managedWorkersCount + ' 工位' : '') + ' · 活跃 ' + c.activeTasksCount + (c.blockedTasksCount ? ' · 待审 ' + c.blockedTasksCount : '');
+      const ownSummary = c.observed && !c.managed && !c.managedRolesCount && !c.activeTasksCount
+        ? '手动终端会话 · 自动归属当前项目'
+        : '管辖 ' + c.managedRolesCount + ' 角色' + (c.managedWorkersCount ? ' · ' + c.managedWorkersCount + ' 工位' : '') + ' · 活跃 ' + c.activeTasksCount + (c.blockedTasksCount ? ' · 待审 ' + c.blockedTasksCount : '');
       const chNote = !c.live ? '主控会话已退出（仍有挂起回执或任务）'
         : c.paused ? '免打扰暂停中 · 回执暂存队列'
         : c.typing ? '检测到输入草稿 · 暂缓 ' + c.queuedCount + ' 条回执'
         : c.queuedCount ? '候投回执 ' + c.queuedCount + ' 条待送达'
+        : !c.managed ? '仅观测（零侵入）· 点击调权限、切项目或转工位'
         : '回执通道畅通 · 16 行输入框防打扰';
       return '<div class="dag-node ctrl ' + (!c.live ? 'st-offline ' : c.status === 'blocked' ? 'st-blocked ' : '') + sel + '" data-node-id="' + esc(c.nodeId) + '" data-lane-id="' + esc(n.laneId) + '" data-node-kind="ctrl" title="Herdr 窗格: ' + esc(c.paneId) + '" style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
         '<div class="dn-head"><div class="dn-title">' + ic('compass') + '<span>' + esc(c.name) + '</span></div><span class="pill ' + stInfo.c + '"><span class="dot ' + stInfo.c + '"></span>' + stInfo.label + '</span></div>' +
         '<div class="dn-sub"><span>' + esc(harnessName(c.kind)) + (c.model ? ' · ' + esc(c.model) : '') + '</span>' + (c.location ? '<span class="loc-chip">' + esc(c.location) + '</span>' : '') + '</div>' +
         '<div class="dn-task"><div class="dn-task-top"><span>' + esc(ownSummary) + '</span>' + (c.queuedCount ? '<span class="pill warn">' + c.queuedCount + ' 候投</span>' : '') + '</div><div class="dn-task-note">' + esc(chNote) + '</div></div>' +
-        '<div class="dn-foot"><span class="dn-foot-left">' + (cPermMeta ? '<span class="tag" title="' + esc(cPermMeta.note) + '">' + ic('shield','sm') + esc(cPermMeta.short + permShort) + '</span>' : '<span class="mono">' + esc(shortPath(c.cwd)) + '</span>') + '</span><div style="display:flex;align-items:center;gap:4px">' +
+        '<div class="dn-foot"><span class="dn-foot-left">' + (cPermMeta ? '<span class="tag" title="' + esc(cPermMeta.note) + '">' + ic('shield','sm') + esc(cPermMeta.short + permShort) + '</span>' : '<span class="tag">仅观测</span>') + (c.overriddenProject ? ' <span class="tag">已指派</span>' : '') + '</span><div style="display:flex;align-items:center;gap:4px">' +
           (c.live ? '<button class="btn icon sm ghost" data-action="' + (c.paused ? 'resumeRecipient' : 'pauseRecipient') + '" data-pane="' + esc(c.paneId) + '" title="' + (c.paused ? '恢复自动投递回执' : '开启免打扰暂停投递') + '">' + ic(c.paused ? 'play' : 'pause','sm') + '</button>' : '') +
           (c.live ? '<button class="btn icon sm ghost" data-action="focusPane" data-pane="' + esc(c.paneId) + '" title="在 Herdr 中定位此窗格">' + ic('locate','sm') + '</button>' : '') +
         '</div></div>' +
@@ -234,14 +239,14 @@ function renderDagView(){
   }).join('');
 
   const emptyHtml = layout.lanes.length ? '' :
-    '<div class="empty-canvas"><div class="empty-card"><div style="margin-bottom:10px;color:var(--accent)">' + ic('dag','lg') + '</div><div style="font-size:16px;font-weight:700;margin-bottom:6px">当前暂无项目角色或活跃派发</div><div style="font-size:13.5px;color:var(--text-3);margin-bottom:16px">点击右上角「新建角色」创建固定分工（支持保存为全局模板），或直接向下方外部在线会话派发任务。</div><div style="display:flex;justify-content:center;gap:8px"><button class="btn" data-action="openNewRole">' + ic('user-plus','sm') + '新建角色</button><button class="btn primary" data-action="openDispatch">' + ic('send','sm') + '派发任务</button></div></div></div>';
+    '<div class="empty-canvas"><div class="empty-card"><div style="margin-bottom:10px;color:var(--accent)">' + ic('dag','lg') + '</div><div style="font-size:16px;font-weight:700;margin-bottom:6px">当前暂无在线会话或活跃项目</div><div style="font-size:13.5px;color:var(--text-3);margin-bottom:16px">在 Herdr 终端启动任意 Harness 会话后将自动归属对应目录项目并展示为主控；也可从顶部项目菜单切入已持久化项目一键拉起角色。</div><div style="display:flex;justify-content:center;gap:8px"><button class="btn" data-action="openNewRole">' + ic('user-plus','sm') + '新建角色</button><button class="btn primary" data-action="openDispatch">' + ic('send','sm') + '派发任务</button></div></div></div>';
 
   return '<div class="dag-shell ' + (state.dag.expanded ? 'expanded' : '') + '" id="dag-shell">' +
     emptyHtml +
     '<div class="dag-stage" id="dag-stage" style="transform:translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')">' +
       lanesHtml + '<svg class="dag-svg">' + svgPaths + '</svg>' + edgeBadges + nodesHtml +
     '</div>' +
-    '<div class="dag-hint">拖顶栏移项目 · 拖卡片容器自动贴合 · 拖右下角调尺寸 · 布局自动记住 · Esc 关闭浮层</div>' +
+    '<div class="dag-hint">拖顶栏移项目 · 拖卡片容器自动贴合 · 右键卡片快捷切换项目/角色 · 布局自动记住 · Esc 关闭浮层</div>' +
     '<div class="dag-controls">' +
       '<button data-action="dagZoomOut" title="缩小">−</button>' +
       '<span class="dag-zoom-val" id="dag-zoom-val">' + Math.round(state.dag.scale * 100) + '%</span>' +
@@ -250,7 +255,7 @@ function renderDagView(){
       '<button data-action="dagReset">重置</button>' +
       '<button data-action="dagExpand" title="' + (state.dag.expanded ? '退出全屏画布' : '全屏展开画布') + '">' + ic(state.dag.expanded ? 'minimize' : 'maximize','sm') + '</button>' +
     '</div>' +
-  '</div>' + renderUnmanagedBox();
+  '</div>';
 }
 
 function updateDraggedEdges(stage, layout){
@@ -288,16 +293,193 @@ function bindDagInteractions(){
   const shell = document.getElementById('dag-shell'), stage = document.getElementById('dag-stage');
   if (!shell || !stage) return;
 
-  shell.onwheel = ev => {
-    ev.preventDefault();
-    state.dag.scale = Math.min(1.5, Math.max(0.5, state.dag.scale * (ev.deltaY < 0 ? 1.08 : 0.92)));
+  const applyTransform = () => {
     stage.style.transform = 'translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')';
     const zv = document.getElementById('dag-zoom-val');
     if (zv) zv.textContent = Math.round(state.dag.scale * 100) + '%';
   };
 
+  shell.onwheel = ev => {
+    ev.preventDefault();
+    state.dag.scale = Math.min(1.6, Math.max(0.3, state.dag.scale * (ev.deltaY < 0 ? 1.08 : 0.92)));
+    applyTransform();
+  };
+
+  let lastTouchAt = 0;
+  let touchState = null;
+
+  const openNodeDrawer = nodeEl => {
+    const id = nodeEl.dataset.nodeId;
+    const kind = nodeEl.dataset.nodeKind;
+    if (kind === 'worker') { state.drawer = { kind: 'worker', nodeId: id, tab: 'overview' }; render(); }
+    else if (kind === 'ctrl') { state.drawer = { kind: 'ctrl', nodeId: id, tab: 'overview' }; render(); }
+    else if (kind === 'fallback') { state.drawer = { kind: 'worker', nodeId: nodeEl.dataset.workerId, tab: 'overview' }; render(); }
+  };
+
+  shell.addEventListener('touchstart', ev => {
+    lastTouchAt = Date.now();
+    if (ev.target.closest('button') || ev.target.closest('.dag-controls')) return;
+    const touches = ev.touches;
+    if (touches.length === 2){
+      ev.preventDefault();
+      if (touchState?.el) touchState.el.classList.remove('dragging');
+      shell.classList.remove('panning');
+      const [t0, t1] = [touches[0], touches[1]];
+      const rect = shell.getBoundingClientRect();
+      const midX = (t0.clientX + t1.clientX) / 2 - rect.left;
+      const midY = (t0.clientY + t1.clientY) / 2 - rect.top;
+      touchState = {
+        mode: 'pinch',
+        dist: Math.max(1, Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY)),
+        scale: state.dag.scale,
+        worldX: (midX - state.dag.tx) / state.dag.scale,
+        worldY: (midY - state.dag.ty) / state.dag.scale
+      };
+      return;
+    }
+    if (touches.length !== 1) return;
+    const t = touches[0];
+    const layout = state.lastLayout;
+    const resizeEl = ev.target.closest('[data-lane-resize]');
+    if (resizeEl){
+      const laneId = resizeEl.dataset.laneResize;
+      const lane = layout?.lanes.find(l => l.id === laneId);
+      const laneEl = stage.querySelector('.dag-lane[data-lane-id="' + CSS.escape(laneId) + '"]');
+      if (lane && laneEl){
+        const laneNodes = layout.nodes.filter(n => n.laneId === laneId);
+        laneEl.classList.add('dragging');
+        touchState = {
+          mode: 'resize', laneId, lane, el: laneEl, sx: t.clientX, sy: t.clientY, startW: lane.w, startH: lane.h,
+          minW: Math.max(420, ...laneNodes.map(n => (n.x - lane.x) + n.w + LANE_PAD_X)),
+          minH: Math.max(220, ...laneNodes.map(n => (n.y - lane.y) + n.h + LANE_PAD_BOTTOM))
+        };
+        return;
+      }
+    }
+    const laneDragEl = ev.target.closest('[data-lane-drag]');
+    if (laneDragEl){
+      const laneId = laneDragEl.dataset.laneDrag;
+      const lane = layout?.lanes.find(l => l.id === laneId);
+      const laneEl = stage.querySelector('.dag-lane[data-lane-id="' + CSS.escape(laneId) + '"]');
+      if (lane && laneEl){
+        const laneNodes = layout.nodes.filter(n => n.laneId === laneId);
+        laneEl.classList.add('dragging');
+        touchState = {
+          mode: 'lane', laneId, lane, el: laneEl, sx: t.clientX, sy: t.clientY,
+          orig: state.dag.laneOffsets[laneId] || { dx: 0, dy: 0 },
+          laneStartX: lane.x, laneStartY: lane.y,
+          nodeStart: laneNodes.map(n => ({ n, el: stage.querySelector('.dag-node[data-node-id="' + CSS.escape(n.id) + '"]'), x: n.x, y: n.y }))
+        };
+        return;
+      }
+    }
+    const nodeEl = ev.target.closest('.dag-node');
+    if (nodeEl){
+      const id = nodeEl.dataset.nodeId;
+      const nodeObj = layout?.nodes.find(n => n.id === id);
+      const lane = nodeObj ? layout?.lanes.find(l => l.id === nodeObj.laneId) : null;
+      const startX = nodeObj ? nodeObj.x : 0;
+      const startY = nodeObj ? nodeObj.y : 0;
+      touchState = {
+        mode: 'node', id, el: nodeEl, nodeObj, lane, sx: t.clientX, sy: t.clientY,
+        startX, startY,
+        baseAbsX: lane && nodeObj ? (lane.x + nodeObj.baseRelX) : startX,
+        baseAbsY: lane && nodeObj ? (lane.y + nodeObj.baseRelY) : startY,
+        moved: false
+      };
+      return;
+    }
+    shell.classList.add('panning');
+    touchState = { mode: 'pan', px: t.clientX - state.dag.tx, py: t.clientY - state.dag.ty };
+  }, { passive: false });
+
+  shell.addEventListener('touchmove', ev => {
+    if (!touchState) return;
+    lastTouchAt = Date.now();
+    const touches = ev.touches;
+    if (touchState.mode === 'pinch' && touches.length >= 2){
+      ev.preventDefault();
+      const [t0, t1] = [touches[0], touches[1]];
+      const rect = shell.getBoundingClientRect();
+      const midX = (t0.clientX + t1.clientX) / 2 - rect.left;
+      const midY = (t0.clientY + t1.clientY) / 2 - rect.top;
+      const dist = Math.max(1, Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY));
+      state.dag.scale = Math.min(1.8, Math.max(0.3, touchState.scale * (dist / touchState.dist)));
+      state.dag.tx = Math.round(midX - touchState.worldX * state.dag.scale);
+      state.dag.ty = Math.round(midY - touchState.worldY * state.dag.scale);
+      applyTransform();
+      return;
+    }
+    if (touches.length !== 1) return;
+    const t = touches[0];
+    const layout = state.lastLayout;
+    if (touchState.mode === 'pan'){
+      ev.preventDefault();
+      state.dag.tx = Math.round(t.clientX - touchState.px);
+      state.dag.ty = Math.round(t.clientY - touchState.py);
+      applyTransform();
+    } else if (touchState.mode === 'resize'){
+      ev.preventDefault();
+      const nw = Math.max(touchState.minW, Math.round(touchState.startW + (t.clientX - touchState.sx) / state.dag.scale));
+      const nh = Math.max(touchState.minH, Math.round(touchState.startH + (t.clientY - touchState.sy) / state.dag.scale));
+      state.dag.laneSizes[touchState.laneId] = { w: nw, h: nh };
+      touchState.lane.w = nw; touchState.lane.h = nh;
+      touchState.el.style.width = nw + 'px'; touchState.el.style.height = nh + 'px';
+    } else if (touchState.mode === 'lane'){
+      ev.preventDefault();
+      const ddx = (t.clientX - touchState.sx) / state.dag.scale;
+      const ddy = (t.clientY - touchState.sy) / state.dag.scale;
+      state.dag.laneOffsets[touchState.laneId] = { dx: Math.round(touchState.orig.dx + ddx), dy: Math.round(touchState.orig.dy + ddy) };
+      touchState.lane.x = Math.round(touchState.laneStartX + ddx);
+      touchState.lane.y = Math.round(touchState.laneStartY + ddy);
+      touchState.el.style.left = touchState.lane.x + 'px';
+      touchState.el.style.top = touchState.lane.y + 'px';
+      for (const item of touchState.nodeStart){
+        item.n.x = Math.round(item.x + ddx); item.n.y = Math.round(item.y + ddy);
+        if (item.el){ item.el.style.left = item.n.x + 'px'; item.el.style.top = item.n.y + 'px'; }
+      }
+      if (layout) updateDraggedEdges(stage, layout);
+    } else if (touchState.mode === 'node'){
+      const ddx = (t.clientX - touchState.sx) / state.dag.scale;
+      const ddy = (t.clientY - touchState.sy) / state.dag.scale;
+      if (!touchState.moved && Math.hypot(t.clientX - touchState.sx, t.clientY - touchState.sy) > 8){
+        touchState.moved = true;
+        touchState.el.classList.add('dragging');
+      }
+      if (touchState.moved && touchState.nodeObj){
+        ev.preventDefault();
+        const minX = touchState.lane ? touchState.lane.x + 20 : -Infinity;
+        const minY = touchState.lane ? touchState.lane.y + LANE_HEADER_CLEARANCE : -Infinity;
+        touchState.nodeObj.x = Math.round(Math.max(minX, touchState.startX + ddx));
+        touchState.nodeObj.y = Math.round(Math.max(minY, touchState.startY + ddy));
+        state.dag.offsets[touchState.id] = { dx: touchState.nodeObj.x - touchState.baseAbsX, dy: touchState.nodeObj.y - touchState.baseAbsY };
+        touchState.el.style.left = touchState.nodeObj.x + 'px';
+        touchState.el.style.top = touchState.nodeObj.y + 'px';
+        if (touchState.lane && layout) syncLaneDom(stage, layout, touchState.lane.id);
+        if (layout) updateDraggedEdges(stage, layout);
+      }
+    }
+  }, { passive: false });
+
+  const endTouch = ev => {
+    if (!touchState) return;
+    lastTouchAt = Date.now();
+    const ts = touchState;
+    touchState = null;
+    shell.classList.remove('panning');
+    if (ts.el) ts.el.classList.remove('dragging');
+    if (ts.mode === 'resize' || ts.mode === 'lane'){
+      saveDagPersist();
+    } else if (ts.mode === 'node'){
+      if (ts.moved) saveDagPersist();
+      else if (ev.type === 'touchend'){ ev.preventDefault(); openNodeDrawer(ts.el); }
+    }
+  };
+  shell.addEventListener('touchend', endTouch, { passive: false });
+  shell.addEventListener('touchcancel', endTouch);
+
   shell.onmousedown = ev => {
-    if (ev.button !== 0) return;
+    if (ev.button !== 0 || Date.now() - lastTouchAt < 500) return;
     if (ev.target.closest('button') || ev.target.closest('.dag-controls')) return;
 
     const resizeEl = ev.target.closest('[data-lane-resize]');
@@ -434,19 +616,39 @@ function bindDagInteractions(){
   };
 
   shell.oncontextmenu = ev => {
+    const ctrlEl = ev.target.closest('.dag-node[data-node-kind="ctrl"]');
+    if (ctrlEl){
+      ev.preventDefault();
+      const c = findCtrlByNodeId(ctrlEl.dataset.nodeId);
+      if (!c) return;
+      const managedEntry = (getSnap().managed_panes || []).find(p => p.pane_id === c.paneId && !p.role);
+      const hasCtrlWorkerTask = Boolean(managedEntry && taskForPane(managedEntry));
+      document.getElementById('ctx-root').innerHTML = '<div class="ctx-menu" style="left:' + Math.max(12, Math.min(ev.clientX, window.innerWidth - 236)) + 'px;top:' + Math.max(12, Math.min(ev.clientY, window.innerHeight - 310)) + 'px">' +
+        '<button class="ctx-item" data-action="openCtrl" data-id="' + esc(c.nodeId) + '">' + ic('eye','sm') + '查看主控详情</button>' +
+        (c.live ? '<button class="ctx-item" data-action="focusPane" data-pane="' + esc(c.paneId) + '">' + ic('locate','sm') + '跳转 Herdr 窗格</button>' : '') +
+        (c.live ? '<button class="ctx-item" data-action="openProjectModal" data-pane="' + esc(c.paneId) + '" data-proj="' + esc(c.projectId) + '" data-cwd="' + esc(c.cwd || '') + '">' + ic('folder','sm') + '切换所属项目...</button>' : '') +
+        (c.live ? '<button class="ctx-item" data-action="openBindPane" data-pane="' + esc(c.paneId) + '" data-proj="' + esc(c.projectId) + '">' + ic('link','sm') + '绑定为项目角色...</button>' : '') +
+        (c.live ? '<button class="ctx-item" data-action="convertToWorker" data-pane="' + esc(c.paneId) + '" data-kind="' + esc(c.kind) + '" data-proj="' + esc(c.projectId) + '">' + ic('monitor','sm') + '转为临时受管工位</button>' : '') +
+        (c.live && !c.managed ? '<button class="ctx-item" data-action="adoptAsController" data-pane="' + esc(c.paneId) + '" data-kind="' + esc(c.kind) + '">' + ic('shield','sm') + '接入管控（保留主控位）</button>' : '') +
+        (c.live ? '<button class="ctx-item" data-action="' + (c.paused ? 'resumeRecipient' : 'pauseRecipient') + '" data-pane="' + esc(c.paneId) + '">' + ic(c.paused ? 'play' : 'pause','sm') + (c.paused ? '恢复自动投递回执' : '开启免打扰暂停') + '</button>' : '') +
+        (managedEntry && !hasCtrlWorkerTask ? '<button class="ctx-item danger" data-action="releasePane" data-pane="' + esc(c.paneId) + '">' + ic('x','sm') + '移出管控（退回仅观测）</button>' : '') +
+      '</div>';
+      return;
+    }
     const nodeEl = ev.target.closest('.dag-node[data-node-kind="worker"]');
     if (!nodeEl) return;
     ev.preventDefault();
     const w = findWorkerByNodeId(nodeEl.dataset.nodeId);
     if (!w) return;
-    document.getElementById('ctx-root').innerHTML = '<div class="ctx-menu" style="left:' + Math.min(ev.clientX, window.innerWidth - 220) + 'px;top:' + Math.min(ev.clientY, window.innerHeight - 250) + 'px">' +
+    document.getElementById('ctx-root').innerHTML = '<div class="ctx-menu" style="left:' + Math.max(12, Math.min(ev.clientX, window.innerWidth - 226)) + 'px;top:' + Math.max(12, Math.min(ev.clientY, window.innerHeight - 290)) + 'px">' +
       '<button class="ctx-item" data-action="openWorker" data-id="' + esc(w.nodeId) + '">' + ic('eye','sm') + '查看详情</button>' +
       (w.paneId && w.status !== 'offline' ? '<button class="ctx-item" data-action="focusPane" data-pane="' + esc(w.paneId) + '">' + ic('locate','sm') + '跳转 Herdr 窗格</button>' : '') +
       (w.status === 'blocked' && w.task ? '<button class="ctx-item" data-action="approveTask" data-id="' + esc(w.task.task) + '">' + ic('check','sm') + '一键批准放行</button>' : '') +
       (w.role ? '<button class="ctx-item" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('swap','sm') + '热替换会话 / 模型</button>' : '') +
+      (!w.role && w.paneId && w.status !== 'offline' ? '<button class="ctx-item" data-action="openProjectModal" data-pane="' + esc(w.paneId) + '" data-proj="' + esc(w.projectId) + '" data-cwd="' + esc(w.pane?.cwd || '') + '">' + ic('folder','sm') + '切换所属项目...</button>' : '') +
       (!w.role && w.paneId ? '<button class="ctx-item" data-action="openBindPane" data-pane="' + esc(w.paneId) + '" data-proj="' + esc(w.projectId) + '">' + ic('link','sm') + '绑定为项目角色</button>' : '') +
-      (w.bindingMode !== 'unbound' ? '<button class="ctx-item" data-action="setPerm" data-target="' + esc(w.task?.task || w.paneId || w.rawRole || w.name) + '" data-perm="auto-workspace">' + ic('shield','sm') + '切为工作区自动</button>' : '') +
-      (!w.role && w.paneId && !w.task ? '<button class="ctx-item danger" data-action="releasePane" data-pane="' + esc(w.paneId) + '">' + ic('x','sm') + '移出管控（不关终端）</button>' : '') +
+      (w.bindingMode !== 'unbound' ? '<button class="ctx-item" data-action="setPerm" data-target="' + esc(w.task?.task || w.paneId || w.rawRole || w.name) + '" data-perm="auto-workspace" data-kind="' + esc(w.kind) + '">' + ic('shield','sm') + '切为工作区自动</button>' : '') +
+      (!w.role && w.paneId && !w.task ? '<button class="ctx-item danger" data-action="releasePane" data-pane="' + esc(w.paneId) + '">' + ic('x','sm') + '移出管控（退回仅观测）</button>' : '') +
       (w.role && w.bindingMode !== 'unbound' ? '<button class="ctx-item danger" data-action="unbindRole" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('x','sm') + '解绑当前会话</button>' : '') +
     '</div>';
   };

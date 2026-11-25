@@ -18,7 +18,7 @@ const FAVICON_LINK = `<link rel="icon" type="image/svg+xml" href="data:image/svg
 const APP_CORE_TOP = String.raw`
 (function(){
 'use strict';
-const BOOT = window.__CHFLOW_BOOT__ || { mode: 'preview', version: '3.6.1' };
+const BOOT = window.__CHFLOW_BOOT__ || { mode: 'preview', version: '3.6.3' };
 const ic = (name, cls='') => '<svg class="ic ' + cls + '"><use href="#i-' + name + '"/></svg>';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const TERMINAL_STATES = new Set(['succeeded','failed','cancelled']);
@@ -254,6 +254,7 @@ function saveDagPersist(){
 }
 
 const persistedDag = loadDagPersist();
+const isNarrowViewport = () => typeof window !== 'undefined' && window.innerWidth <= 768;
 const state = {
   snap: BOOT.mode === 'preview' ? makePreviewSnapshot() : null,
   connected: BOOT.mode === 'preview',
@@ -261,7 +262,8 @@ const state = {
   stopReason: null,
   project: 'all',
   tab: 'work',
-  workMode: 'dag',
+  workMode: isNarrowViewport() ? 'cards' : 'dag',
+  workModeManual: false,
   projMenuOpen: false,
   focusCollapsed: false,
   autoRestartPerm: getSavedAutoRestart(),
@@ -272,6 +274,10 @@ const state = {
   dag: { tx: 24, ty: 14, scale: 0.85, offsets: persistedDag.offsets, laneOffsets: persistedDag.laneOffsets, laneSizes: persistedDag.laneSizes, fitted: false, expanded: false },
   lastLayout: null
 };
+function syncOverlayLock(){
+  const modalRoot = document.getElementById('modal-root');
+  document.body.classList.toggle('overlay-open', Boolean(state.drawer) || Boolean(modalRoot && modalRoot.innerHTML.trim()));
+}
 
 let es = null, reconnectTimer = null, reconnectDelay = 1200;
 
@@ -395,9 +401,17 @@ async function connectLive(){
 }
 
 function getSnap(){ return state.snap || { projects: [], roles: [], global_roles: [], managed_panes: [], unmanaged_live_agents: [], controller_views: [], tasks: [], queue: [], scheduled_retries: [], paused_recipients: [], audit: [], daemon: {} }; }
+function isProjectActiveOnCanvas(p){
+  const snap = getSnap();
+  if (p.live_panes > 0 || p.active_tasks > 0 || (p.controllers && p.controllers.length > 0)) return true;
+  if ((snap.controller_views || []).some(c => c.project_id === p.project_id)) return true;
+  if ((snap.managed_panes || []).some(m => m.project_id === p.project_id)) return true;
+  return false;
+}
 function visibleProjects(){
   const list = getSnap().projects || [];
-  return state.project === 'all' ? list : list.filter(p => p.project_id === state.project);
+  if (state.project !== 'all') return list.filter(p => p.project_id === state.project);
+  return list.filter(isProjectActiveOnCanvas);
 }
 function projectName(pid){
   return (getSnap().projects || []).find(p => p.project_id === pid)?.name || pid || 'default';
@@ -573,16 +587,17 @@ function buildProjectControllers(project, workers){
   const views = (snap.controller_views || []).filter(v => v.project_id === project.project_id);
   const viewByPane = new Map(views.map(v => [v.pane_id, v]));
   const ids = new Set([...views.map(v => v.pane_id), ...(project.controllers || [])]);
-  for (const w of workers) if (w.controllerPane) ids.add(w.controllerPane);
   const pausedSet = new Set(snap.paused_recipients || []);
   const activeTasks = (snap.tasks || []).filter(t => t.project_id === project.project_id && !TERMINAL_STATES.has(t.state));
 
   const out = [];
   for (const paneId of ids){
     const cv = viewByPane.get(paneId);
-    const info = findPaneMeta(paneId);
-    const managedEntry = (snap.managed_panes || []).find(p => p.pane_id === paneId);
-    const live = cv ? Boolean(cv.live) : Boolean(info && info.live !== false);
+    const rawInfo = findPaneMeta(paneId);
+    const rawManaged = (snap.managed_panes || []).find(p => p.pane_id === paneId);
+    const live = cv ? Boolean(cv.live) : Boolean(rawInfo && rawInfo.live !== false);
+    const info = live ? rawInfo : null;
+    const managedEntry = (cv ? cv.managed : Boolean(rawManaged)) ? rawManaged : null;
     const queued = (snap.queue || []).filter(q => PENDING_QUEUE.has(q.state) && q.recipient?.pane === paneId);
     const ownedWorkers = workers.filter(w => w.controllerPane === paneId);
     const ownedRolesCount = cv?.managed_roles_count ?? ownedWorkers.filter(w => w.itemKind === 'role').length;
@@ -591,7 +606,7 @@ function buildProjectControllers(project, workers){
     const activeCount = cv?.active_tasks_count ?? ownedTasks.length;
     const blockedCount = cv?.blocked_tasks_count ?? ownedTasks.filter(t => t.state === 'blocked').length;
     const queuedCount = cv?.queued_count ?? queued.length;
-    const hasActiveWork = queuedCount > 0 || activeCount > 0 || ownedWorkers.some(w => w.status !== 'unbound' && w.status !== 'offline');
+    const hasActiveWork = queuedCount > 0 || activeCount > 0;
     if (!live && !hasActiveWork) continue;
 
     const typing = cv?.typing ?? queued.some(q => q.state === 'deferred_user_typing');
@@ -608,7 +623,8 @@ function buildProjectControllers(project, workers){
     out.push({
       nodeId: 'ctrl:' + project.project_id + ':' + paneId,
       paneId, projectId: project.project_id,
-      live, name, kind,
+      live, observed: Boolean(cv?.observed), overriddenProject: Boolean(cv?.overridden_project),
+      name, kind,
       model: cv?.model || managedEntry?.model || '',
       effort: cv?.effort || managedEntry?.effort || '',
       cwd: cv?.cwd || info?.cwd || project.root || '',
@@ -634,6 +650,53 @@ function allVisibleWorkers(){
 `;
 
 const APP_CORE_BOTTOM = String.raw`
+function centerDagView(layout){
+  const shell = document.getElementById('dag-shell');
+  if (!shell || !layout || !layout.lanes.length) return;
+  const sw = Math.max(280, shell.clientWidth || 1440);
+  const sh = Math.max(280, shell.clientHeight || 620);
+  const pad = sw < 640 ? 14 : 32;
+  const minScale = sw < 640 ? 0.30 : 0.45;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const l of layout.lanes){
+    minX = Math.min(minX, l.x);
+    minY = Math.min(minY, l.y);
+    maxX = Math.max(maxX, l.x + l.w);
+    maxY = Math.max(maxY, l.y + l.h);
+  }
+  const cw = Math.max(1, maxX - minX);
+  const ch = Math.max(1, maxY - minY);
+  const s = Math.min(1.04, Math.max(minScale, Math.min((sw - pad * 2) / cw, (sh - pad * 2) / ch)));
+  state.dag.scale = s;
+  const rawTx = Math.round((sw - cw * s) / 2 - minX * s);
+  const rawTy = Math.round((sh - ch * s) / 2 - minY * s);
+  state.dag.tx = cw * s <= sw - pad ? rawTx : Math.round(pad / 2 - minX * s);
+  state.dag.ty = ch * s <= sh - pad ? rawTy : Math.round(pad / 2 - minY * s);
+  const stage = document.getElementById('dag-stage');
+  if (stage) stage.style.transform = 'translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')';
+  const zv = document.getElementById('dag-zoom-val');
+  if (zv) zv.textContent = Math.round(state.dag.scale * 100) + '%';
+}
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (!state.workModeManual){
+      const desired = isNarrowViewport() ? 'cards' : 'dag';
+      if (state.workMode !== desired){
+        state.workMode = desired;
+        if (desired === 'dag') state.dag.fitted = false;
+        render();
+        return;
+      }
+    }
+    if (state.tab === 'work' && state.workMode === 'dag' && state.lastLayout?.lanes?.length){
+      centerDagView(state.lastLayout);
+    }
+  }, 140);
+});
+
 function render(){
   renderTopbar();
   renderFocus();
@@ -643,21 +706,10 @@ function render(){
     view.innerHTML = state.workMode === 'dag' ? renderDagView() : renderCardsView();
     if (state.workMode === 'dag'){
       if (!state.dag.fitted){
-        const shell = document.getElementById('dag-shell');
         const layout = state.lastLayout || computeDagLayout();
-        const firstLane = layout.lanes[0];
-        if (firstLane && shell){
-          const sw = (shell.clientWidth || 1440) - 36, sh = (shell.clientHeight || 620) - 36;
-          const tw = firstLane.w + 36, th = firstLane.h + 36;
-          const s = Math.min(1.04, Math.max(0.72, Math.min(sw / tw, sh / th)));
-          state.dag.scale = s;
-          state.dag.tx = Math.max(16, Math.round((sw + 36 - tw * s) / 2));
-          state.dag.ty = 8;
+        if (layout.lanes.length){
+          centerDagView(layout);
           state.dag.fitted = true;
-          const stage = document.getElementById('dag-stage');
-          if (stage) stage.style.transform = 'translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')';
-          const zv = document.getElementById('dag-zoom-val');
-          if (zv) zv.textContent = Math.round(state.dag.scale * 100) + '%';
         }
       }
       bindDagInteractions();
@@ -696,7 +748,7 @@ document.addEventListener('click', async ev => {
     else if (act === 'toggleTheme'){ applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true); renderTopbar(); }
     else if (act === 'toggleFocus'){ state.focusCollapsed = !state.focusCollapsed; state.dag.fitted = false; render(); }
     else if (act === 'goTab'){ state.tab = id; render(); }
-    else if (act === 'setWorkMode'){ state.workMode = id; render(); }
+    else if (act === 'setWorkMode'){ state.workMode = id; state.workModeManual = true; if (id === 'dag') state.dag.fitted = false; render(); }
     else if (act === 'openWorker'){ state.drawer = { kind: 'worker', nodeId: id, tab: 'overview' }; render(); }
     else if (act === 'openCtrl'){ state.drawer = { kind: 'ctrl', nodeId: id, tab: 'overview' }; render(); }
     else if (act === 'openTask'){
@@ -752,7 +804,7 @@ document.addEventListener('click', async ev => {
       const nativeWs = btn.dataset.nativeWs || undefined;
       const isHeadless = btn.dataset.headless === '1';
       if (btn.dataset.adoptFirst === '1'){
-        await apiAction('adopt', pTarget, { perm: permVal, ...(wsMode ? { workspace_mode: wsMode } : {}), ...(pKind === 'agy' ? { attended: true } : {}) });
+        await apiAction('adopt', pTarget, { ...(btn.dataset.asController === '1' ? { as_controller: true } : {}), perm: permVal, ...(wsMode ? { workspace_mode: wsMode } : {}), ...(pKind === 'agy' ? { attended: true } : {}) });
       }
       const pm = permModeMeta(pKind, permVal, pNative, undefined, wsMode, nativeWs);
       const wantAuto = Boolean(state.autoRestartPerm && !isHeadless && pm.needsRestart);
@@ -817,15 +869,62 @@ document.addEventListener('click', async ev => {
     else if (act === 'pauseRecipient'){ await apiAction('queue_pause', btn.dataset.pane, {}); toast('已暂停自动投递'); }
     else if (act === 'resumeRecipient'){ await apiAction('queue_resume', btn.dataset.pane, {}); toast('已恢复自动投递'); }
     else if (act === 'flushPane'){ await apiAction('flush', btn.dataset.pane, {}); toast('已消费候投队列'); }
-    else if (act === 'adoptPane'){ await apiAction('adopt', btn.dataset.pane, { project: btn.dataset.proj || undefined }); toast('已接入受管工位（可派发任务与调整权限）'); }
-    else if (act === 'releasePane'){ await apiAction('release_pane', btn.dataset.pane, {}); state.drawer = null; toast('已移出受管列表（Herdr 终端保持运行）'); }
+    else if (act === 'adoptPane'){ await apiAction('adopt', btn.dataset.pane, { ...(btn.dataset.kind === 'agy' ? { attended: true } : {}) }); toast('已接入受管工位（可派发任务与调整权限）'); }
+    else if (act === 'adoptAsController'){
+      const pKind = btn.dataset.kind || findPaneMeta(btn.dataset.pane)?.kind || '';
+      await apiAction('adopt', btn.dataset.pane, { as_controller: true, ...(pKind === 'agy' ? { attended: true } : {}) });
+      toast('已接入管控并保留在主控位（可调整权限与原生重启）');
+    }
+    else if (act === 'convertToWorker'){
+      const paneId = btn.dataset.pane, pKind = btn.dataset.kind || findPaneMeta(paneId)?.kind || '';
+      await apiAction('adopt', paneId, { as_controller: false, ...(pKind === 'agy' ? { attended: true } : {}) });
+      state.drawer = { kind: 'worker', nodeId: 'pane:' + paneId, tab: 'overview' };
+      render();
+      toast('已转为临时受管工位（移至右侧执行列）');
+    }
+    else if (act === 'openProjectModal'){ openProjectModal(btn.dataset.pane, btn.dataset.proj, btn.dataset.cwd); }
+    else if (act === 'confirmAssignProject'){
+      const paneId = btn.dataset.pane, dir = btn.dataset.cwd || '';
+      const sel = document.getElementById('ap-proj')?.value || '';
+      const targetProj = sel === '__custom__' ? (document.getElementById('ap-custom')?.value || '').trim() : sel;
+      if (!targetProj){ toast('请选择或输入目标项目 ID', true); return; }
+      const persist = !!document.getElementById('ap-persist')?.checked;
+      if (persist && dir){
+        const dispName = (document.getElementById('ap-persist-name')?.value || '').trim() || targetProj;
+        await apiAction('project_persist', undefined, { cwd: dir, project: targetProj, name: dispName });
+        await apiAction('assign_project', paneId, { reset: true });
+        closeModal(); state.drawer = null; state.dag.fitted = false;
+        toast('已写入 .chflow/project.yaml 并持久化归属至 ' + targetProj);
+      } else {
+        await apiAction('assign_project', paneId, { project: targetProj });
+        closeModal(); state.drawer = null; state.dag.fitted = false;
+        toast('已将当前会话归属切换至 ' + targetProj + '（仅本次会话生效）');
+      }
+    }
+    else if (act === 'resetPaneProject'){
+      await apiAction('assign_project', btn.dataset.pane, { reset: true });
+      closeModal(); state.drawer = null; state.dag.fitted = false;
+      toast('已恢复按会话目录自动识别所属项目');
+    }
+    else if (act === 'openPersistProject'){ openPersistProjectModal(btn.dataset.cwd, btn.dataset.proj); }
+    else if (act === 'confirmPersistProject'){
+      const cwd = (document.getElementById('pp-cwd')?.value || '').trim();
+      const projId = (document.getElementById('pp-id')?.value || '').trim();
+      const name = (document.getElementById('pp-name')?.value || '').trim();
+      if (!cwd || !projId){ toast('请填写有效的目录与项目 ID', true); return; }
+      const res = await apiAction('project_persist', undefined, { cwd, project: projId, ...(name ? { name } : {}) });
+      closeModal(); state.drawer = null; state.dag.fitted = false;
+      toast('已持久化项目配置：' + (res?.project?.project_id || projId) + '（.chflow/project.yaml）');
+    }
+    else if (act === 'releasePane'){ await apiAction('release_pane', btn.dataset.pane, {}); state.drawer = null; toast('已移出管控，会话退回「仅观测」主控态（终端保持运行）'); }
     else if (act === 'openBindPane'){ openBindPaneModal(btn.dataset.pane, btn.dataset.proj); }
     else if (act === 'confirmBindPane'){
       const raw = document.getElementById('bp-role')?.value || '';
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      await apiAction('role_bind', parsed.role, { project: parsed.project || undefined, pane: btn.dataset.pane });
-      closeModal(); toast('已绑定至角色 ' + parsed.role);
+      const pKind = btn.dataset.kind || findPaneMeta(btn.dataset.pane)?.kind || '';
+      await apiAction('role_bind', parsed.role, { project: parsed.project || undefined, pane: btn.dataset.pane, ...(pKind === 'agy' ? { attended: true } : {}) });
+      closeModal(); state.drawer = null; toast('已绑定至角色 ' + parsed.role);
     }
     else if (act === 'pruneNow'){ const res = await apiAction('prune', undefined, { tasks: true }); toast('清理完成：窗格 ' + (res?.pruned_panes || 0) + '，归档任务 ' + (res?.pruned_tasks || 0)); }
     else if (act === 'openStopModal'){ openStopModal(); }
@@ -849,7 +948,10 @@ document.addEventListener('click', async ev => {
       const m = document.getElementById('sw-model').value.trim();
       if (m) opts.model = m;
       if (mode === 'headless') opts.headless = true;
-      else if (mode === 'pane') opts.pane = document.getElementById('sw-pane').value;
+      else if (mode === 'pane'){
+        opts.pane = document.getElementById('sw-pane').value;
+        if (opts.kind === 'agy' || findPaneMeta(opts.pane)?.kind === 'agy') opts.attended = true;
+      }
       else { opts.spawn = true; if (opts.kind === 'agy') opts.attended = true; }
       await apiAction('role_bind', btn.dataset.role, opts);
       closeModal(); toast('角色 ' + btn.dataset.role + ' 热替换完成');
@@ -890,6 +992,7 @@ document.addEventListener('click', async ev => {
       const opts = { brief };
       if (taskId) opts.task = taskId;
       if (sel.project) opts.project = sel.project;
+      if (sel.harness === 'agy') opts.attended = true;
       if ((sel.kind === 'role' || sel.kind === 'global_role') && document.getElementById('dp-spawn').checked) opts.spawn = true;
       const res = await apiAction('send', sel.target, opts);
       if (state.drawer?.kind === 'worker'){
@@ -901,14 +1004,11 @@ document.addEventListener('click', async ev => {
     }
     else if (act === 'closeModal'){ closeModal(); }
     else if (act === 'dagExpand'){ state.dag.expanded = !state.dag.expanded; state.dag.fitted = false; render(); }
-    else if (act === 'dagZoomIn'){ state.dag.scale = Math.min(1.5, state.dag.scale + 0.1); render(); }
-    else if (act === 'dagZoomOut'){ state.dag.scale = Math.max(0.5, state.dag.scale - 0.1); render(); }
+    else if (act === 'dagZoomIn'){ state.dag.scale = Math.min(1.6, state.dag.scale + 0.1); render(); }
+    else if (act === 'dagZoomOut'){ state.dag.scale = Math.max(0.3, state.dag.scale - 0.1); render(); }
     else if (act === 'dagFit'){
-      const shell = document.getElementById('dag-shell'), layout = state.lastLayout || computeDagLayout();
-      const sw = (shell?.clientWidth || 1440) - 36, sh = (shell?.clientHeight || 620) - 36;
-      state.dag.scale = Math.min(1.05, Math.max(0.52, Math.min(sw / layout.totalW, sh / layout.totalH)));
-      state.dag.tx = Math.max(16, Math.round((sw + 36 - layout.totalW * state.dag.scale) / 2));
-      state.dag.ty = 10; render();
+      const layout = state.lastLayout || computeDagLayout();
+      centerDagView(layout);
     }
     else if (act === 'dagReset'){ state.dag = { tx: 24, ty: 14, scale: 0.85, offsets: {}, laneOffsets: {}, laneSizes: {}, fitted: false, expanded: state.dag.expanded }; try { localStorage.removeItem(DAG_STORAGE_KEY); } catch {} render(); }
   } catch (e){
@@ -922,6 +1022,14 @@ document.addEventListener('change', ev => {
     state.drawer.turn = undefined;
     renderDrawer();
     refreshOpenDrawerFiles();
+  }
+  if (ev.target && ev.target.id === 'ap-proj'){
+    const cf = document.getElementById('ap-custom-field');
+    if (cf) cf.style.display = ev.target.value === '__custom__' ? 'block' : 'none';
+  }
+  if (ev.target && ev.target.id === 'ap-persist'){
+    const nf = document.getElementById('ap-persist-name-field');
+    if (nf) nf.style.display = ev.target.checked ? 'block' : 'none';
   }
 });
 
@@ -941,7 +1049,7 @@ function renderAuthHtml(config: UiBootConfig): string {
 <html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>chflow — Access Verification (v${config.version})</title>
 ${FAVICON_LINK}
 ${THEME_BOOT_SCRIPT}
@@ -1005,7 +1113,7 @@ export function renderUiHtml(config: UiBootConfig): string {
 <html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>chflow — Cross-Harness Orchestrator (v${config.version})</title>
 ${FAVICON_LINK}
 ${THEME_BOOT_SCRIPT}
@@ -1027,11 +1135,15 @@ ${SVG_SPRITE}
       <div class="menu-pop" id="proj-menu" style="display:none"></div>
     </div>
     <div class="spacer"></div>
-    <button class="btn" data-action="openNewRole"><svg class="ic"><use href="#i-user-plus"/></svg>新建角色</button>
-    <button class="btn primary" data-action="openDispatch"><svg class="ic"><use href="#i-send"/></svg>派发任务</button>
+    <div class="top-actions">
+      <button class="btn" data-action="openNewRole"><svg class="ic"><use href="#i-user-plus"/></svg><span>新建角色</span></button>
+      <button class="btn primary" data-action="openDispatch"><svg class="ic"><use href="#i-send"/></svg><span>派发任务</span></button>
+    </div>
     <div class="vsep"></div>
-    <button class="btn icon ghost" id="theme-btn" data-action="toggleTheme" title="切换浅色 / 深色"></button>
-    <div class="daemon" id="daemon"></div>
+    <div class="top-status">
+      <button class="btn icon ghost" id="theme-btn" data-action="toggleTheme" title="切换浅色 / 深色"></button>
+      <div class="daemon" id="daemon"></div>
+    </div>
   </div>
 </header>
 <main>

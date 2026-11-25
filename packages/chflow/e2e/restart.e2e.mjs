@@ -118,6 +118,20 @@ test('E2E-35 protected restart, exit escalation, retry and rollback preserve pan
     const result=await command(fx,['switch',p.pane_id,'--perm','readonly','--workspace-mode','auto','--restart'],1);
     assert.equal(result.error.code,'invalid_args');assert.equal(fx.herdr.keys.length,n);assert.equal(fx.herdr.prompts.length,0);
   });
+  await t.test('void Herdr commands accept empty stdout while malformed output or empty queries still fail',async t=>{
+    const fx=await createFixture(t,{env});const p=await worker(fx);
+    fx.herdr.failNext('pane.send-keys',{code:0,rawStdout:'unexpected plain text\n'});
+    const bad=await command(fx,['switch',p.pane_id,'--perm','readonly','--restart','--timeout','4'],1);
+    assert.equal(bad.error.code,'invalid_response');
+    assert.equal((await pane(fx,p.pane_id)).last_restart_error,'invalid_response');
+    fx.herdr.failNext('pane.get',{code:0,rawStdout:''});
+    const emptyQuery=await command(fx,['switch',p.pane_id,'--perm','readonly','--restart','--timeout','4'],1);
+    assert.equal(emptyQuery.error.code,'invalid_response');
+    fx.herdr.failNext('agent.prompt',{code:0,rawStdout:''});
+    fx.herdr.configureRestart(p.pane_id,{exitOn:'ctrl+c'});
+    const okResult=await command(fx,['switch',p.pane_id,'--perm','readonly','--restart','--timeout','4']);
+    assert.equal(okResult.native_perm,'readonly');assert.equal(okResult.last_restart_error,null);
+  });
 });
 test('E2E-36 idle scheduling, cancellation, force and GUI rollback use the protected restart path', {timeout:90000}, async t=>{
   await t.test('CLI schedules busy workers, then consumes the request once idle',async t=>{

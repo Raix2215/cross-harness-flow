@@ -19,7 +19,7 @@ export async function installPack(root, env) {
   const { stdout } = await run(['pack', '--json', '--ignore-scripts', '--pack-destination', root], packageDir);
   const result = JSON.parse(stdout);
   const packed = Array.isArray(result) ? result[0] : result.chflow;
-  assert.equal(packed.filename, 'chflow-3.6.1.tgz');
+  assert.equal(packed.filename, 'chflow-3.6.3.tgz');
   assert.ok(packed.files.some(({ path }) => path === 'dist/cli.js'));
   assert.ok(packed.files.some(({ path }) => path === 'LICENSE'));
   assert.ok(packed.files.every(({ path }) => /^(?:dist\/.+\.js|README\.md|LICENSE|package\.json)$/.test(path)));
@@ -41,7 +41,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   try {
     const executable = await installPack(root, env);
     const { stdout } = await execFile(executable, ['--version'], { env, shell: process.platform === 'win32' });
-    assert.equal(stdout.trim(), '3.6.1');
+    assert.equal(stdout.trim(), '3.6.3');
     process.stdout.write('npm pack and isolated offline global install passed\n');
   } finally { await rm(root, { recursive: true, force: true }); }
 }

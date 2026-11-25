@@ -18,7 +18,7 @@ const actionOptions=new Map<string,string[]>([
   ['send','task brief perm workspace_mode readonly cwd machine session attended model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn'.split(' ')],
   ['run','kind task transport perm workspace_mode readonly bg brief cwd model effort provider attended timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller'.split(' ')],
   ['switch','model effort provider perm workspace_mode readonly restart force auto_restart allow_last machine session timeout attended matrix channel'.split(' ')],
-  ['adopt','name perm workspace_mode readonly controller takeover machine session attended matrix channel project role'.split(' ')],
+  ['adopt','name perm workspace_mode readonly controller takeover as_controller machine session attended matrix channel project role'.split(' ')],
   ['handoff',['to','to_session','to_machine','notify_old','machine','session']],
   ['set_perm',['perm','workspace_mode','auto_restart']],
   ['cancel_restart',['machine','session']],
@@ -37,7 +37,8 @@ const actionOptions=new Map<string,string[]>([
   ['queue_drop',['event_id']],
   ['queue_reroute',['event_id','to','to_session','to_machine']],
   ['cancel_retry',[]],
-  ['assign_project',['project','machine','session']],
+  ['assign_project',['project','reset','machine','session']],
+  ['project_persist',['project','name','cwd']],
   ['focus_pane',['machine','session']],
   ['release_pane',['machine','session']],
   ['prune',['tasks','project','machine','session']],
@@ -45,7 +46,7 @@ const actionOptions=new Map<string,string[]>([
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,roleActionOptions(action)!.split(' ')] as [string,string[]]),
 ]);
 const operatorCommands=new Map([
-  ['assign_project','ui.assign_project'],['focus_pane','ui.focus_pane'],['release_pane','ui.release_pane'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
+  ['assign_project','ui.assign_project'],['project_persist','ui.project_persist'],['focus_pane','ui.focus_pane'],['release_pane','ui.release_pane'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,'ui.role.'+action] as const),
   ['cancel_restart','ui.cancel_restart'],['set_perm','ui.set_perm'],['terminal_control','ui.terminal'],['inspect_screen','ui.screen'],['cancel_retry','ui.cancel_retry'],
   ...['queue_pause','queue_resume','queue_deliver_now','queue_consume','queue_drop','queue_reroute'].map(a=>[a,'ui.'+a] as const),

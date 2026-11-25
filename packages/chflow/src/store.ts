@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { join } from 'node:path';
-import type { Delivery, ManagedPane, Project, Role, Route, Task } from './types.js';
+import type { Delivery, ManagedPane, Project, ProjectOverrideMeta, ProjectOverrideRecord, Role, Route, Task } from './types.js';
 import { pendingDeliveryStates, routeKey, terminal } from './types.js';
 
 const pendingEvents='state IN ('+[...pendingDeliveryStates,'delivering'].map(state=>"'"+state+"'").join(',')+')';
@@ -19,10 +19,12 @@ export class Store {
       CREATE TABLE IF NOT EXISTS scheduled_retries (task TEXT PRIMARY KEY, attempt TEXT NOT NULL, at INTEGER NOT NULL, state TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS panes (route TEXT NOT NULL, pane TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (route,pane));
       CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS project_overrides (route TEXT NOT NULL, pane TEXT NOT NULL, terminal TEXT NOT NULL, project TEXT NOT NULL, PRIMARY KEY (route,pane));
+      CREATE TABLE IF NOT EXISTS project_overrides (route TEXT NOT NULL, pane TEXT NOT NULL, terminal TEXT NOT NULL, project TEXT NOT NULL, meta TEXT, PRIMARY KEY (route,pane));
       CREATE TABLE IF NOT EXISTS roles (project TEXT NOT NULL, role TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (project,role));
       CREATE TABLE IF NOT EXISTS audit (at INTEGER NOT NULL, task TEXT, event TEXT NOT NULL, detail TEXT);
     `);
+    const cols=this.db.prepare('PRAGMA table_info(project_overrides)').all() as Array<{name?:string}>;
+    if(!cols.some(c=>c.name==='meta'))this.db.exec('ALTER TABLE project_overrides ADD COLUMN meta TEXT');
   }
   transaction<T>(fn:()=>T):T {
     this.db.exec('BEGIN IMMEDIATE');
@@ -82,13 +84,30 @@ export class Store {
   saveProject(p:Project) {
     this.changed(this.db.prepare('INSERT INTO projects VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data WHERE projects.data<>excluded.data').run(p.project_id,JSON.stringify(p)));
   }
+  private decodeOverride(row:Record<string,unknown>):ProjectOverrideRecord {
+    const meta=typeof row.meta==='string'&&row.meta?JSON.parse(row.meta) as ProjectOverrideMeta:{};
+    return {pane:String(row.pane),terminal:String(row.terminal),project:String(row.project),...meta};
+  }
   projectOverride(route:Route,pane:string,terminal:string) {
     return this.db.prepare('SELECT project FROM project_overrides WHERE route=? AND pane=? AND terminal=?')
       .get(routeKey(route),pane,terminal)?.project as string|undefined;
   }
-  assignProject(route:Route,pane:string,terminal:string,project:string) {
-    this.changed(this.db.prepare('INSERT INTO project_overrides VALUES(?,?,?,?) ON CONFLICT(route,pane) DO UPDATE SET terminal=excluded.terminal,project=excluded.project')
-      .run(routeKey(route),pane,terminal,project));
+  projectOverrideRecord(route:Route,pane:string,terminal:string) {
+    const row=this.db.prepare('SELECT pane,terminal,project,meta FROM project_overrides WHERE route=? AND pane=? AND terminal=?')
+      .get(routeKey(route),pane,terminal) as Record<string,unknown>|undefined;
+    return row?this.decodeOverride(row):undefined;
+  }
+  projectOverrides(route:Route) {
+    return (this.db.prepare('SELECT pane,terminal,project,meta FROM project_overrides WHERE route=?').all(routeKey(route)) as Array<Record<string,unknown>>)
+      .map(row=>this.decodeOverride(row));
+  }
+  assignProject(route:Route,pane:string,terminal:string,project:string,meta?:ProjectOverrideMeta) {
+    const encoded=meta?JSON.stringify({kind:meta.kind,session:meta.session??null,cwd:meta.cwd}):null;
+    this.changed(this.db.prepare('INSERT INTO project_overrides VALUES(?,?,?,?,?) ON CONFLICT(route,pane) DO UPDATE SET terminal=excluded.terminal,project=excluded.project,meta=excluded.meta WHERE project_overrides.terminal<>excluded.terminal OR project_overrides.project<>excluded.project OR COALESCE(project_overrides.meta,\'\')<>COALESCE(excluded.meta,\'\')')
+      .run(routeKey(route),pane,terminal,project,encoded));
+  }
+  clearProjectOverride(route:Route,pane:string) {
+    this.changed(this.db.prepare('DELETE FROM project_overrides WHERE route=? AND pane=?').run(routeKey(route),pane));
   }
   role(project:string,name:string) {
     return this.decode<Role>(this.db.prepare('SELECT data FROM roles WHERE project=? AND role=?').get(project,name));

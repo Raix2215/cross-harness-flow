@@ -151,7 +151,7 @@ test('E2E-15 Web UI leases, live SSE updates without read-screen, and bounded ma
   await stream.next(s => s.herdr === 'reachable', 'SSE did not include the initial Herdr discovery');
   assert.equal(first.route.socket, fx.socketPath);
   assert.equal(first.daemon.pid, ui.daemon_pid);
-  assert.equal(first.daemon.version, '3.6.1');
+  assert.equal(first.daemon.version, '3.6.3');
   assert.ok(Number.isFinite(Date.parse(first.daemon.started_at)));
   assert.ok(Number.isSafeInteger(first.now));
 

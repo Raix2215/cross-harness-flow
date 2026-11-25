@@ -21,19 +21,19 @@ npm run build
 npm install -g --prefix "$HOME/.local" .
 ```
 
-将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.6.1.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
+将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.6.3.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
 
-跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.6.1.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
+跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.6.3.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
 
 ```sh
 # Linux：任选一种用户级安装方式
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.1.tgz
-pnpm add -g --offline ./chflow-3.6.1.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.3.tgz
+pnpm add -g --offline ./chflow-3.6.3.tgz
 ```
 
 ```powershell
 # Windows：使用可写的用户 npm prefix，并让其位于 PATH
-npm install --offline -g .\chflow-3.6.1.tgz
+npm install --offline -g .\chflow-3.6.3.tgz
 ```
 
 安装完成后，在实际运行 CLI 或启动 MCP 的环境检查 `command -v chflow`（PowerShell：`Get-Command chflow`），再执行 `chflow health`。从 v2 切换时，将项目 MCP 入口改为 `chflow mcp`，在 v3 新建任务；历史 v2 工位和状态单独处理。

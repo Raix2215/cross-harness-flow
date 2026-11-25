@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { chmodSync, closeSync, constants, fstatSync, mkdirSync, openSync, readSync, realpathSync, statSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { kindOf, launch, permission } from './harnesses.js';
 import { configDir } from './ipc.js';
-import { atomic } from './mailbox.js';
+import { atomic, ignore } from './mailbox.js';
 import { clean } from './sensitive.js';
 import type { Store } from './store.js';
-import { invalid, routeKey, str, terminal, type Agent, type GlobalRoleTemplate, type ManagedPane, type Opts, type Project, type Role, type Route, type Task } from './types.js';
+import { invalid, routeKey, str, terminal, type Agent, type GlobalRoleTemplate, type ManagedPane, type Opts, type Project, type ProjectOverrideRecord, type Role, type Route, type Task } from './types.js';
 
 export const roleName=(value?:string)=>value&&/^[a-z][a-z0-9_-]{0,31}$/.test(value)?value:invalid('Role must match [a-z][a-z0-9_-]{0,31}.');
 export const projectId=(value:string)=>/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$/.test(value)?clean(value):invalid('Provide a valid project ID.');
@@ -36,10 +36,56 @@ function canonical(cwd:string,local:boolean) {
   if(local)try{return clean(realpathSync(path));}catch(e){if(!['ENOENT','ENOTDIR'].includes((e as NodeJS.ErrnoException).code??''))throw e;}
   return path;
 }
+function isSameOrInside(child:string,parent:string){
+  const rel=relative(canonical(parent,true),canonical(child,true));
+  return rel===''||(!rel.startsWith('..')&&!isAbsolute(rel));
+}
 function scalar(raw:string){
   const value=raw.trim();
   const quoted=/^(['"])(.*?)\1(?:\s+#.*)?$/.exec(value);
-  return quoted?quoted[2]:value.replace(/(?:^|\s+)#.*$/,'').trim();
+  if(!quoted)return value.replace(/(?:^|\s+)#.*$/,'').trim();
+  if(quoted[1]==='"'){try{return JSON.parse('"'+quoted[2]+'"') as string;}catch{/* fallback */}}
+  return quoted[2];
+}
+const managedProjectHeader='# chflow-project: managed';
+export function isManagedProjectConfig(root:string){
+  const data=boundedFile(join(root,'.chflow','project.yaml'),65536);
+  return typeof data==='string'&&data.split(/\r?\n/,3).some(line=>line.trim()===managedProjectHeader);
+}
+function writeProjectConfig(root:string,project:Pick<Project,'project_id'|'name'>,roles:Role[]){
+  const id=projectId(project.project_id);
+  const name=project.name.trim();
+  if(!name||name.length>160||/[\u0000-\u001f\u007f]/.test(name))return invalid('Invalid project name.');
+  const dir=join(root,'.chflow');
+  mkdirSync(dir,{recursive:true,mode:0o700});
+  if(process.platform!=='win32')chmodSync(dir,0o700);
+  const lines=[
+    managedProjectHeader,
+    '# Project configuration (metadata only; never store credentials or emails)',
+    'project: '+yamlQuote(id),
+    'name: '+yamlQuote(name),
+  ];
+  const sorted=[...roles].sort((a,b)=>a.role.localeCompare(b.role));
+  if(sorted.length){
+    lines.push('roles:');
+    for(const r of sorted){
+      lines.push('  '+r.role+':');
+      if(r.description)lines.push('    description: '+yamlQuote(r.description));
+      if(r.default_kind)lines.push('    kind: '+yamlQuote(r.default_kind));
+      if(r.default_model)lines.push('    model: '+yamlQuote(r.default_model));
+      if(r.default_effort)lines.push('    effort: '+yamlQuote(r.default_effort));
+      if(r.default_provider)lines.push('    provider: '+yamlQuote(r.default_provider));
+      if(r.default_channel)lines.push('    channel: '+yamlQuote(r.default_channel));
+      if(r.default_perm)lines.push('    perm: '+yamlQuote(r.default_perm));
+      if(r.default_workspace_mode)lines.push('    workspace_mode: '+yamlQuote(r.default_workspace_mode));
+      if(typeof r.worktree==='boolean')lines.push('    worktree: '+String(r.worktree));
+      if(r.cwd)lines.push('    cwd: '+yamlQuote(r.cwd));
+    }
+  }
+  const path=join(dir,'project.yaml');
+  atomic(path,clean(lines.join('\n')+'\n'));
+  ignore(root);
+  return path;
 }
 export function roleDefaults(o:Opts,root:string,prior?:Partial<GlobalRoleTemplate>){
   const kind=o.kind!==undefined?kindOf(o.kind):prior?.default_kind;
@@ -280,8 +326,47 @@ export class Projects {
     }
   }
 
-  pane(route:Route,a:Pick<Agent,'pane_id'|'terminal_id'|'cwd'|'foreground_cwd'>,cwd:string,explicit?:string,saved?:ManagedPane,strict=false){
-    const override=this.db.projectOverride(route,a.pane_id,a.terminal_id);
+  isOverrideValid(
+    route:Route,
+    a:Pick<Agent,'pane_id'|'terminal_id'|'cwd'|'foreground_cwd'|'agent_session'>&{agent?:string;kind?:string;launch_cwd?:string},
+    rec:ProjectOverrideRecord,
+  ){
+    if(rec.pane!==a.pane_id||rec.terminal!==a.terminal_id)return false;
+    const liveKind=a.agent??a.kind;
+    if(rec.kind&&liveKind&&rec.kind!==liveKind)return false;
+    if(rec.session){
+      if(a.agent_session&&(rec.session.kind!==a.agent_session.kind||rec.session.value!==a.agent_session.value))return false;
+      return true;
+    }
+    const liveDir=a.launch_cwd??a.cwd;
+    if(rec.cwd&&liveDir&&rec.cwd!==liveDir)return false;
+    if(!rec.kind&&!rec.cwd&&liveDir&&!('machine' in route)){
+      const proj=this.db.project(rec.project);
+      if(proj&&!isSameOrInside(liveDir,proj.root))return false;
+    }
+    return true;
+  }
+
+  inferredPane(
+    route:Route,
+    a:Pick<Agent,'pane_id'|'terminal_id'|'cwd'|'foreground_cwd'>,
+    cwd:string,
+  ){
+    const path=paneCwd(a)??cwd;
+    const local=!('machine' in route)||!paneCwd(a);
+    return this.view(path,undefined,local);
+  }
+
+  pane(
+    route:Route,
+    a:Pick<Agent,'pane_id'|'terminal_id'|'cwd'|'foreground_cwd'|'agent_session'>&{agent?:string;kind?:string;launch_cwd?:string},
+    cwd:string,
+    explicit?:string,
+    saved?:ManagedPane,
+    strict=false,
+  ){
+    const rec=this.db.projectOverrideRecord(route,a.pane_id,a.terminal_id);
+    const override=rec&&this.isOverrideValid(route,a,rec)?rec.project:undefined;
     const id=explicit??override??saved?.project_id;
     const path=paneCwd(a)??cwd;
     const local=!('machine' in route)||!paneCwd(a);
@@ -299,7 +384,60 @@ export class Projects {
     return next;
   }
 
-  assign(route:Route,a:Agent,project:Pick<Project,'project_id'>){
-    this.db.assignProject(route,a.pane_id,a.terminal_id,project.project_id);
+  assign(
+    route:Route,
+    a:Pick<Agent,'pane_id'|'terminal_id'|'cwd'|'agent_session'>&{agent?:Agent['agent'];kind?:Agent['agent'];launch_cwd?:string},
+    project:Pick<Project,'project_id'>,
+  ){
+    this.db.assignProject(route,a.pane_id,a.terminal_id,project.project_id,{
+      kind:a.agent??a.kind,session:a.agent_session??null,cwd:a.launch_cwd??a.cwd,
+    });
+  }
+
+  clearOverride(route:Route,pane:string){
+    this.db.clearProjectOverride(route,pane);
+  }
+
+  persist(cwd:string,explicitId?:string,explicitName?:string){
+    const root=canonical(cwd,true);
+    if(!statSync(root,{throwIfNoEntry:false})?.isDirectory())return invalid('Provide an existing local directory to persist project configuration.');
+    const existing=this.view(root);
+    const id=explicitId!==undefined?projectId(explicitId):existing.project_id;
+    const rawName=explicitName!==undefined?clean(explicitName.trim()):existing.name;
+    if(!rawName||rawName.length>160||/[\u0000-\u001f\u007f]/.test(rawName))return invalid('Invalid project name.');
+    const project:Project={project_id:id,name:rawName,root,source:'config'};
+    const byName=new Map<string,Role>();
+    for(const r of this.db.roles()){
+      if(r.project_id===existing.project_id||r.project_id===id){
+        byName.set(r.role,{...r,project_id:id,source:'config',config_root:root,config_overrides:undefined});
+      }
+    }
+    const roles=[...byName.values()];
+    const path=writeProjectConfig(root,project,roles);
+    this.db.transaction(()=>{
+      this.db.saveProject(project);
+      if(existing.project_id!==id){
+        for(const r of this.db.roles())if(r.project_id===existing.project_id)this.db.removeRole(r);
+        for(const t of this.db.tasks())if(t.project_id===existing.project_id)this.db.save({...t,project_id:id});
+      }
+      for(const r of roles)this.db.saveRole(r);
+      for(const p of this.db.panes()){
+        const dir=paneCwd(p.agent);
+        if(dir&&isSameOrInside(dir,root)){
+          if(p.project_id===existing.project_id||p.project_id===id)this.db.savePane({...p,project_id:undefined});
+          this.db.clearProjectOverride(p.route,p.agent.pane_id);
+        }
+      }
+      this.db.audit(null,'project_persisted',id+' '+root);
+    });
+    return {project,roles,path};
+  }
+
+  syncConfigFile(id:string){
+    const project=this.db.project(id);
+    if(!project||project.source!=='config'||!isManagedProjectConfig(project.root))return false;
+    const roles=this.db.roles().filter(r=>r.project_id===id);
+    writeProjectConfig(project.root,project,roles);
+    return true;
   }
 }

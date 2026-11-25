@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { atomic } from './mailbox.js';
 import { get, idle, prompt, controlDelays, transient, missing, hasDraft, inputPosition, notifyTyping } from './herdr.js';
 import { batchEntry, note, wake } from './protocol.js';
-import { FlowError, invalid, pendingDeliveryStates, routeKey, terminal, type Agent, type Delivery, type EventType, type ProgressProbe, type Recipient, type Route, type Task } from './types.js';
+import { FlowError, invalid, pendingDeliveryStates, routeKey, seconds, terminal, type Agent, type Delivery, type EventType, type ProgressProbe, type Recipient, type Route, type Task } from './types.js';
 import type { Store } from './store.js';
 
 const priority:Record<EventType,number>={result:5,interrupted:4,settled_no_reply:4,quota_exhausted:4,pane_gone:4,blocked:3,stalled:2,progress:1,fallback_switched:1,scheduled_retry:1,handed_off:1};
@@ -19,8 +19,13 @@ export class DeliveryQueue {
   private safeAfter=new Map<string,number>();
   private readySince=new Map<string,number>();
   private input=new Map<string,{revision:number; since:number}>();
+  private typingNotified=new Set<string>();
+  private focusDefer=['1','true'].includes(process.env.CHFLOW_FOCUS_DEFER??'');
+  private deferRetryMs:number;
   constructor(private db:Store,private root:string,private debounce:number,private quiet:number,
-    private revalidateResume:(e:Delivery)=>Promise<boolean>) {}
+    private revalidateResume:(e:Delivery)=>Promise<boolean>) {
+    this.deferRetryMs=seconds(process.env.CHFLOW_DEFER_RETRY_MS,Math.min(Math.max(this.quiet,200),5000),1,86400000);
+  }
   private async enter<T>(key:string,fn:()=>Promise<T>){
     while(this.doors.has(key)) await this.doors.get(key)!.catch(()=>{});
     const result=Promise.resolve().then(fn);
@@ -54,6 +59,7 @@ export class DeliveryQueue {
     const key=keyOf(route,pane);
     this.readySince.delete(key);
     this.input.delete(key);
+    this.typingNotified.delete(key);
     for(const e of this.inbox(route,pane))
       if(e.state==='queued'||e.state==='deferred_user_typing')this.state(e,'paused_by_operator');
   }
@@ -66,7 +72,15 @@ export class DeliveryQueue {
     const selected=event?[event]:this.db.events().filter(e=>pending(e)&&routeKey(e.recipient.route)===routeKey(route)&&(!pane||e.recipient.pane===pane));
     const groups=this.groups(selected);
     const results=await Promise.allSettled([...groups].map(([key,group])=>this.enter(key,async()=>{
-      const events=group.map(e=>this.current(e)).filter((e):e is Delivery=>!!e);
+      const current=group.map(e=>this.current(e)).filter((e):e is Delivery=>!!e);
+      if(!current.length)return 0;
+      const recipient=current[0].recipient,agent=await get(recipient.route,recipient.pane);
+      const accepted=await Promise.all(current.map(e=>this.accept(e)));
+      const events=current.filter((e,i)=>{
+        if(!accepted[i]||!this.current(e))return false;
+        if(matchesRecipient(e,agent))return true;
+        this.state(e,'pending_unreachable',Number.MAX_SAFE_INTEGER);return false;
+      });
       return events.length?this.push(events,true):0;
     })));
     let delivered=0,failure:unknown;
@@ -168,25 +182,39 @@ export class DeliveryQueue {
   }
   async tick(){
     const now=Date.now();
-    const groups=this.groups(this.db.events().filter(e=>pending(e)&&e.state!=='paused_by_operator'&&(e.nextAt??0)<=now));
+    const groups=this.groups(this.db.events().filter(e=>pending(e)&&e.state!=='paused_by_operator'));
     for(const key of this.readySince.keys()) if(!groups.has(key)) this.readySince.delete(key);
     for(const key of this.input.keys()) if(!groups.has(key)) this.input.delete(key);
-    for(const key of this.safeAfter.keys()) if(!groups.has(key)&&this.safeAfter.get(key)!<Date.now()) this.safeAfter.delete(key);
-    await Promise.all([...groups].map(([key,es])=>this.deliver(key,es)));
+    for(const key of this.typingNotified) if(!groups.has(key)) this.typingNotified.delete(key);
+    for(const key of this.safeAfter.keys()) if(!groups.has(key)&&this.safeAfter.get(key)!<now) this.safeAfter.delete(key);
+    await Promise.all([...groups].map(([key,es])=>{
+      if(es.some(e=>e.nextAt!==undefined&&e.nextAt>now&&e.nextAt<Number.MAX_SAFE_INTEGER)){
+        this.readySince.delete(key);return;
+      }
+      const due=es.filter(e=>(e.nextAt??0)<=now);
+      return due.length?this.deliver(key,due):undefined;
+    }));
   }
   private async typingGate(key:string,agent:Agent,events:Delivery[]){
     const {route,pane}=events[0].recipient;
-    const at=await inputPosition(route,pane,agent.terminal_id);
-    if(this.db.isPaused(route,pane))return false;
-    if(!at.ready){this.input.delete(key);return false;}
-    if(!at.focused){this.input.delete(key);return true;}
-    const now=Date.now(),before=this.input.get(key);
     const defer=async()=>{
-      const candidates=events.filter(e=>this.current(e));
-      const alreadyNotified=candidates.some(e=>this.db.event(e.event_id)?.state==='deferred_user_typing');
-      for(const e of candidates)this.state(e,'deferred_user_typing');
+      const candidates=events.map(e=>this.current(e)).filter((e):e is Delivery=>!!e);
+      const alreadyNotified=this.typingNotified.has(key)||candidates.some(e=>e.state==='deferred_user_typing');
+      if(candidates.length)this.typingNotified.add(key);
+      const nextAt=Date.now()+this.deferRetryMs;
+      this.readySince.delete(key);
+      for(const e of candidates)this.state(e,'deferred_user_typing',nextAt);
       if(candidates.length&&!alreadyNotified)await notifyTyping(route,candidates.length).catch(()=>{});
     };
+    const at=await inputPosition(route,pane,agent.terminal_id);
+    if(this.db.isPaused(route,pane))return false;
+    if(!at.ready){this.input.delete(key);await defer();return false;}
+    if(!at.focused){this.input.delete(key);this.typingNotified.delete(key);return true;}
+    const now=Date.now(),before=this.input.get(key);
+    if(this.focusDefer||await hasDraft(route,pane)){
+      this.input.set(key,{revision:at.revision,since:now});
+      await defer();return false;
+    }
     if(!before||before.revision!==at.revision){
       this.input.set(key,{revision:at.revision,since:now});
       if(before)await defer();
@@ -196,12 +224,13 @@ export class DeliveryQueue {
     const draft=await hasDraft(route,pane);
     const after=await inputPosition(route,pane,agent.terminal_id);
     if(this.db.isPaused(route,pane))return false;
-    if(!after.ready){this.input.delete(key);return false;}
-    if(!after.focused){this.input.delete(key);return true;}
+    if(!after.ready){this.input.delete(key);await defer();return false;}
+    if(!after.focused){this.input.delete(key);this.typingNotified.delete(key);return true;}
     if(draft||after.revision!==at.revision){
       this.input.set(key,{revision:after.revision,since:Date.now()});
       await defer();return false;
     }
+    this.typingNotified.delete(key);
     return true;
   }
   private async deliver(key:string,snapshot:Delivery[]){
@@ -209,7 +238,9 @@ export class DeliveryQueue {
     return this.enter(key,async()=>{
       const recipient=snapshot[0].recipient;
       if(this.paused(recipient)){this.pauseWaiting(recipient.route,recipient.pane);return;}
-      const live=(await Promise.all(snapshot.map(e=>this.accept(e)))).filter(Boolean);
+      const waiting=this.readySince.get(key);
+      if(waiting!==undefined&&Date.now()<Math.max(waiting+this.debounce,this.safeAfter.get(key)??0))return;
+      const live=await Promise.all(snapshot.map(e=>this.accept(e)));
       const candidates=snapshot.filter((_,i)=>live[i]);
       if(!candidates.length){this.readySince.delete(key);return;}
       const {recipient:r}=candidates[0];
@@ -219,18 +250,23 @@ export class DeliveryQueue {
         return undefined;
       });
       if(!a||!idle(a)){this.readySince.delete(key);return;}
+      const matching=candidates.filter(e=>matchesRecipient(e,a));
+      for(const e of candidates)if(!matchesRecipient(e,a))this.state(e,'pending_unreachable',Number.MAX_SAFE_INTEGER);
+      if(!matching.length){this.readySince.delete(key);return;}
+      const ready=await this.typingGate(key,a,matching).catch(()=>false);
+      if(!ready||this.paused(r)){this.readySince.delete(key);return;}
       const since=this.readySince.get(key)??Date.now();
       this.readySince.set(key,since);
       if(Date.now()<Math.max(since+this.debounce,this.safeAfter.get(key)??0)) return;
-      const checked=await Promise.all(candidates.map(e=>this.accept(e)));
+      const checked=await Promise.all(matching.map(e=>this.accept(e)));
       const rc=await get(r.route,r.pane).catch(()=>undefined);
       if(!rc||!idle(rc)||rc.state_change_seq!==a.state_change_seq||this.paused(r)) {this.readySince.delete(key);return;}
-      const valid=candidates.filter((e,i)=>checked[i]&&this.current(e));
+      const valid=matching.filter((e,i)=>checked[i]&&this.current(e));
       let events=valid.filter(e=>matchesRecipient(e,rc));
       for(const e of valid) if(!events.includes(e)) this.state(e,'pending_unreachable',Number.MAX_SAFE_INTEGER);
       if(!events.length) return;
       const safe=await this.typingGate(key,rc,events).catch(()=>false);
-      if(!safe||this.paused(r))return;
+      if(!safe||this.paused(r)){this.readySince.delete(key);return;}
       events=events.map(e=>this.current(e)).filter((e):e is Delivery=>!!e);
       if(!events.length)return;
       if(events[0].type==='handed_off') events=events.slice(0,1);
@@ -266,7 +302,7 @@ export class DeliveryQueue {
   }
   private retry(e:Delivery,error:unknown,sending:boolean){
     const code=error instanceof FlowError?error.code:'unknown_error';
-    const safe=!sending||missing.test(code)||/^(?:connect_refused|connection_refused|machine_connection_failed|ssh_connect_failed|agent_blocked|server_not_running|cli_missing)$/.test(code);
+    const safe=!sending||missing.test(code)||/^(?:connect_refused|connection_refused|machine_connection_failed|ssh_connect_failed|agent_blocked|agent_busy|agent_not_idle|agent_not_ready|interactive_not_ready|pane_busy|input_busy|agent_working|pane_not_ready|server_not_running|cli_missing)$/.test(code);
     const steps=controlDelays();
     this.state({...e,failures:e.failures+1},'pending_unreachable',safe
       ? Date.now()+(transient.test(code)||e.failures>=steps.length

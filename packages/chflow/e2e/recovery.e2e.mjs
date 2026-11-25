@@ -50,7 +50,7 @@ function assertRecoveryFields(prompt, { brief, out }) {
 async function succeed(fx, pane, task, body) {
   fx.herdr.setAgent(pane, { failure_reason: undefined });
   const { attempt, out } = await inspect(fx, task);
-  await command(fx, ['reply', task, '--attempt', attempt, '--ok', '--body', body], { pane }, [0, 2]);
+  await command(fx, ['reply', task, '--attempt', attempt, '--ok', '--body', body], { pane }, [0]);
   await waitPrompt(fx, task, 'succeeded', fx.caller);
   assert.equal((await inspect(fx, task)).state, 'succeeded');
   assert.equal((await readFile(out, 'utf8')).trimEnd(), body);

@@ -152,13 +152,13 @@ test('E2E-12 MCP shared daemon, compact schema, EOF, and isolated offline packag
   for(const r of batch.object)assert.equal(r.result.structuredContent.exit_code,0);
   await parallel.eof();await m.eof();
   assert.equal(await daemonPid(fx),pid);
-  await cli(fx,['reply',sent.task,'--attempt',sent.attempt,'--ok','--body','Still alive'],2,{pane:'w1:p11'});
+  await cli(fx,['reply',sent.task,'--attempt',sent.attempt,'--ok','--body','Still alive'],0,{pane:'w1:p11'});
   await eventually(()=>prompts(fx,fx.caller).find(p=>p.text.includes('task=mcp-running#1')&&p.text.includes('status=succeeded')));
   const installed=await installPack(fx.root,fx.env);
   const {stdout}=await execFile(installed,['health','--json'],{env:fx.env,cwd:fx.workspace,shell:process.platform==='win32'});
   assert.equal(JSON.parse(stdout).daemon.pid,pid);
   const packed=mcp(t,fx,{executable:installed});
-  assert.equal((await packed.call(1,'initialize',{protocolVersion:'2025-06-18'})).object.result.serverInfo.version,'3.5.0');
+  assert.equal((await packed.call(1,'initialize',{protocolVersion:'2025-06-18'})).object.result.serverInfo.version,'3.6.0');
   await packed.eof();
   t.diagnostic(`MCP compact tools/list: ${bytes} bytes; npm pack + offline install + health/MCP passed`);
 });
@@ -184,7 +184,8 @@ test('E2E-13 safe adoption, controller ownership, queued handoff and native migr
     assert.equal(error.code,'pane_owned_by_other');assert.equal(error.details.controller.pane,fx.caller);
   }
   fx.herdr.setAgent(fx.caller,{agent_status:'working'});
-  await cli(fx,['reply',sent.task,'--attempt',sent.attempt,'--ok','--body','External terminal callback'],2,noPane);
+  const callback=await cli(fx,['reply',sent.task,'--attempt',sent.attempt,'--ok','--body','External terminal callback'],0,noPane);
+  assert.equal(callback.queued,true,'Busy-recipient replies succeed while their receipt remains queued');
   const beforeTransfer=(await cli(fx,['list'])).queue.find(x=>x.task===sent.task);
   assert.equal(beforeTransfer.recipient.pane,fx.caller);
   const handed=await cli(fx,['handoff',sent.task,'--to',fx.otherCaller,'--notify-old']);
@@ -200,7 +201,7 @@ test('E2E-13 safe adoption, controller ownership, queued handoff and native migr
   fx.herdr.setAgent(fx.otherCaller,{agent_status:'idle'});
   await cli(fx,['adopt',q,'--name','takeover-worker']);
   const second=await cli(fx,['send','takeover-worker','--task','takeover-task','--brief','Move via explicit takeover']);
-  await cli(fx,['reply',second.task,'--ok','--body','Queued for takeover'],2,{pane:q});
+  await cli(fx,['reply',second.task,'--ok','--body','Queued for takeover'],0,{pane:q});
   await cli(fx,['adopt',q,'--takeover'],0,b);
   await eventually(()=>prompts(fx,fx.otherCaller).find(x=>x.text.includes('takeover-task#1')));
   release(fx);

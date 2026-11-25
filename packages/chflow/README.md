@@ -1,4 +1,4 @@
-# chflow v3.5.0
+# chflow v3.6.0
 
 `chflow` coordinates Pi, Codex, Claude Code, and Antigravity sessions across multiple projects and stable roles. It requires Node.js **22.13.0+** and has **zero third-party runtime dependencies**.
 
@@ -19,19 +19,19 @@ Put `$HOME/.local/bin` on `PATH`. With pnpm (including pnpm 12+), pack first and
 
 ```sh
 npm pack
-pnpm add -g --offline ./chflow-3.5.0.tgz
+pnpm add -g --offline ./chflow-3.6.0.tgz
 ```
 
-For cross-machine offline distribution, copy `chflow-3.5.0.tgz` and run:
+For cross-machine offline distribution, copy `chflow-3.6.0.tgz` and run:
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.5.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.0.tgz
 ```
 
 ```powershell
 # Windows (with a user-writable npm prefix on PATH)
-npm install --offline -g .\chflow-3.5.0.tgz
+npm install --offline -g .\chflow-3.6.0.tgz
 ```
 
 ## Quick Start
@@ -44,18 +44,30 @@ chflow role set reviewer --global --kind claude --perm readonly --desc "Cross-ha
 chflow role list --global
 
 # Lazily instantiate global templates or define project-specific roles and hot-swap sessions anytime
-chflow role set backend --kind codex --perm auto-workspace --worktree --desc "Backend implementation & tests"
+chflow role set backend --kind codex --perm auto-workspace --workspace-mode workspace-write --worktree --desc "Backend implementation & tests"
 chflow role bind backend --spawn
 chflow send reviewer --spawn --brief-file review-brief.md
 
-# Or spin up an ad-hoc worker pane directly
-chflow start worker-1 --kind codex --place split --perm readonly
+# Or spin up an ad-hoc worker pane directly (5 permission tiers: readonly | ask | auto | auto-workspace | yolo)
+chflow start worker-1 --kind codex --place split --perm auto
 chflow send worker-1 --brief-file task-brief.md
 ```
 
 Global role templates live in `$XDG_CONFIG_HOME/chflow/roles.yaml` (override via `CHFLOW_CONFIG_DIR`) and do not clutter projects until first bound/dispatched (`role bind` or `send --spawn`). Override precedence: **per-dispatch flags > project role instance (incl. `.chflow/project.yaml`) > global role template > Skill defaults**.
 
-Use `chflow health`, `chflow status`, or `chflow list --panes` to view live projects, roles, managed panes, and unmanaged agents with human-readable Herdr `workspace / tab` locations and `folder · Harness` names (raw pane IDs stay available as secondary technical identifiers). Herdr `agent list` is treated as the live source of truth (including exited agent sessions whose Herdr pane remains open): exited/closed panes without active tasks are auto-pruned, role bindings revert to `unbound` standby, and `chflow prune [--tasks]` cleans up stale entries on demand.
+### Five Permission Tiers & Harness-Owned Security
+
+- `readonly`: read-only / plan mode (`agy --mode plan`, `claude --permission-mode plan`, `codex -s read-only`, `pi --no-mcp --tools read,grep,find,ls`).
+- `ask`: interactive confirmation by the Harness (default).
+- `auto`: **Harness Native Auto** (`agy --mode auto`, `claude --permission-mode auto`, `codex --approve-for-me`, `pi` default). `chflow` never presses keys on `auto` (`auto_guard: false`); switching an existing pane into `auto` without matching native flags reports `restart_required`.
+- `auto-workspace`: **Workspace Auto + `chflow` permission guard**, with selectable native base (`--workspace-mode`): `agy`/`claude` (`accept-edits` default, or `auto`), `codex` (`workspace-write` default, or `approve-for-me`). Command/path safety stays governed natively by each Harness (no duplicate `chflow`-side command blacklist); `chflow` only inspects the active prompt region (`activePromptText()`) to distinguish permission dialogs from user questions.
+- `yolo`: native skip-permissions flags plus filterless runtime passthrough (skipping only user questions, unsafe selections, and 3-repeat approval loops). Explicit authorization or external isolation required.
+
+### Live Sync, Stall Liveness Probe & Lifecycle
+
+Use `chflow health`, `chflow status`, or `chflow list --panes` to view live projects, roles, managed panes, and unmanaged agents with human-readable Herdr `workspace / tab` locations and `folder · Harness` names (raw pane IDs stay available as secondary technical identifiers). Herdr `agent list` is treated as the live source of truth: exited/closed panes without active tasks are auto-pruned, role bindings revert to `unbound` standby, and `chflow prune [--tasks]` cleans up stale entries on demand.
+
+Before raising a `stalled` alert on long-running active workers, the Daemon runs a **two-sample liveness probe** (`CHFLOW_STALL_CONFIRM_MS`, default `20000` ms) comparing bottom-20-line screen hashes plus `out`/local session file `mtime`, eliminating false stall alerts while keeping routine monitoring zero-screen-read.
 
 Explicit Daemon shutdown is available via `chflow stop` / `chflow quit` (pass `--force` when active tasks exist), WebUI topbar "Stop Service", or `x` (twice) in `chflow top`. Idle Daemons auto-exit after `CHFLOW_IDLE_TIMEOUT_SEC` (default 1800s with no clients) or `CHFLOW_UI_IDLE_TIMEOUT_SEC` (default 3600s when only passive WebUI tabs remain with zero live sessions or active tasks).
 
@@ -65,14 +77,14 @@ Workers read the brief path from the dispatch and reply with `chflow reply <task
 
 ## Embedded WebUI, CLI Dashboard & MCP
 
-- **Embedded WebUI**: Starts automatically with the Daemon on `http://127.0.0.1:4317` (falling back to a free port on conflict). Supports multi-project / multi-controller switching, interactive role-first DAG canvas & card views, human-readable Herdr session names & `Workspace / Tab` subtitles, one-click **Focus in Herdr** (`herdr agent focus`), global template fill/save in the New Role modal, session hot-swapping, and one-click operator actions.
+- **Embedded WebUI**: Starts automatically with the Daemon on `http://127.0.0.1:4317` (falling back to a free port on conflict). Features a pure monochrome light/dark visual system with muted semantic status accents, adaptive SVG brand mark & favicon, multi-project / multi-controller switching, rich controller cards & 3-tab controller drawer (`Overview` / `Workers` / `Activity`) with quick DND toggle, interactive role-first DAG canvas & card views, one-click **Focus in Herdr** (`herdr agent focus`), 5-tier permission matrix with selectable Workspace Native Base, historical multi-turn task mailbox inspection & Turn `N+1` continuation, global template fill/save, session hot-swapping, and one-click operator actions.
   - Run `chflow` in an interactive terminal for live status + WebUI URL, `chflow top` for an in-place live dashboard, `chflow open` (or `chflow ui --open`) to open the browser, and `approve` / `perm` / `queue` / `view` for quick human TTY overrides.
   - For LAN / Tailnet remote access, run a standalone instance with `chflow ui --host 0.0.0.0 --allow-remote`, or stop the Daemon (`chflow daemon stop`, after confirming no active tasks) and restart it with `CHFLOW_UI_HOST=0.0.0.0 CHFLOW_UI_ALLOW_REMOTE=1` to enforce Access Token + `HttpOnly` cookie auth. Note that `?token=...` links are reusable credentials — do not share them publicly.
-- **Project-scoped MCP**: Configure your host to run `chflow mcp` over stdio. It shares the same Daemon, exposes **19 compact tools** by default (including `flow_role` with `--global` template support), and keeps `flow_respond` opt-in.
+- **Project-scoped MCP**: Configure your host to run `chflow mcp` over stdio. It shares the same Daemon, exposes **19 compact tools** by default (including `flow_role` with `--global` template & `workspace_mode` support), and keeps `flow_respond` opt-in.
 
 ## Architecture & Guarantees
 
-The CLI, MCP server, and embedded WebUI are thin clients to a lazily started, per-user Daemon backed by SQLite, global role templates (`~/.config/chflow/roles.yaml`), and workspace `.chflow/` mailboxes (with fallback mailbox when no writable workspace exists). Herdr carries short control signals while the Daemon handles live reconciliation, coalesced notifications, typing-aware delivery deferral (`chflow inbox` / `chflow flush`), and retry/fallback scheduling.
+The CLI, MCP server, and embedded WebUI are thin clients to a lazily started, per-user Daemon backed by SQLite, global role templates (`~/.config/chflow/roles.yaml`), and workspace `.chflow/` mailboxes (with fallback mailbox when no writable workspace exists). Herdr carries short control signals while the Daemon handles live reconciliation, coalesced notifications, typing-aware delivery deferral (`chflow inbox` / `chflow flush`), two-sample stall liveness verification, and retry/fallback scheduling.
 
 `--machine` routes Herdr operations over SSH; cross-host file exchange requires a shared mounted mailbox and Worker callback connectivity to the owning Daemon. Antigravity (`agy`) is strictly attended-only (`--attended`) and excluded from unattended runs, automatic retries, and automatic fallbacks.
 

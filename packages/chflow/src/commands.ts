@@ -4,14 +4,14 @@ import { clean, input } from './sensitive.js';
 import { FlowError, type Context, type Invocation, type Opts } from './types.js';
 
 export const commandOptions:Record<string,string>={
-  start:'kind name perm readonly resume place worktree base worktree_path trust_repository workspace direction label focus pane cwd model effort provider machine session attended unattended bg timeout matrix channel controller project role',
-  adopt:'name perm readonly controller takeover machine session attended unattended bg matrix channel project role',
+  start:'kind name perm workspace_mode readonly resume place worktree base worktree_path trust_repository workspace direction label focus pane cwd model effort provider machine session attended unattended bg timeout matrix channel controller project role',
+  adopt:'name perm workspace_mode readonly controller takeover machine session attended unattended bg matrix channel project role',
   handoff:'to to_machine to_session notify_old machine session',
-  switch:'model effort provider perm readonly restart allow_last machine session timeout attended unattended bg matrix channel',
-  send:'task brief brief_file perm readonly watch wait cwd machine session attended unattended bg model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn',
+  switch:'model effort provider perm workspace_mode readonly restart allow_last machine session timeout attended unattended bg matrix channel',
+  send:'task brief brief_file perm workspace_mode readonly watch wait cwd machine session attended unattended bg model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn',
   reply:'attempt ok fail question progress note body out file stdin',
   wait:'timeout machine session', watch:'',
-  run:'kind task transport perm readonly bg brief brief_file cwd model effort provider machine session attended unattended timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller',
+  run:'kind task transport perm workspace_mode readonly bg brief brief_file cwd model effort provider machine session attended unattended timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller',
   respond:'expect_visible key text submit_key', inspect:'screen lines diag',
   resume:'brief brief_file attended unattended bg matrix switch max_retries retry_backoff',
   retry:'at after switch max_retries retry_backoff brief brief_file attended unattended bg matrix',
@@ -20,32 +20,33 @@ export const commandOptions:Record<string,string>={
 };
 const roleOptions=new Map([
   ['list','project global machine session'],
-  ['set','project global desc kind model effort provider channel perm worktree cwd'],
-  ['bind','project pane spawn headless kind model effort provider channel perm worktree cwd controller close_old attended machine session timeout matrix'],
+  ['set','project global desc kind model effort provider channel perm workspace_mode worktree cwd'],
+  ['bind','project pane spawn headless kind model effort provider channel perm workspace_mode worktree cwd controller close_old attended machine session timeout matrix'],
   ['unbind','project'],['remove','project global'],
 ]);
 export const roleActionOptions=(action:string)=>roleOptions.get(action);
 const cliOptions=new Map([
-  ['role','project global desc kind model effort provider channel perm worktree cwd pane spawn headless controller close_old attended machine session timeout matrix'],
+  ['role','project global desc kind model effort provider channel perm workspace_mode worktree cwd pane spawn headless controller close_old attended machine session timeout matrix'],
   ['prune','tasks project machine session'],
   ['ui','port host open session machine allow_remote standalone'],
   ['open','port host session machine allow_remote standalone'],
   ['status','watch session machine project'],['top','session machine project'],
-  ['approve','key text submit_key'],['perm','perm'],
+  ['approve','key text submit_key'],['perm','perm workspace_mode'],
   ['queue','event to to_session to_machine'],['view','turn'],
 ]);
 export const optionsFor=(method:string)=>cliOptions.get(method)??
   (method.startsWith('role.')?roleOptions.get(method.slice(5)):
     Object.hasOwn(commandOptions,method)?commandOptions[method]:undefined);
 const operatorOptions=new Map([
-  ['respond',commandOptions.respond+' force'],['ui.set_perm','perm'],['ui.terminal','keys text submit_key prompt'],
+  ['respond',commandOptions.respond+' force'],['ui.set_perm','perm workspace_mode'],['ui.terminal','keys text submit_key prompt'],
   ['ui.screen','lines'],['ui.queue_pause',''],['ui.queue_resume',''],['ui.queue_deliver_now','event_id'],
   ['ui.queue_consume','event_id'],['ui.queue_drop','event_id'],['ui.queue_reroute','event_id to to_session to_machine'],
   ['ui.cancel_retry',''],['ui.assign_project','project machine session'],['ui.focus_pane','machine session'],
+  ['ui.release_pane','machine session'],
   ['ui.prune',cliOptions.get('prune')!],
   ...[...roleOptions].filter(([action])=>action!=='list').map(([action,opts])=>['ui.role.'+action,opts] as const),
 ]);
-const operatorRequired=new Set(['ui.set_perm','ui.terminal','ui.screen','ui.cancel_retry','ui.assign_project','ui.focus_pane']);
+const operatorRequired=new Set(['ui.set_perm','ui.terminal','ui.screen','ui.cancel_retry','ui.assign_project','ui.focus_pane','ui.release_pane']);
 const operatorOptional=new Set([
   'ui.queue_pause','ui.queue_resume','ui.queue_deliver_now','ui.queue_consume','ui.queue_drop','ui.queue_reroute',
 ]);

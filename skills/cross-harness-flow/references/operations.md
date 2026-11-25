@@ -1,4 +1,4 @@
-# chflow v3.5 操作手册
+# chflow v3.6 操作手册
 
 ## 四层工作流与全局角色模板
 
@@ -21,19 +21,19 @@ npm run build
 npm install -g --prefix "$HOME/.local" .
 ```
 
-将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.5.0.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
+将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.6.0.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
 
-跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.5.0.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
+跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.6.0.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
 
 ```sh
 # Linux：任选一种用户级安装方式
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.5.0.tgz
-pnpm add -g --offline ./chflow-3.5.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.0.tgz
+pnpm add -g --offline ./chflow-3.6.0.tgz
 ```
 
 ```powershell
 # Windows：使用可写的用户 npm prefix，并让其位于 PATH
-npm install --offline -g .\chflow-3.5.0.tgz
+npm install --offline -g .\chflow-3.6.0.tgz
 ```
 
 安装完成后，在实际运行 CLI 或启动 MCP 的环境检查 `command -v chflow`（PowerShell：`Get-Command chflow`），再执行 `chflow health`。从 v2 切换时，将项目 MCP 入口改为 `chflow mcp`，在 v3 新建任务；历史 v2 工位和状态单独处理。
@@ -68,7 +68,7 @@ Herdr 路由只覆盖终端控制面。若缺共享挂载或回程，向用户�
 
 ## 纳管、移交和原会话迁入
 
-`chflow health` 或 `chflow list --panes` 区分 `managed_panes` 与 `unmanaged_live_agents`。`chflow adopt <pane> --name <alias>` 只登记工位身份和控制方，支持 `working`、`idle` 和 `done`。第一次派发附 `mode=adopted`；Worker 以本轮 brief 为边界。纳管前的原生权限为 `unknown`，需要修改启动参数时，待工位空闲后执行 `chflow switch <alias> --perm <tier> --restart`。
+`chflow health` 或 `chflow list --panes` 区分 `managed_panes` 与 `unmanaged_live_agents`。`chflow adopt <pane> --name <alias>` 只登记工位身份和控制方，支持 `working`、`idle` 和 `done`。第一次派发附 `mode=adopted`；Worker 以本轮 brief 为边界。纳管前的原生权限为 `unknown`，需要修改启动参数（含切换至原生 `auto` 或更换 `--workspace-mode` 基底）时，待工位空闲后执行 `chflow switch <alias> --perm <tier> [--workspace-mode <mode>] --restart`。
 
 在旧控制方会话执行 `chflow handoff <pane_or_task> --to <new_pane>`；可指定 `--to-machine` 或 `--to-session`，`--notify-old` 会向原控制方排队发送单行提示。在新控制方会话执行 `chflow adopt <pane> --takeover` 也能显式接管。控制方及待投递消息一并改路由；若消息正在投递，待投递提交完成后再移交。其他会话的普通 `adopt`、`send` 和 `switch` 会返回 `pane_owned_by_other`；旧控制方退出后可重新接管。
 
@@ -81,13 +81,13 @@ Herdr 路由只覆盖终端控制面。若缺共享挂载或回程，向用户�
 | 命令 | 用法 |
 | --- | --- |
 | `daemon start\|stop\|status\|logs` / `stop [--force]` / `quit` | 管理或显式停止当前用户 Daemon；存在活跃任务时 `stop`/`quit` 默认拦截，须加 `--force`。查询 `status` 或 `stop` 不会触发懒启动。 |
-| `role list\|set\|bind\|unbind\|remove [--global]` | 管理项目稳定角色（如 `backend`、`reviewer`）并热替换底层 Harness/窗格/无头配置；加 `--global` 管理用户级全局模板（`~/.config/chflow/roles.yaml`），首次 `bind` / `send --spawn` 自动懒实例化到项目。绑定窗格关闭或会话退出后自动回到 `unbound` 待命，也可用 `.chflow/project.yaml` 声明项目预设。 |
+| `role list\|set\|bind\|unbind\|remove [--global]` | 管理项目稳定角色（如 `backend`、`reviewer`）并热替换底层 Harness/窗格/无头配置，支持 `--perm` 与 `--workspace-mode`；加 `--global` 管理用户级全局模板（`~/.config/chflow/roles.yaml`），首次 `bind` / `send --spawn` 自动懒实例化到项目。绑定窗格关闭或会话退出后自动回到 `unbound` 待命，也可用 `.chflow/project.yaml` 声明项目预设。 |
 | `prune [--tasks] [--project ID]` | 清理 Herdr 中已关闭且无活跃任务的离线窗格记录；加 `--tasks` 一并归档清理已终结的历史任务。 |
-| `start [name] --kind codex\|claude\|pi\|agy` | 建交互工位；用 `--resume <id\|last>` 恢复已有会话，可选 `--role <role>` 与 `--project <id>`。用 `--place pane\|split\|tab\|workspace` 布局，`--worktree <branch>` 隔离变更（使用 `workspace` 布局），`--session <name>` 指定 Herdr session，`--machine <profile>` 跨机。按工位能力传 `--model`、`--effort`、Pi `--provider` 或 `--perm`。 |
-| `adopt <pane> [--name ALIAS] [--takeover]` | 纳管已在线工位，按需指定 `--role`、`--project`、`--perm` 或 `--controller <pane>`；显式接管会带走未投递回执。 |
+| `start [name] --kind codex\|claude\|pi\|agy` | 建交互工位；用 `--resume <id\|last>` 恢复已有会话，可选 `--role <role>` 与 `--project <id>`。用 `--place pane\|split\|tab\|workspace` 布局，`--worktree <branch>` 隔离变更（使用 `workspace` 布局），`--session <name>` 指定 Herdr session，`--machine <profile>` 跨机。按工位能力传 `--model`、`--effort`、Pi `--provider`、`--perm` 或 `--workspace-mode`。 |
+| `adopt <pane> [--name ALIAS] [--takeover]` | 纳管已在线工位，按需指定 `--role`、`--project`、`--perm`、`--workspace-mode` 或 `--controller <pane>`；显式接管会带走未投递回执。 |
 | `handoff <pane_or_task> --to <new_pane>` | 移交控制权及排队回执；可传 `--to-machine` / `--to-session` 和 `--notify-old`。 |
-| `switch <target>` | 切换工位模型、effort、provider 或权限；涉及会话重启时先核对现场，再按需用 `--restart`。 |
-| `send <role\|target>` | 用 `--brief <text>` 或 `--brief-file <path>` 派发；优先按当前项目角色名解析，未绑定角色默认拦截（显式 `--spawn` 可按预设拉起）。`--task <id>` 追问，`--watch` 监看或 `--wait` 同步等待，`--perm` 显式覆盖权限。 |
+| `switch <target>` | 切换工位模型、effort、provider、权限或工作区原生基底（`--workspace-mode`）；涉及原生启动参数变更时先核对现场，再按需用 `--restart`。 |
+| `send <role\|target>` | 用 `--brief <text>` 或 `--brief-file <path>` 派发；优先按当前项目角色名解析，未绑定角色默认拦截（显式 `--spawn` 可按预设拉起）。`--task <id>` 追问，`--watch` 监看或 `--wait` 同步等待，`--perm` / `--workspace-mode` 显式覆盖权限。 |
 | `reply <task>` | Worker 用 `--attempt <id>` 和 `--ok` / `--fail` / `--question` / `--progress` 回执；`--note <text>` 为一句话摘要，正文用 `--out` 或 `--body`。 |
 | `wait <target_or_task> [--timeout S]` | 等待任务或工位推进。 |
 | `watch <task>` | 把已有活跃任务纳入 Daemon 监看。 |
@@ -102,16 +102,16 @@ Herdr 路由只覆盖终端控制面。若缺共享挂载或回程，向用户�
 | `inbox [pane]` | 查看当前或指定窗格的排队回执，含 `deferred_user_typing`。 |
 | `flush [pane]` | 拉取该窗格回执的合并摘要并标记已消费，保留当前输入草稿。 |
 | `health [target_or_task]` | 以 Herdr 实时在线窗格为真值检查 Daemon、Herdr、项目、角色、工位和任务状态。 |
-| `status [-w] [--project ID]` / `top` | 展示彩色紧凑全局状态（含多项目摘要、角色表与内置 WebUI 链接）；`top` 或 `status -w` 进入基于 Daemon 推送的零读屏实时看板（支持 `q/o/a/p/f/r` 热键）。 |
+| `status [-w] [--project ID]` / `top` | 展示彩色紧凑全局状态（含多项目摘要、角色表与内置 WebUI 链接）；`top` 或 `status -w` 进入基于 Daemon 推送的零读屏实时看板（支持 `q/o/a/p/f/r/x` 热键）。 |
 | `ui [--open]` / `open` | 打印或直接打开 Daemon 内置常驻 Web 控制台（默认 `127.0.0.1:4317`，冲突自动回退）；传 `--port`/`--host`/`--session`/`--machine` 可另起独立实例，非回环开放需 `--allow-remote` 并自动启用访问令牌鉴权（若要切换常驻 Daemon 的远程监听参数，先在确认无进行中任务后执行 `chflow daemon stop`，再以 `CHFLOW_UI_HOST`/`CHFLOW_UI_ALLOW_REMOTE=1` 重启；带 `?token=` 的链接属于可复用登录凭据，请勿公开分享）。 |
-| `approve` / `perm` / `queue` / `view` | 面向人类交互终端的快捷接管指令（不进 MCP）：一键放行阻塞、热切权限、暂停/强推/清理投递队列、以及只读查阅任务信箱（`brief`/`reply`/`diag`）。 |
+| `approve` / `perm` / `queue` / `view` | 面向人类交互终端的快捷接管指令（不进 MCP）：一键放行阻塞、切换五档权限（可选 `--workspace-mode`）、暂停/强推/清理投递队列、以及只读查阅任务信箱（`brief`/`reply`/`diag`）。 |
 | `mcp [--enable-respond\|--no-respond]` | 启动 Stdio MCP 薄代理，复用同一 Daemon。 |
 
-退出码：`0` 成功；`1` 运行错误、合规拦截或身份漂移；`2` 阻塞或回执待送达；`3` 等待超时；`64` CLI 语法错误；`130` / `143` 对应信号中断。
+退出码：`0` 成功（含 `reply` 成功落盘并异步入队，JSON 中以 `queued: true` 标明排队态）；`1` 运行错误、合规拦截或身份漂移；`2` 目标阻塞或等待中的阻断态；`3` 等待超时；`64` CLI 语法错误；`130` / `143` 对应信号中断。
 
 ## 项目或文件夹级 MCP
 
-推荐只为高频协作项目配置 MCP，由宿主通过 `PATH` 找到 `chflow`。合并模板到配置的现有内容，并按宿主要求信任项目。默认 **19 个核心工具**，含 `flow_role`、`flow_adopt`、`flow_handoff`、`flow_inbox` 和 `flow_flush`。`flow_respond` 默认隐藏；仅在确需且已确认权限策略时加 `--enable-respond` 或 `CHFLOW_MCP_ENABLE_RESPOND=1`；`--no-respond` 或 `CHFLOW_MCP_DISABLE_RESPOND=1` 优先强制关闭。
+推荐只为高频协作项目配置 MCP，由宿主通过 `PATH` 找到 `chflow`。合并模板到配置的现有内容，并按宿主要求信任项目。默认 **19 个核心工具**，含 `flow_role`、`flow_adopt`、`flow_handoff`、`flow_inbox` 和 `flow_flush`（相关工具支持五档 `perm` 与 `workspace_mode`）。`flow_respond` 默认隐藏；仅在确需且已确认权限策略时加 `--enable-respond` 或 `CHFLOW_MCP_ENABLE_RESPOND=1`；`--no-respond` 或 `CHFLOW_MCP_DISABLE_RESPOND=1` 优先强制关闭。
 
 ### Claude Code / Antigravity
 
@@ -171,22 +171,23 @@ args = ["mcp"]
 
 等价项目注册命令：`pi mcp add --local cross-harness-flow -- chflow mcp`。交互中用 `/mcp` 核对连通状态。若启用 Pi 的工具内联预算，可在项目 `.pi/settings.json` 合并 `{"codemode":{"inlineBudget":0}}`。
 
-## 权限、阻塞与队列
+## 五档权限、阻塞与队列
 
-| `--perm` | 含义 |
-| --- | --- |
-| `readonly` | 只读，`--readonly` 为简写；与提权透传参数互斥。 |
-| `ask` | 默认档位；保留 Harness 的原生确认。 |
-| `auto-workspace` | 优先使用 Harness 原生的工作区级权限策略；复用窗格时，仅在确认弹窗属于普通权限请求并通过高危筛查后自动操作。 |
-| `yolo` | 可绕过原生审批和沙箱限制；仅在明确授权或外部隔离下使用。复用窗格时只处理已识别的权限弹窗。 |
+| `--perm` | 含义与原生参数 | `chflow` 自动审批代理 |
+| --- | --- | --- |
+| `readonly` | 只读 / Plan（`agy --mode plan` / `claude --permission-mode plan` / `codex -s read-only` / `pi --no-mcp --tools read,grep,find,ls`）；`--readonly` 为简写，与提权透传参数互斥。 | 关闭 |
+| `ask` | 默认档位；保留 Harness 原生确认。 | 关闭 |
+| `auto` | **Harness 原生 Auto**（`agy --mode auto` / `claude --permission-mode auto` / `codex --approve-for-me` / `pi` 默认），完全交由目标 Harness 自身审批策略接管；若已有窗格未按原生 `auto` 启动则标记 `restart_required`。 | **严格关闭（零代按）** |
+| `auto-workspace` | **工作区自动**：支持通过 `--workspace-mode` 选择原生启动基底——`agy` / `claude` 默认 `accept-edits`（可选 `auto`；`claude` 接受 `acceptEdits` 别名）、`codex` 默认 `workspace-write`（可选 `approve-for-me`）、`pi` 不接受显式 `workspace_mode`。 | **开启**：仅匹配活跃弹窗区且为权限请求时自动放行；跳过用户问答、不安全选项与 3 次循环 |
+| `yolo` | 原生跳过审批与沙箱（`--dangerously-skip-permissions` / `--dangerously-bypass-approvals-and-sandbox`）；仅限明确授权或外部隔离。 | **开启（无过滤透传）**：仅跳过用户问答、原生 `readonly` 与 3 次循环 |
 
-`auto-workspace` 拒绝自动批准高危操作，例如系统级删除、磁盘操作、`git push --force`、`sudo`、访问 `.env` 或 `~/.ssh/`，以及明显越界的破坏性写删。提问或未知弹窗留给主 Agent 和用户。`respond` 会重新核对状态序列和可见文本；若已由人工放行，返回 `already_unblocked`，保持终端原样。凭据、会话令牌与真实邮箱留在宿主管理，禁止写入任务和 MCP 配置。
+命令与路径安全统一由各 Harness 原生沙箱与策略治理，`chflow` 不再内置重复命令黑名单；分类器通过 `activePromptText()` 剥离底部状态栏与历史卷回，仅分析当前活跃交互弹窗。`respond` 会重新核对状态序列和可见文本；若已由人工放行，返回 `already_unblocked`，保持终端原样。凭据、会话令牌与真实邮箱留在宿主管理，禁止写入任务和 MCP 配置。
 
-`agy` 只用于有人在场的交互，推荐显式加 `--attended`，非前台路由或使用 `readonly` / `auto-workspace` / `yolo` 时必须提供；禁止 `--unattended`、`--bg`、外层自动/定时重试以及作为自动回退目标。无头自动任务使用合规的 Codex、Claude 或 Pi 渠道。
+`agy` 只用于有人在场的交互，推荐显式加 `--attended`，非前台路由或使用 `readonly` / `auto` / `auto-workspace` / `yolo` 时必须提供；禁止 `--unattended`、`--bg`、外层自动/定时重试以及作为自动回退目标。无头自动任务使用合规的 Codex、Claude 或 Pi 渠道。
 
-收件窗格忙时先入队；空闲后默认等待约 2 秒再合并有效事件，一批只送一次。完成回执覆盖同一轮较早的进度或阻塞事件；人工解阻后撤回尚未送达的旧告警。常规监看只查结构化状态；Worker 转入 `blocked` 时每个状态序列自动读屏一次，将脱敏后的快照留在 `diag` 文件。按需显式 `inspect <task> --screen`，屏幕原文禁止进入派发或唤醒文本。
+收件窗格忙时先入队；空闲后默认等待约 2 秒再合并有效事件，一批只送一次。完成回执覆盖同一轮较早的进度或阻塞事件；人工解阻后撤回尚未送达的旧告警。常规监看只查结构化状态；Worker 转入 `blocked` 时每个状态序列自动读屏一次，将脱敏后的快照留在 `diag` 文件。长耗时 `working` 工位达到静默阈值后，在发出 `stalled` 告警前会自动执行 **双采样活体复核**（`CHFLOW_STALL_CONFIRM_MS`，默认 `20000` 毫秒），间隔复采末 20 行屏幕哈希与产物/本地会话文件时间戳，避免活跃任务误报。按需显式 `inspect <task> --screen`，屏幕原文禁止进入派发或唤醒文本。
 
-聚焦的收件窗格另有打字静默窗（`CHFLOW_TYPING_QUIET_MS`，默认 `2500` 毫秒）。投递前 Daemon 只检查终端底部三行的草稿状态，草稿既不落盘也不进入上下文。检测到打字或未提交草稿时，回执标为 `deferred_user_typing`，并发桌面通知。清空草稿后自动送达；也可用 `chflow inbox [pane]` 查看，再用 `chflow flush [pane]` 拉取摘要并消费，不向输入框注入文字。
+聚焦的收件窗格另有打字静默窗（`CHFLOW_TYPING_QUIET_MS`，默认 `2500` 毫秒；可通过 `CHFLOW_FOCUS_DEFER` 配置聚焦暂缓行为）。投递前 Daemon 只检查终端底部输入区的草稿状态，草稿既不落盘也不进入上下文。检测到打字、未提交草稿或交互选择阻挡时，回执标为 `deferred_user_typing` 并按定时重投周期（`CHFLOW_DEFER_RETRY_MS`）自动复检，并发一次桌面通知；草稿或选择清除后自动重新进入防抖合并窗，将积压回执合并为单次批量送达；也可用 `chflow inbox [pane]` 查看，再用 `chflow flush [pane]` 拉取摘要并消费，不向输入框注入文字。
 
 ## 重试、定时恢复和回退
 

@@ -1,67 +1,30 @@
 import { randomUUID } from 'node:crypto';
-import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readSync, realpathSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { lstatSync } from 'node:fs';
+import { isAbsolute, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { approveKey, blacklist, classifyBlock, keyArg, signature } from './approval.js';
-import { channelMatrix, channels, compliance, fallbackSpecs, kindOf, launch, native, permission, resumeArgs } from './harnesses.js';
+import { approveKey, classifyBlock, keyArg, signature } from './approval.js';
+import { channelMatrix, channels, compliance, defaultWorkspaceMode, fallbackSpecs, kindOf, launch, native, permission, resumeArgs, workspaceMode } from './harnesses.js';
 import { headless, processStamp, stopGroup, transportFor } from './headless.js';
 import { closePane, controlDelays, focusAgent, get, herdr, idle, keys, literal, missing, prompt, route, same, screen, startPane, transient } from './herdr.js';
 import { readConfig } from './ipc.js';
-import { atomic, diagnostic, fileText, fileTextIf, mailbox } from './mailbox.js';
+import { diagnostic, fileText, mailbox, mailboxDirectory, readMailboxFile, writeMailboxFile } from './mailbox.js';
 import { dispatch, note } from './protocol.js';
 import { globalRole, paneCwd, projectId, readGlobalRoles, removeGlobalRole, roleActive, roleDefaults, roleName, samePane, saveGlobalRole } from './projects.js';
 import { DeliveryQueue, sessionsEqual } from './queue.js';
 import { backoff, classify, recovery, schedule } from './retry.js';
 import { clean, input, redact } from './sensitive.js';
 import type { Store } from './store.js';
-import { FlowError, VERSION, alive, invalid, routeKey, seconds, str, success, terminal, type Agent, type Context, type Delivery, type Invocation, type Launch, type Opts, type ProgressProbe, type Project, type Recipient, type Reply, type Role, type Route, type Task } from './types.js';
-import { matches, paneView, safeTarget, Workspaces, type LiveTopology } from './workspaces.js';
+import { received, SnapshotViews } from './snapshots.js';
+import { FlowError, VERSION, alive, invalid, routeKey, seconds, str, success, terminal, type Agent, type Context, type Delivery, type Invocation, type Launch, type ManagedPane, type Opts, type ProgressProbe, type Project, type Recipient, type Reply, type Role, type Route, type Task } from './types.js';
+import { matches, paneKey, paneView, safeTarget, Workspaces, type LiveTopology } from './workspaces.js';
 
-const ms=(name:string,def:number,min=0)=>seconds(process.env[name],def,min,86400000);
+const ms=(name:string,def:number,min=0,max=86400000)=>seconds(process.env[name],def,min,max);
 const idRx=/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 const taskId=(s?:string)=>s&&idRx.test(s)?clean(s):invalid('Provide a valid task ID.');
 const attempt=()=>randomUUID().replaceAll('-','');
 const active=(t:Task)=>!terminal(t.state)&&t.state!=='closing'&&t.state!=='close_unknown';
 const errcode=(e:unknown)=>e instanceof FlowError?e.code:'internal_error';
 const localCwd=(base:string,path?:string)=>path?resolve(base,path):base;
-const received=(t:Task)=>({...t,perm:t.launch.perm,kind:t.launch.kind,pane_id:t.pane,agent_session:t.session,return_route:t.return_route??null,controller:t.controller??null});
-const fileLimit=1024*1024;
-function readMailboxFile(mail:string,path:string){
-  const rel=relative(mail,path);
-  if(!rel||isAbsolute(rel)||rel==='..'||rel.startsWith('..'+sep))return invalid('File must be inside the task mailbox.');
-  const checkSize=(size:number)=>{
-    if(size>fileLimit)throw new FlowError('file_too_large','Mailbox file exceeds 1 MiB.');
-  };
-  try{
-    for(const dir of [dirname(dirname(mail)),dirname(mail),mail]){
-      if(!lstatSync(dir).isDirectory())return invalid('Invalid task mailbox directory.');
-    }
-    const expected=resolve(realpathSync(mail),rel);
-    const before=lstatSync(path);
-    if(!before.isFile()||realpathSync(path)!==expected)return invalid('Mailbox path must be a regular file without symlinks.');
-    checkSize(before.size);
-    const fd=openSync(path,constants.O_RDONLY|(constants.O_NOFOLLOW??0)|(constants.O_NONBLOCK??0));
-    try{
-      const stat=fstatSync(fd);
-      if(!stat.isFile()||stat.dev!==before.dev||stat.ino!==before.ino||
-        realpathSync(path)!==expected)return invalid('Mailbox file changed while opening.');
-      checkSize(stat.size);
-      const buffer=Buffer.allocUnsafe(fileLimit+1);
-      let size=0;
-      while(size<buffer.length){
-        const n=readSync(fd,buffer,size,buffer.length-size,null);
-        if(!n)break;
-        size+=n;
-      }
-      checkSize(size);
-      return {exists:true,content:redact(buffer.toString('utf8',0,size)),updated_at:Math.floor(stat.mtimeMs)};
-    }finally{closeSync(fd);}
-  }catch(e){
-    if((e as NodeJS.ErrnoException).code==='ENOENT')return undefined;
-    if((e as NodeJS.ErrnoException).code==='ELOOP')return invalid('Mailbox path must be a regular file without symlinks.');
-    throw e;
-  }
-}
 interface UiRoute {
   route:Route;
   clients:number;
@@ -72,18 +35,24 @@ interface UiRoute {
 }
 export class Engine {
   private work:Workspaces;
+  private views:SnapshotViews;
   private queue:DeliveryQueue;
   private locks=new Map<string,Promise<void>>();
   private running=new Map<string,{controller:AbortController;done:Promise<void>}>();
   private pending=new Set<Promise<unknown>>();
   private stopping=false;
   private settle=ms('CHFLOW_SETTLE_MS',1800);
-  private stall=ms('CHFLOW_STALL_MS',120000);
+  private stall=ms('CHFLOW_STALL_MS',300000);
+  private stallConfirm=ms('CHFLOW_STALL_CONFIRM_MS',20000,100,300000);
+  private stallProbes=new Map<string,{screenHash:string;fileStamp:string;checkedAt:number}>();
   private unblock=ms('CHFLOW_AUTO_APPROVAL_MS',2500);
   private uiRoutes=new Map<string,UiRoute>();
+  private paneGuardState=new Map<string,{terminal:string;lastSeq:number;signature?:string;count:number}>();
+  private paneGuardPending=new Set<string>();
   constructor(private db:Store,private root:string,private onLiveChange:()=>void){
     this.work=new Workspaces(db);
-    this.queue=new DeliveryQueue(db,root,ms('CHFLOW_DEBOUNCE_MS',2000),ms('CHFLOW_TYPING_QUIET_MS',2500),e=>this.revalidateResume(e));
+    this.views=new SnapshotViews(db,this.work,r=>this.uiRoutes.get(routeKey(r))?.current);
+    this.queue=new DeliveryQueue(db,root,ms('CHFLOW_DEBOUNCE_MS',2000),ms('CHFLOW_TYPING_QUIET_MS',4500),e=>this.revalidateResume(e));
   }
   recover(){
     this.queue.recover();
@@ -172,8 +141,8 @@ export class Engine {
     if(prev){
       const mail=clean(prev.mail);
       paths={mail,brief:join(mail,'t'+turn+'-brief.md'),out:join(mail,'t'+turn+'-reply.md')};
-      mkdirSync(mail,{recursive:true,mode:0o700});
-      atomic(paths.brief,text);
+      mailboxDirectory(mail,true);
+      writeMailboxFile(mail,paths.brief,text);
     }else paths=mailbox(this.root,cwd,id,turn,text);
     return {task:id,attempt:attempt(),turn,route:r,caller:c,controller:c,return_route:c,launch:l,name:l.kind,mode,state:'dispatching',
       ...paths,cwd:cwd??inv.ctx.cwd,startedAt:Date.now(),activityAt:Date.now(),retries:0,delays,fallback:fall,quotaAt:quota.at,quotaDelay:quota.after,timeout:launchTimeout};
@@ -293,12 +262,12 @@ export class Engine {
     });
     return !role&&initialBinding?this.lock(this.roleKey(initialBinding),dispatch):dispatch();
   }
-  private runHeadless(t:Task,mode:'assigned'|'resume'|'fallback',extra:string[]=[]){
+  private runHeadless(t:Task,mode:'assigned'|'resume'|'fallback'){
     t.state='submitted';t.activityAt=Date.now();this.save(t);
     const controller=new AbortController();
     const done=headless(t,dispatch(t,mode),controller.signal,pid=>{
       t.process={pid,stamp:processStamp(pid)};this.save(t);
-    },extra).then(res=>{
+    },t.native_extra).then(res=>{
       const cur=this.db.task(t.task);
       if(!cur||cur.attempt!==t.attempt||terminal(cur.state)||this.stopping) return;
       cur.process=undefined;
@@ -306,11 +275,11 @@ export class Engine {
       cur.stop_reason=res.reason;
       if(res.ok){
         const written=this.artifact(cur);
-        if(written){if(redact(written)!==written) atomic(cur.out,redact(written));}
-        else atomic(cur.out,redact(res.output));
+        if(written){if(redact(written)!==written) writeMailboxFile(cur.mail,cur.out,redact(written));}
+        else writeMailboxFile(cur.mail,cur.out,redact(res.output));
         this.complete(cur,true,'completed');return;
       }
-      if(res.output?.trim())atomic(cur.out,redact(res.output));
+      if(res.output?.trim())writeMailboxFile(cur.mail,cur.out,redact(res.output));
       if(res.diagnostic)cur.diag=diagnostic(cur.mail,cur.retries,'headless',res.diagnostic);
       if(res.reason==='question_blocked'){
         cur.state='blocked';cur.reason='question_blocked';this.save(cur);
@@ -340,7 +309,8 @@ export class Engine {
     const dispatchProject=project??(prev?this.work.projects.task(prev):this.work.projects.resolve(cwd));
     const task=this.initial(inv,id,prev,r,l,cwd,role||o.bg||o.controller!==undefined?controller:undefined,'headless',matrix);
     Object.assign(task,{controller,transport,project_id:dispatchProject.project_id,role:role?.role});
-    this.install(task);this.runHeadless(task,'assigned',inv.extra);
+    task.native_extra=inv.extra;
+    this.install(task);this.runHeadless(task,'assigned');
     return task;
   }
 
@@ -363,10 +333,9 @@ export class Engine {
   }
   private artifact(t:Task){
     try{
-      const stat=lstatSync(t.out);
-      if(!stat.isFile()||stat.size>1024*1024) return undefined;
-      const v=fileText(t.out);return v.trim()?v:undefined;
-    }catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT') return undefined;throw e;}
+      const v=readMailboxFile(t.mail,t.out,false)?.content;
+      return v?.trim()?v:undefined;
+    }catch(e){if(e instanceof FlowError&&['invalid_args','invalid_mailbox','file_too_large'].includes(e.code))return undefined;throw e;}
   }
   private probe(t:Task,a?:Agent):ProgressProbe {
     let artifact:string|undefined;
@@ -376,6 +345,17 @@ export class Engine {
     }catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}
     return {seq:a?.state_change_seq??t.seq,revision:a?.revision??t.revision,artifact};
   }
+  private async livenessFingerprint(t:Task){
+    let screenHash='';
+    try{screenHash=signature(await screen(t.route,t.pane!,20));}catch{/* File progress remains available when the screen is unreachable. */}
+    const files:[string,string][]=[['out',t.out]],stamps:string[]=[];
+    if(!('machine' in t.route)&&t.session?.kind==='path'&&t.session.value)files.push(['sess',t.session.value]);
+    for(const [kind,path] of files){
+      try{const s=lstatSync(path);stamps.push(`${kind}:${s.ino}:${s.size}:${s.mtimeMs}`);}
+      catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}
+    }
+    return {screenHash,fileStamp:stamps.join('|')};
+  }
   private humanResumed(t:Task,baseline:ProgressProbe,a:Agent|undefined,stalled=false){
     const now=this.probe(t,a);
     // A stall may already be recorded as working; only new activity invalidates it.
@@ -384,6 +364,7 @@ export class Engine {
       (stalled&&a.revision!==baseline.revision));
     const output=now.artifact&&now.artifact!==baseline.artifact?this.artifact(t):undefined;
     if(!resumed&&!output)return false;
+    this.stallProbes.delete(t.task+':'+t.attempt);
     this.db.transaction(()=>{
       this.db.scheduleState(t,'cancelled');
       this.queue.supersedeResume(t);
@@ -397,7 +378,7 @@ export class Engine {
       this.save(t);
     });
     if(output&&a?.agent_status!=='working'){
-      const safe=redact(output);if(safe!==output)atomic(t.out,safe);
+      const safe=redact(output);if(safe!==output)writeMailboxFile(t.mail,t.out,safe);
       this.complete(t,true,'artifact_written');
     }
     return true;
@@ -415,6 +396,7 @@ export class Engine {
     });
   }
   private complete(t:Task,ok:boolean,reason:string,notify=true,fromRecovery=false){
+    this.stallProbes.delete(t.task+':'+t.attempt);
     this.db.transaction(()=>{
       if(fromRecovery)this.queue.supersedeResume(t);
       t.state=ok?'succeeded':'failed';t.reason=reason;t.nextAt=undefined;t.process=undefined;t.recoveryProbe=undefined;
@@ -425,6 +407,7 @@ export class Engine {
     });
   }
   private failure(t:Task,reason:string){
+    this.stallProbes.delete(t.task+':'+t.attempt);
     const next=recovery(t,reason);
     this.db.transaction(()=>{
       t.reason=reason;t.startedAt=Date.now();t.block=undefined;t.recoveryMode=next.type==='fallback'?'fallback':'resume';
@@ -461,12 +444,13 @@ export class Engine {
       if(this.humanResumed(t,t.recoveryProbe,verified))return;
     }
     const previous=t.attempt;
+    this.stallProbes.delete(t.task+':'+previous);
     let mode=t.recoveryMode??'resume';
     const choice=forced??(mode==='fallback'?t.fallback[0]:undefined);
     if(choice){
       mode='fallback'; if(!forced)t.fallback=t.fallback.slice(1);
       t.launch=choice;t.name=choice.kind;t.retries=0;t.session=undefined;t.rebuild=t.mode==='interactive';
-      if(t.mode==='headless')t.transport=transportFor(choice.kind);
+      if(t.mode==='headless'){t.transport=transportFor(choice.kind);t.native_extra=undefined;}
     } else if(!manual&&t.state==='retrying'&&mode!=='fallback') t.retries++;
     const oldPane=t.pane;
     const plan=t.state==='scheduled_retry';
@@ -492,7 +476,9 @@ export class Engine {
         const {agent}=await startPane({ctx,opts:{place:'workspace',cwd:t.cwd}},t.route,name,t.launch.kind,[...rs,...n]);
         a=agent;t.name=name;t.pane=a.pane_id;t.terminal=a.terminal_id;t.session=a.agent_session??t.session;t.reused=false;t.rebuild=false;
         const owner=this.db.task(t.task)?.controller;
-        const pane={agent:a,route:t.route,launch:t.launch,alias:name,controller:owner,adopted:false,native_perm:t.launch.perm,project_id:t.project_id};
+        const pane={agent:a,route:t.route,launch:t.launch,alias:name,controller:owner,adopted:false,native_perm:t.launch.perm,
+          native_workspace_mode:t.launch.perm==='auto-workspace'?t.launch.workspace_mode??defaultWorkspaceMode(t.launch.kind):undefined,
+          auto_guard:t.launch.perm==='auto-workspace'||t.launch.perm==='yolo',project_id:t.project_id};
         const role=t.project_id&&t.role?this.db.role(t.project_id,t.role):undefined;
         if(role)this.work.attach(pane,role);
         else this.db.savePane(pane);
@@ -535,7 +521,7 @@ export class Engine {
       if(o.retry_backoff!==undefined||o.max_retries!==undefined)t.delays=backoff(o,t.delays);
       if(method==='retry')t.retries=0;
       const brief=str(o,'brief');
-      if(brief!==undefined)atomic(t.brief,input(brief));
+      if(brief!==undefined)writeMailboxFile(t.mail,t.brief,input(brief));
       if(timed.at!==undefined||timed.after!==undefined){
         if(selected.length)t.fallback=[...selected,...t.fallback];
         const at=timed.at??Date.now()+timed.after!;
@@ -556,10 +542,12 @@ export class Engine {
       if(errcode(e)==='identity_changed')return this.complete(t,false,'identity_changed');
       return;
     }
-    const now=Date.now(),seq=a.state_change_seq;
+    const now=Date.now(),seq=a.state_change_seq,key=t.task+':'+t.attempt;
     if(t.seq!==seq||t.revision!==a.revision){
+      this.stallProbes.delete(key);
       t.seq=seq;t.revision=a.revision;t.activityAt=now;t.stalled=false;
     }
+    if(a.agent_status!=='working')this.stallProbes.delete(key);
     if(a.agent_session)t.session=a.agent_session;
     if(a.agent_status==='blocked'){
       t.working=true;t.settledAt=undefined;
@@ -569,22 +557,21 @@ export class Engine {
       try{raw=await screen(t.route,t.pane!,40);}catch{/* Leave an unknown block for the controller. */}
       const kind=classifyBlock(raw),diag=diagnostic(t.mail,seq,'blocked',raw),sig=signature(raw);
       t.diag=diag;t.block={seq,kind,diag,reason:kind==='permission'?'approval_required':kind==='question'?'user_question':'unknown_prompt',since:now};
-      if(kind==='permission'&&t.reused&&['auto-workspace','yolo'].includes(t.launch.perm)){
-        if(t.launch.perm==='auto-workspace'&&blacklist(raw,t.cwd))t.block.reason='blacklist_hit';
-        else{
-          const key=approveKey(t.launch.kind,raw),count=t.autoSignature===sig?(t.autoCount??0):0;
-          if(count>=3)t.block.reason='approval_loop';
-          else if(key){
-            let latest:Agent|undefined;
-            try{latest=await this.verify(t);}catch{/* Leave manual control in place. */}
-            if(latest&&(latest.agent_status!=='blocked'||latest.state_change_seq!==seq)){
-              t.state='submitted';t.block=undefined;this.save(t);this.queue.unblock(t);return;
-            }
-            if(latest){
-              t.autoSignature=sig;t.autoCount=count+1;t.block.approved=true;this.save(t);
-              try{await keys(t.route,t.pane!,[key]);this.db.audit(t.task,'auto_approved',String(seq));return;}
-              catch{t.block.approved=false;t.block.reason='approval_delivery_unknown';}
-            }
+      const pane=t.pane?this.db.pane(t.route,t.pane):undefined;
+      if(pane?.native_perm!=='readonly'&&['auto-workspace','yolo'].includes(t.launch.perm)&&
+        (t.launch.perm==='yolo'?kind!=='question':kind==='permission')){
+        const key=approveKey(t.launch.kind,raw,t.launch.perm==='yolo'),count=t.autoSignature===sig?(t.autoCount??0):0;
+        if(count>=3)t.block.reason='approval_loop';
+        else if(key){
+          let latest:Agent|undefined;
+          try{latest=await this.verify(t);}catch{/* Leave manual control in place. */}
+          if(latest&&(latest.agent_status!=='blocked'||latest.state_change_seq!==seq)){
+            t.state='submitted';t.block=undefined;this.save(t);this.queue.unblock(t);return;
+          }
+          if(latest){
+            t.autoSignature=sig;t.autoCount=count+1;t.block.approved=true;this.save(t);
+            try{await keys(t.route,t.pane!,[key]);this.db.audit(t.task,'auto_approved',String(seq));return;}
+            catch{t.block.approved=false;t.block.reason='approval_delivery_unknown';}
           }
         }
       }
@@ -598,6 +585,19 @@ export class Engine {
     if(a.agent_status==='working'){
       t.working=true;t.settledAt=undefined;t.state='submitted';
       if(!t.stalled&&now-t.activityAt>=this.stall){
+        const previous=this.stallProbes.get(key);
+        if(!previous){
+          const fp=await this.livenessFingerprint(t);
+          this.stallProbes.set(key,{...fp,checkedAt:now});this.save(t);return;
+        }
+        if(now-previous.checkedAt<this.stallConfirm){this.save(t);return;}
+        const current=await this.livenessFingerprint(t),latest=this.db.task(t.task);
+        this.stallProbes.delete(key);
+        if(!latest||latest.attempt!==t.attempt||latest.state!==t.state||latest.stalled!==t.stalled)return;
+        if((previous.screenHash!==''&&current.screenHash!==''&&current.screenHash!==previous.screenHash)||
+          current.fileStamp!==previous.fileStamp){
+          t.activityAt=Date.now();t.stalled=false;this.save(t);return;
+        }
         t.stalled=true;this.queue.enqueue(t,'stalled','stalled','No recent Worker activity.',{probe:this.probe(t,a)});this.db.audit(t.task,'stalled');
       }
     }else if(idle(a)&&(t.working||seq!==t.startSeq||t.state==='delivery_unknown')){
@@ -605,7 +605,7 @@ export class Engine {
       const explicit=a.failure??a.error??a.failure_reason??a.stop_reason;
       if(explicit||now-t.settledAt>=this.settle){
         const output=this.artifact(t);
-        if(output&&!explicit){if(redact(output)!==output)atomic(t.out,redact(output));return this.complete(t,true,'artifact_written');}
+        if(output&&!explicit){if(redact(output)!==output)writeMailboxFile(t.mail,t.out,redact(output));return this.complete(t,true,'artifact_written');}
         const desc=typeof explicit==='string'?explicit:explicit?.code;
         return this.failure(t,classify(desc??'settled_no_reply',desc));
       }
@@ -635,6 +635,7 @@ export class Engine {
       kind:o.kind??role.default_kind,model:o.model??(switching?undefined:role.default_model),
       effort:o.effort??(switching?undefined:role.default_effort),provider:o.provider??(switching?undefined:role.default_provider),
       channel:o.channel??(switching?undefined:role.default_channel),perm:o.perm??role.default_perm,
+      workspace_mode:o.workspace_mode??(switching?undefined:role.default_workspace_mode),
       cwd:cwd?localCwd(inv.ctx.cwd,cwd):role.cwd??(isAbsolute(project.root)?project.root:inv.ctx.cwd),
       worktree:(o.worktree??role.worktree)?role.role+'-'+randomUUID().slice(0,8):undefined,
       controller:o.controller,attended:o.attended,unattended:o.unattended,bg:o.bg,matrix:o.matrix??readConfig(this.root).matrix,
@@ -719,7 +720,7 @@ export class Engine {
     const project=this.resolvedProject(inv);
     if(action==='list'){
       const r=route(inv),live=await this.refreshRoute(r);
-      return {project_filter:project.project_id,roles:this.roleViews(this.work.topologyView(r,live,ctx.cwd),r,this.db.tasks(),project.project_id),global_roles:readGlobalRoles()};
+      return {project_filter:project.project_id,roles:this.views.roleViews(this.work.topologyView(r,live,ctx.cwd),r,this.db.tasks(),project.project_id),global_roles:readGlobalRoles()};
     }
     const name=roleName(inv.target);
     return this.lock(this.roleKey({project_id:project.project_id,role:name}),async()=>{
@@ -748,33 +749,11 @@ export class Engine {
     });
   }
 
-  private roleView(role:Role,r:Route,topology:ReturnType<Workspaces['topologyView']>,tasks:Task[]){
-    const {launch:l,config_overrides,config_root,launch_cwd,...defaults}=role;
-    const pane=role.binding_mode==='pane'&&role.route&&same(r,role.route)?
-      topology.managed_panes.find(p=>p.pane_id===role.pane_id&&p.terminal_id===role.terminal_id):undefined;
-    const task=roleActive(role,tasks);
-    return {...defaults,controller:pane?pane.controller:role.controller,kind:pane?.kind??l?.kind,model:pane?.model??l?.model,
-      effort:pane?.effort??l?.effort,provider:pane?.provider??l?.provider,perm:pane?.perm??l?.perm,
-      live:role.binding_mode==='headless'||!!pane?.live,
-      agent_status:role.binding_mode==='unbound'?'unbound':role.binding_mode==='headless'?
-        (task?.state??'idle'):(pane?.agent_status??'offline'),active_task:task?.task};
-  }
-
-  private roleViews(topology:ReturnType<Workspaces['topologyView']>,r:Route,tasks:Task[],project?:string,roleFilter?:string){
-    return this.db.roles().filter(role=>(!project||role.project_id===project)&&(!roleFilter||role.role===roleFilter)).map(role=>{
-      if(role.route&&!same(role.route,r)&&role.binding_mode==='pane'){
-        const live=this.uiRoutes.get(routeKey(role.route))?.current;
-        if(live)return this.roleView(role,role.route,this.work.topologyView(role.route,live,this.db.project(role.project_id)?.root??'.'),tasks);
-      }
-      return this.roleView(role,r,topology,tasks);
-    });
-  }
-
   private async singleRoleView(role:Role,inv:Invocation){
     const r=role.route??route(inv);
     const live=await this.refreshRoute(r);
     const current=this.db.role(role.project_id,role.role)??role;
-    return this.roleView(current,r,this.work.topologyView(r,live,inv.ctx.cwd),this.db.tasks());
+    return this.views.roleView(current,r,this.work.topologyView(r,live,inv.ctx.cwd),this.db.tasks());
   }
 
   private async prune(inv:Invocation){
@@ -844,6 +823,10 @@ export class Engine {
       const agents=[...topology.agents].sort((a,b)=>a.pane_id.localeCompare(b.pane_id));
       const fingerprint=JSON.stringify({herdr:topology.herdr,agents,labels:topology.labels});
       state.current=topology;
+      for(const p of this.db.panes().filter(p=>same(p.route,r)&&p.auto_guard)){
+        const a=agents.find(a=>a.pane_id===p.agent.pane_id&&a.terminal_id===p.agent.terminal_id);
+        if(a?.agent_status==='blocked')this.schedulePaneGuard(p,a);
+      }
       if(fingerprint!==state.fingerprint){
         state.fingerprint=fingerprint;
         if(state.clients)this.onLiveChange();
@@ -853,57 +836,13 @@ export class Engine {
     return state.pending;
   }
 
-  private projectView(inv:Invocation,r:Route,live:LiveTopology,all:boolean){
-    const {opts:o,ctx}=inv;
-    const filter=str(o,'project'),roleFilter=str(o,'role');
-    if(filter!==undefined)projectId(filter);
-    if(roleFilter!==undefined)roleName(roleFilter);
-    const current=this.work.projects.view(ctx.cwd);
-    const topology=this.work.topologyView(r,live,ctx.cwd);
-    const list=this.db.tasks();
-    const roleProject=filter??(roleFilter?current.project_id:undefined);
-    const roles=this.roleViews(topology,r,list,roleProject,roleFilter);
-    const scoped=(row:{project_id:string})=>!filter||row.project_id===filter;
-    const managed_panes=topology.managed_panes.filter(p=>scoped(p)&&(!roleFilter||p.project_id===roleProject&&p.role===roleFilter));
-    const unmanaged_live_agents=topology.unmanaged_live_agents.filter(p=>scoped(p)&&!roleFilter);
-    const tasks=list.map(t=>({...received(t),project_id:this.work.projects.task(t).project_id})).filter(t=>
-      scoped(t)&&(!roleFilter||t.project_id===roleProject&&t.role===roleFilter));
-    const ids=new Set(tasks.map(t=>t.task));
-    const pending=(row:{task?:unknown})=>(!filter&&!roleFilter)||typeof row.task==='string'&&ids.has(row.task);
-    const projectIds=new Set([
-      current.project_id,...managed_panes.map(p=>p.project_id),...unmanaged_live_agents.map(p=>p.project_id),
-      ...roles.map(row=>row.project_id),...tasks.map(t=>t.project_id),...this.db.projects().filter(p=>p.source==='override'||p.source==='config').map(p=>p.project_id),
-    ]);
-    if(filter)projectIds.add(filter);
-    const projects=this.db.projects().filter(p=>projectIds.has(p.project_id)&&scoped(p)).map(project=>{
-      const panes=managed_panes.filter(p=>p.project_id===project.project_id);
-      const external=unmanaged_live_agents.filter(p=>p.project_id===project.project_id);
-      const slots=roles.filter(role=>role.project_id===project.project_id);
-      const work=tasks.filter(t=>t.project_id===project.project_id&&!terminal(t.state));
-      const controllers=new Set([
-        ...panes.map(p=>p.controller?.pane),...slots.map(row=>row.controller?.pane),
-        ...tasks.filter(t=>t.project_id===project.project_id).map(t=>t.controller?.pane),
-      ].filter((p):p is string=>p!==undefined));
-      return {...project,controllers:[...controllers],roles_count:slots.length,live_panes:panes.filter(p=>p.live).length+external.length,
-        active_tasks:work.length,blocked_count:work.filter(t=>t.state==='blocked').length};
-    });
-    const duplicateNames=new Set(projects.filter((p,i)=>projects.findIndex(q=>q.name===p.name)<i).map(p=>p.name));
-    for(const p of projects)if(duplicateNames.has(p.name))p.name=dirname(p.root)+' / '+p.name;
-    const visibleRecipients=new Set([...projects.flatMap(p=>p.controllers),...managed_panes.map(p=>p.pane_id),...unmanaged_live_agents.map(p=>p.pane_id)]);
-    return {route:r,herdr:topology.herdr,managed_panes,unmanaged_live_agents,projects,roles,global_roles:readGlobalRoles(),project_filter:filter,
-      current_project:current.project_id,tasks:all?tasks:tasks.filter(t=>!terminal(t.state)),
-      queue:this.db.events(all).filter(pending),scheduled_retries:this.db.plans(all).filter(pending),
-      paused_recipients:this.db.pausedPanes(r).filter(p=>!filter||visibleRecipients.has(p)),
-      audit:this.db.logs().filter(event=>!filter||typeof event.task==='string'&&ids.has(event.task))};
-  }
-
   async uiSnapshot(inv:Invocation,sequence:()=>number){
     const r=route(inv),state=this.routeState(r);
     const refresh=this.refreshRoute(r);
     const live=state.clients?await Promise.race([
       refresh,sleep<LiveTopology>(500,state.current??{herdr:'checking',agents:[]},{ref:false}),
     ]):await refresh;
-    const view=this.projectView(inv,r,live,true);
+    const view=this.views.projectView(inv,r,live,true);
     return {seq:sequence(),now:Date.now(),...view};
   }
   private uiFile(inv:Invocation){
@@ -918,8 +857,47 @@ export class Engine {
   private activePaneTask(r:Route,pane:string){
     return this.db.tasks().find(t=>t.pane===pane&&same(t.route,r)&&t.mode==='interactive'&&active(t));
   }
+  private paneGuardEnabled(p:ManagedPane){
+    return p.auto_guard===true&&['auto-workspace','yolo'].includes(p.launch.perm)&&
+      p.native_perm!=='readonly'&&
+      !this.db.tasks().some(t=>t.pane===p.agent.pane_id&&same(t.route,p.route)&&!terminal(t.state));
+  }
+  private schedulePaneGuard(p:ManagedPane,a:Pick<Agent,'pane_id'|'terminal_id'|'state_change_seq'|'agent_status'|'cwd'>){
+    const key=paneKey(p.route,p.agent.pane_id),state=this.paneGuardState.get(key);
+    if(!this.paneGuardEnabled(p)||this.paneGuardPending.has(key)||
+      state?.terminal===a.terminal_id&&state.lastSeq===a.state_change_seq)return;
+    this.paneGuardPending.add(key);
+    this.track(this.observePaneGuard(p,a).finally(()=>this.paneGuardPending.delete(key)));
+  }
+  private async observePaneGuard(saved:ManagedPane,a:Pick<Agent,'pane_id'|'terminal_id'|'state_change_seq'|'agent_status'|'cwd'>){
+    const r=saved.route,pane=saved.agent.pane_id,key=paneKey(r,pane);
+    await this.work.lock(r,pane,async()=>{
+      const p=this.db.pane(r,pane),prior=this.paneGuardState.get(key);
+      if(!p||!this.paneGuardEnabled(p)||p.agent.terminal_id!==a.terminal_id||a.agent_status!=='blocked'||
+        prior?.terminal===a.terminal_id&&prior.lastSeq===a.state_change_seq)return;
+      const raw=await screen(r,pane,40),sig=signature(raw);
+      const state={terminal:a.terminal_id,lastSeq:a.state_change_seq,signature:sig,
+        count:prior?.terminal===a.terminal_id&&prior.signature===sig?prior.count:0};
+      this.paneGuardState.set(key,state);
+      const blockKind=classifyBlock(raw);
+      if(p.launch.perm==='yolo'?blockKind==='question':blockKind!=='permission'){
+        this.db.audit(null,'pane_auto_approve_skipped',pane+' kind='+blockKind);return;
+      }
+      const approve=approveKey(p.launch.kind,raw,p.launch.perm==='yolo');
+      if(state.count>=3){this.db.audit(null,'pane_auto_approve_skipped',pane+' approval_loop');return;}
+      if(!approve){this.db.audit(null,'pane_auto_approve_skipped',pane+' unsafe_selection');return;}
+      const latest=await get(r,pane);
+      if(latest.terminal_id!==a.terminal_id||latest.agent!==p.launch.kind||latest.agent_status!=='blocked'||
+        latest.state_change_seq!==a.state_change_seq||!sessionsEqual(p.agent.agent_session,latest.agent_session)||
+        !this.paneGuardEnabled(this.db.pane(r,pane)??p))return;
+      state.count++;
+      await keys(r,pane,[approve]);
+      this.db.audit(null,'pane_auto_approved',pane+' seq='+a.state_change_seq);
+      this.onLiveChange();
+    });
+  }
   private uiSetPerm(inv:Invocation){
-    const target=safeTarget(inv.target),requested=str(inv.opts,'perm');
+    const target=safeTarget(inv.target),requested=str(inv.opts,'perm'),rawWs=str(inv.opts,'workspace_mode');
     if(requested===undefined)return invalid('Provide a permission tier.');
     const perm=permission({perm:requested});
     const selected=this.db.task(target),r=selected?.route??route(inv);
@@ -930,11 +908,14 @@ export class Engine {
       const p=pane?this.db.pane(r,pane):undefined;
       const running=pane?this.activePaneTask(r,pane):undefined;
       const ids=new Set([selected?.task,running?.task].filter((id):id is string=>!!id));
+      const base=p?.launch??running?.launch??selected!.launch;
+      const workspace_mode=rawWs!==undefined?workspaceMode(base.kind,rawWs):base.workspace_mode;
       this.db.transaction(()=>{
-        if(p)this.db.savePane({...p,launch:{...p.launch,perm}});
+        if(p)this.db.savePane({...p,launch:{...p.launch,perm,workspace_mode},auto_guard:perm==='auto-workspace'||perm==='yolo'});
         for(const id of ids){
           const t=this.task(id);
-          t.launch={...t.launch,perm};
+          const mode=rawWs!==undefined?workspaceMode(t.launch.kind,rawWs):t.launch.workspace_mode;
+          t.launch={...t.launch,perm,workspace_mode:mode};
           t.reused=!p||p.native_perm!==perm;
           this.save(t);
         }
@@ -948,7 +929,16 @@ export class Engine {
           await this.observe(t);
         }));
       }
-      return success({target,perm});
+      if(p){
+        this.paneGuardState.delete(paneKey(r,p.agent.pane_id));
+        if(!running&&(perm==='auto-workspace'||perm==='yolo')){
+          this.track(get(r,p.agent.pane_id).then(a=>{
+            const current=this.db.pane(r,p.agent.pane_id);
+            if(current&&a.agent_status==='blocked')this.schedulePaneGuard(current,a);
+          }));
+        }
+      }
+      return success({target,perm,workspace_mode});
     };
     const update=async()=>pane?this.work.lock(r,pane,async()=>apply()):apply();
     return current?this.lock(current.task,update):update();
@@ -1064,8 +1054,8 @@ export class Engine {
       if(mood.length>1)return invalid('Choose one reply status.');
       const body=str(o,'body'),out=str(o,'out');
       if(body!==undefined&&out)return invalid('Choose one reply body or artifact.');
-      if(body!==undefined)atomic(t.out,input(body));
-      if(out&&resolve(inv.ctx.cwd,out)!==t.out)atomic(t.out,input(fileText(resolve(inv.ctx.cwd,out))));
+      if(body!==undefined)writeMailboxFile(t.mail,t.out,input(body));
+      if(out&&resolve(inv.ctx.cwd,out)!==t.out)writeMailboxFile(t.mail,t.out,input(fileText(resolve(inv.ctx.cwd,out))));
       const text=note(str(o,'note'));
       if(o.question||o.progress){
         this.queue.enqueue(t,o.question?'blocked':'progress',o.question?'blocked(question)':'progress',text,{out:body!==undefined||out?t.out:undefined});
@@ -1074,7 +1064,7 @@ export class Engine {
         t.note=text;this.complete(t,!o.fail,o.fail?'worker_reported_failure':'worker_replied',true,recovering);
       }
       const pending=this.db.events(false,id).some(e=>e.attempt===t.attempt);
-      return success({...received(t),queued:pending},pending?2:0);
+      return success({...received(t),queued:pending});
     });
   }
   private async respond(inv:Invocation){
@@ -1094,7 +1084,7 @@ export class Engine {
       }
       if(!force){
         if(!t.block||a.state_change_seq!==t.block.seq)throw new FlowError('block_changed','The current block has not been classified yet.',2);
-        if(!fileText(t.block.diag).includes(clean(expect!)))throw new FlowError('expectation_mismatch','The expected text did not match the block snapshot.',2);
+        if(!readMailboxFile(t.mail,t.block.diag)?.content.includes(clean(expect!)))throw new FlowError('expectation_mismatch','The expected text did not match the block snapshot.',2);
       }
       const again=await this.verify(t);
       if(again.agent_status!=='blocked'){
@@ -1135,7 +1125,7 @@ export class Engine {
   }
   private async inspect(inv:Invocation){
     const t=this.task(inv.target),o=inv.opts;
-    const value={...received(t),queue:this.db.events(true,t.task),audit:this.db.logs(t.task),diag_text:o.diag&&t.diag?fileTextIf(t.diag):undefined,screen:undefined as string|undefined};
+    const value={...received(t),queue:this.db.events(true,t.task),audit:this.db.logs(t.task),diag_text:o.diag&&t.diag?readMailboxFile(t.mail,t.diag)?.content:undefined,screen:undefined as string|undefined};
     if(o.screen){
       await this.verify(t);
       const lines=this.screenLines(o);
@@ -1158,6 +1148,7 @@ export class Engine {
     });
   }
   private cancelled(t:Task){
+    this.stallProbes.delete(t.task+':'+t.attempt);
     this.db.transaction(()=>{
       t.state='cancelled';t.reason='controller_cancelled';t.nextAt=undefined;t.process=undefined;t.closeOwner=undefined;
       this.save(t);this.db.scheduleState(t,'cancelled');this.queue.discard(t,'superseded_by_terminal');this.db.audit(t.task,'cancelled');
@@ -1178,6 +1169,7 @@ export class Engine {
       this.work.assertFree(t,t.route,t.pane);
       return this.work.lock(t.route,t.pane,async()=>{
         const old=t.state;
+        this.stallProbes.delete(t.task+':'+t.attempt);
         t.closeOwner='closing:'+process.pid+':'+randomUUID();t.state='closing';this.save(t);
         try{await this.verify(t);await closePane(t.route,t.pane!);}
         catch(e){
@@ -1214,6 +1206,11 @@ export class Engine {
         if(!project)return invalid('Select a destination project.');
         return success(await this.work.assignProject(inv,this.resolvedProject(inv)));
       }
+      case 'ui.release_pane': {
+        const released=await this.work.release(inv);
+        this.onLiveChange();
+        return success(released);
+      }
       case 'ui.focus_pane': {
         const r=route(inv), pane=safeTarget(inv.target);
         await focusAgent(r,pane);
@@ -1242,7 +1239,7 @@ export class Engine {
       case 'list':case 'health': {
         const r=route(inv),includePanes=method==='health'||!!o.panes;
         const live=includePanes?await this.refreshRoute(r):this.uiRoutes.get(routeKey(r))?.current??{herdr:'unchecked',agents:[]};
-        const data=this.projectView(inv,r,live,!!o.all);
+        const data=this.views.projectView(inv,r,live,!!o.all);
         if(!includePanes){
           const {tasks,queue,scheduled_retries,projects,roles,project_filter,current_project}=data;
           return success({tasks,queue,scheduled_retries,projects,roles,project_filter,current_project});

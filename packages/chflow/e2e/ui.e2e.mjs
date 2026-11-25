@@ -151,7 +151,7 @@ test('E2E-15 Web UI leases, live SSE updates without read-screen, and bounded ma
   await stream.next(s => s.herdr === 'reachable', 'SSE did not include the initial Herdr discovery');
   assert.equal(first.route.socket, fx.socketPath);
   assert.equal(first.daemon.pid, ui.daemon_pid);
-  assert.equal(first.daemon.version, '3.5.0');
+  assert.equal(first.daemon.version, '3.6.0');
   assert.ok(Number.isFinite(Date.parse(first.daemon.started_at)));
   assert.ok(Number.isSafeInteger(first.now));
 
@@ -329,7 +329,7 @@ test('E2E-16 Web UI security, controlled actions and matrix v2 fallback', { time
 
   const draft = 'UNSUBMITTED_HTTP_DRAFT';
   fx.herdr.setAgent(fx.caller, { agent_status: 'idle', focused: true, screen: '❯ ' + draft });
-  await command(fx, ['reply', task, '--attempt', sent.attempt, '--ok', '--body', 'Result for the caller.'], { pane: worker }, [0, 2]);
+  await command(fx, ['reply', task, '--attempt', sent.attempt, '--ok', '--body', 'Result for the caller.'], { pane: worker }, [0]);
   const deferred = await eventually(async () => (await snapshot(ui.url)).queue.find(row =>
     row.task === task && row.type === 'result' && row.state === 'deferred_user_typing'));
   const flushed = await action('flush');
@@ -452,7 +452,7 @@ test('E2E-17 Web UI operator authority, terminal overrides, and per-event delive
   const promptsTo = pane => fx.herdr.prompts.filter(p => p.pane === pane);
   const resultFor = id => eventually(async () => (await state()).queue.find(e => e.task === id && e.type === 'result'));
   const reply = row => command(fx, ['reply', row.task, '--attempt', row.attempt, '--ok', '--body', 'Operator fixture result.'],
-    { pane: row.pane_id }, [0, 2]);
+    { pane: row.pane_id }, [0]);
 
   const launched = await action('start', undefined, {
     kind: 'codex', name: 'operator-worker', place: 'workspace', controller: fx.otherCaller,
@@ -576,6 +576,16 @@ test('E2E-17 Web UI operator authority, terminal overrides, and per-event delive
   assert.match(promptsTo(fx.otherCaller)[0].text, /^\[chflow:batch\] count=2/);
   assert.ok(promptsTo(fx.otherCaller)[0].text.includes(routed.task));
   assert.ok(promptsTo(fx.otherCaller)[0].text.includes(batched.task));
+
+  const stale = await makeResult('operator-stale-recipient', 'w1:p99', fx.otherCaller);
+  const previousSession = fx.herdr.agents.get(fx.otherCaller).agent_session;
+  const previousPrompts = promptsTo(fx.otherCaller).length;
+  fx.herdr.setAgent(fx.otherCaller, { agent_session: { kind: 'path', value: '/fixture/replacement-session' } });
+  assert.deepEqual(await action('queue_deliver_now', undefined, { event_id: stale.event_id }), { delivered: 0 });
+  assert.equal((await event(stale.event_id)).state, 'pending_unreachable');
+  assert.equal(promptsTo(fx.otherCaller).length, previousPrompts, 'Force delivery still validates recipient identity');
+  await action('queue_drop', undefined, { event_id: stale.event_id });
+  fx.herdr.setAgent(fx.otherCaller, { agent_session: previousSession });
 
   const resumed = await makeResult('operator-resume-queue', 'w1:p96', fx.otherCaller);
   assert.equal(resumed.state, 'paused_by_operator');
@@ -921,7 +931,7 @@ test('E2E-19 human CLI, TTY-only controls, redacted mailbox and live top', { tim
   await eventually(async () => (await task(id))?.state === 'submitted' && fx.herdr.keys.length === 2);
   assert.equal((await task(id)).perm, 'yolo');
   assert.equal(fx.herdr.starts.length, launches);
-  await command(fx, ['reply', id, '--attempt', sent.attempt, '--ok'], { pane: worker }, [0, 2]);
+  await command(fx, ['reply', id, '--attempt', sent.attempt, '--ok'], { pane: worker }, [0]);
   const result = await eventually(() => queued(id, 'result'));
   assert.equal(result.state, 'paused_by_operator');
   assert.deepEqual(await runPty(['queue', 'push', '--event', result.event_id, '--json']), { delivered: 1 });
@@ -930,7 +940,7 @@ test('E2E-19 human CLI, TTY-only controls, redacted mailbox and live top', { tim
 
   fx.herdr.setAgent(worker, { agent_status: 'idle' });
   const remaining = await command(fx, ['send', worker, '--task', 'tty-resumed', '--brief', 'Normal delivery.']);
-  await command(fx, ['reply', remaining.task, '--attempt', remaining.attempt, '--ok'], { pane: worker }, [0, 2]);
+  await command(fx, ['reply', remaining.task, '--attempt', remaining.attempt, '--ok'], { pane: worker }, [0]);
   assert.equal((await queued(remaining.task, 'result')).state, 'paused_by_operator');
   fx.herdr.setAgent(fx.caller, { agent_status: 'idle' });
   assert.equal((await runPty(['queue', 'resume', fx.caller, '--json'])).resumed, 1);
@@ -1015,7 +1025,7 @@ test('E2E-20 project precedence, two controllers, offline reconciliation and mat
   assert.deepEqual(one.fallback.map(row => row.channel), ['claude-backup']);
   assert.equal((await command(fx, ['status', '--project', 'app'])).projects[0].active_tasks, 2);
   for (const row of [one, two]) {
-    await command(fx, ['reply', row.task, '--ok', '--attempt', row.attempt, '--body', 'Fixture done'], { pane: row.pane_id }, [0, 2]);
+    await command(fx, ['reply', row.task, '--ok', '--attempt', row.attempt, '--body', 'Fixture done'], { pane: row.pane_id }, [0]);
   }
   assert.equal((await command(fx, ['prune', '--tasks', '--project', 'app'])).pruned_tasks, 0);
   fx.herdr.setAgent(fx.caller, { agent_status: 'idle' });
@@ -1075,7 +1085,7 @@ test('E2E-21 role lifecycle, guarded spawn, hot rebinding and UI/MCP actions', {
   assert.equal((await role('backend')).pane_id, first.pane_id);
   assert.equal((await role('backend')).active_task, first.task);
   assert.equal((await command(fx, ['role', 'unbind', 'backend'], undefined, [1])).error.code, 'role_busy');
-  await command(fx, ['reply', first.task, '--ok', '--attempt', first.attempt, '--body', 'Turn one result'], { pane: first.pane_id }, [0, 2]);
+  await command(fx, ['reply', first.task, '--ok', '--attempt', first.attempt, '--body', 'Turn one result'], { pane: first.pane_id }, [0]);
   fx.herdr.removeAgent(first.pane_id);
   const offline = await role('backend');
   assert.equal(offline.binding_mode, 'unbound');
@@ -1100,7 +1110,7 @@ test('E2E-21 role lifecycle, guarded spawn, hot rebinding and UI/MCP actions', {
   assert.equal(await readFile(first.brief, 'utf8'), 'First role turn');
   const stale = await command(fx, ['reply', second.task, '--ok', '--attempt', first.attempt], { pane: secondWorker }, [1]);
   assert.equal(stale.error.code, 'attempt_mismatch');
-  await command(fx, ['reply', second.task, '--ok', '--attempt', second.attempt, '--body', 'Turn two result'], { pane: secondWorker }, [0, 2]);
+  await command(fx, ['reply', second.task, '--ok', '--attempt', second.attempt, '--body', 'Turn two result'], { pane: secondWorker }, [0]);
 
   fx.herdr.setAgent(secondWorker, { agent_status: 'idle' });
   const third = await command(fx, ['role', 'bind', 'backend', '--spawn', '--close-old']);
@@ -1383,4 +1393,632 @@ test('E2E-23 global role templates, lazy instantiation, readable Herdr labels an
   assert.ok(gList.result.structuredContent.data.global_roles.some(r => r.role === 'reviewer'));
   mcp.stdin.end();
   assert.equal(await ended, 0);
+});
+
+test('E2E-24 historical controllers, readable adoption and operator pane release', { timeout: 45_000 }, async t => {
+  const fx = await createFixture(t);
+  const folder = join(fx.root, 'retired-project');
+  await mkdir(folder);
+  const controller = 'w1:p71', worker = 'w1:p72';
+  fx.herdr.addAgent(controller, { cwd: folder, agent_status: 'working' });
+  fx.herdr.addAgent(worker, { cwd: folder });
+  const ui = await startUi(t, fx);
+  const html = await (await fetch(ui.url + '/')).text();
+  const token = html.match(/"csrfToken"\s*:\s*"([0-9a-f]{64})"/)?.[1];
+  assert.ok(token);
+  const headers = { Origin: ui.url, 'X-Chflow-Token': token, 'Content-Type': 'application/json' };
+  const action = async (action, target, opts = {}, code = 200) => {
+    const reply = await jsonRequest(ui.url, '/api/action', {
+      method: 'POST', headers, body: JSON.stringify({ action, target, opts }),
+    });
+    assert.equal(reply.status, code, action + ': ' + JSON.stringify(reply.body));
+    return reply.body.data ?? reply.body.error;
+  };
+
+  const sent = await command(fx, ['send', worker, '--task', 'retired-thread', '--brief', 'Complete before exit'],
+    { cwd: folder, pane: controller });
+  fx.herdr.setAgent(controller, { agent_status: 'exited' });
+  assert.deepEqual((await command(fx, ['health'])).projects.find(p => p.project_id === sent.project_id).controllers, [controller],
+    'An offline controller with active work must remain visible');
+  await command(fx, ['reply', sent.task, '--attempt', sent.attempt, '--ok', '--body', 'Finished'], { pane: worker }, [0]);
+  fx.herdr.removeAgent(worker);
+  const waiting = await command(fx, ['health']);
+  const receipts = waiting.queue.filter(e => e.task === sent.task);
+  assert.ok(receipts.length > 0);
+  assert.deepEqual(waiting.projects.find(p => p.project_id === sent.project_id).controllers, [controller],
+    'Undelivered receipts must retain their offline recipient');
+  for (const receipt of receipts) await action('queue_consume', controller, { event_id: receipt.event_id });
+  const retired = await command(fx, ['health', '--all']);
+  assert.equal(retired.projects.some(p => p.project_id === sent.project_id), false,
+    'Terminal-only folder projects must leave the project overview');
+  assert.ok(retired.tasks.some(row => row.task === sent.task && row.state === 'succeeded'));
+  const snap = await snapshot(ui.url);
+  assert.equal(snap.projects.some(p => p.project_id === sent.project_id), false);
+  assert.equal(snap.projects.some(p => p.controllers.includes(controller)), false);
+  assert.ok(snap.tasks.some(row => row.task === sent.task));
+  assert.ok((await command(fx, ['list', '--all'])).tasks.some(row => row.task === sent.task));
+  const scoped = await command(fx, ['health', '--project', sent.project_id]);
+  assert.deepEqual(scoped.projects.map(p => p.project_id), [sent.project_id]);
+  assert.deepEqual(scoped.projects[0].controllers, []);
+  assert.ok((await command(fx, ['health'], { cwd: folder })).projects.some(p => p.project_id === sent.project_id),
+    'The current project remains available after its sessions exit');
+
+  // A handoff can enqueue a receipt before the pane has ever run a task.
+  const handoffWorker = 'w1:p76', handoffOwner = 'w1:p77';
+  fx.herdr.addAgent(handoffWorker, { cwd: folder });
+  fx.herdr.addAgent(handoffOwner, { cwd: folder, agent_status: 'working' });
+  await command(fx, ['adopt', handoffWorker], { cwd: folder, pane: handoffOwner });
+  await command(fx, ['handoff', handoffWorker, '--to', fx.caller, '--notify-old'], { cwd: folder, pane: handoffOwner });
+  fx.herdr.setAgent(handoffOwner, { agent_status: 'exited' });
+  fx.herdr.removeAgent(handoffWorker);
+  const handedOff = await snapshot(ui.url);
+  assert.deepEqual(handedOff.projects.find(p => p.project_id === sent.project_id).controllers, [handoffOwner]);
+  const handoffReceipt = handedOff.queue.find(e => e.type === 'handed_off' && e.recipient.pane === handoffOwner);
+  assert.ok(handoffReceipt);
+  await action('queue_consume', handoffOwner, { event_id: handoffReceipt.event_id });
+  assert.equal((await snapshot(ui.url)).projects.some(p => p.project_id === sent.project_id), false);
+
+  // Online workers must not retain a dead historical owner through their saved pane metadata.
+  const owned = 'w1:p73';
+  fx.herdr.addAgent(owned);
+  await command(fx, ['adopt', owned], { pane: fx.otherCaller });
+  fx.herdr.setAgent(fx.otherCaller, { agent_status: 'exited' });
+  assert.equal((await command(fx, ['health'])).projects.some(p => p.controllers.includes(fx.otherCaller)), false);
+
+  const unnamed = 'w1:p74';
+  fx.herdr.addAgent(unnamed, { agent: 'agy' });
+  const adopted = await action('adopt', unnamed);
+  assert.match(adopted.alias, /^agy-[0-9a-f]{6}$/);
+  const paneView = async id => (await snapshot(ui.url)).managed_panes.find(p => p.pane_id === id);
+  assert.equal((await paneView(unnamed)).display_name, 'workspace · Antigravity');
+  await action('adopt', unnamed);
+  assert.equal((await paneView(unnamed)).alias, adopted.alias, 'Repeated adoption must preserve the registered alias');
+  await action('adopt', unnamed, { name: 'custom-worker' });
+  assert.equal((await paneView(unnamed)).display_name, 'custom-worker');
+  const started = await action('start', undefined, { kind: 'pi' });
+  assert.equal((await paneView(started.pane_id)).display_name, 'workspace · Pi');
+
+  const blockedPane = 'w1:p75';
+  fx.herdr.addAgent(blockedPane, { agent_status: 'blocked' });
+  assert.equal((await action('adopt', blockedPane, {}, 409)).code, 'pane_not_ready');
+  assert.equal(await paneView(blockedPane), undefined);
+  // An operator can undo adoption of a controller's own pane without closing its session.
+  const selfAdopt = await fx.cli(['adopt', fx.caller]);
+  assert.equal(selfAdopt.code, 1);
+  assert.equal(selfAdopt.json.error.code, 'invalid_args');
+  await action('adopt', fx.caller);
+  assert.equal((await paneView(fx.caller)).controller.pane, fx.caller);
+  assert.equal((await paneView(fx.caller)).is_controller, true);
+  assert.equal((await paneView(started.pane_id)).is_controller, false);
+  const health = await command(fx, ['health']);
+  assert.equal(health.managed_panes.find(p => p.pane_id === fx.caller).is_controller, true);
+  assert.ok(health.managed_panes.every(p => typeof p.is_controller === 'boolean'));
+  const rendered = await promisify(execFile)(process.execPath, [fx.cliPath, 'list', '--panes'], { cwd: fx.workspace, env: fx.env });
+  assert.match(rendered.stdout, /ctrl/);
+
+  // An adopted controller can also delegate as a worker in a larger workflow.
+  fx.herdr.setAgent(fx.otherCaller, { agent_status: 'idle' });
+  await command(fx, ['adopt', fx.otherCaller], { pane: fx.caller });
+  await command(fx, ['adopt', owned], { pane: fx.otherCaller });
+  assert.equal((await paneView(fx.otherCaller)).is_controller, true);
+  assert.equal((await paneView(owned)).is_controller, false);
+
+  // Labels remain presentation-only even when they contain sensitive metadata.
+  fx.herdr.setWorkspace('w1', 'workspace user@example.test');
+  const labeled = await snapshot(ui.url);
+  assert.equal(labeled.herdr, 'reachable');
+  assert.ok(labeled.managed_panes.some(p => p.pane_id === fx.caller));
+  assert.ok(!JSON.stringify(labeled).includes('user@example.test'));
+  const stream = await events(t, ui.url);
+  const beforeRelease = await stream.next(s => s.managed_panes.some(p => p.pane_id === unnamed), 'Adopted pane missing');
+  const released = await action('release_pane', unnamed);
+  assert.equal(released.pane_id, unnamed);
+  assert.equal(released.released, true);
+  const afterRelease = await stream.next(s => s.seq > beforeRelease.seq &&
+    !s.managed_panes.some(p => p.pane_id === unnamed) && s.unmanaged_live_agents.some(p => p.pane_id === unnamed),
+    'Released pane did not return to the unmanaged live list');
+  assert.ok(afterRelease.audit.some(e => e.event === 'pane_released' && e.detail === unnamed));
+  assert.ok(fx.herdr.agents.has(unnamed));
+  assert.equal(fx.herdr.requests.some(r => r.method === 'pane.close' && r.pane === unnamed), false);
+  assert.equal((await action('release_pane', unnamed, {}, 409)).code, 'not_managed');
+  await action('release_pane', fx.caller);
+  assert.ok((await snapshot(ui.url)).unmanaged_live_agents.some(p => p.pane_id === fx.caller));
+
+  const busy = await action('send', started.pane_id, { task: 'release-busy', brief: 'Remain active' });
+  assert.equal((await action('release_pane', started.pane_id, {}, 409)).code, 'pane_busy');
+  await action('cancel', busy.task);
+  fx.herdr.setAgent(started.pane_id, { agent_status: 'idle' });
+  await action('role_set', 'release-role', { kind: 'pi' });
+  await action('role_bind', 'release-role', { pane: started.pane_id });
+  assert.equal((await paneView(started.pane_id)).display_name, '@release-role');
+  assert.equal((await action('release_pane', started.pane_id, {}, 409)).code, 'role_busy');
+  await action('role_unbind', 'release-role');
+  await action('release_pane', started.pane_id);
+  assert.ok(fx.herdr.agents.has(started.pane_id));
+
+  const mcp = spawn(process.execPath, [fx.cliPath, 'mcp'], { cwd: fx.workspace, env: fx.env, stdio: 'pipe' });
+  t.after(() => { if (mcp.exitCode === null && mcp.signalCode === null) mcp.kill(); });
+  const ended = new Promise(resolve => mcp.once('close', resolve));
+  const lines = createInterface({ input: mcp.stdout });
+  const next = new Promise(resolve => lines.once('line', resolve));
+  mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) + '\n');
+  const line = await next;
+  assert.equal(JSON.parse(line).result.tools.length, 19);
+  assert.ok(Buffer.byteLength(line) < 10_000, 'MCP tools/list bytes: ' + Buffer.byteLength(line));
+  t.diagnostic('MCP tools/list: 19 tools, ' + Buffer.byteLength(line) + ' bytes');
+  mcp.stdin.end();
+  assert.equal(await ended, 0);
+});
+
+test('E2E-27 structured controllers, honest permission modes and opt-in taskless pane guards', { timeout: 60_000 }, async t => {
+  const fx = await createFixture(t, { env: { CHFLOW_TYPING_QUIET_MS: '80' } });
+  fx.herdr.setAgent(fx.caller, { agent: 'agy', name: 'agy-a1b2c3', workspace_id: 'w1', tab_id: 'w1:t1' });
+  fx.herdr.setWorkspace('w1', 'Engineering');
+  fx.herdr.setTab('w1:t1', 'w1', 'Review');
+  const ui = await startUi(t, fx);
+  const html = await (await fetch(ui.url + '/')).text();
+  const token = html.match(/"csrfToken"\s*:\s*"([0-9a-f]{64})"/)?.[1];
+  assert.ok(token);
+  const headers = { Origin: ui.url, 'X-Chflow-Token': token, 'Content-Type': 'application/json' };
+  const action = async (action, target, opts = {}) => {
+    const reply = await jsonRequest(ui.url, '/api/action', {
+      method: 'POST', headers, body: JSON.stringify({ action, target, opts }),
+    });
+    assert.equal(reply.status, 200, action + ': ' + JSON.stringify(reply.body));
+    assert.equal(reply.body.ok, true);
+    return reply.body.data;
+  };
+  const state = () => snapshot(ui.url);
+  const pane = async id => (await state()).managed_panes.find(p => p.pane_id === id);
+  const controller = async () => (await state()).controller_views.find(c => c.pane_id === fx.caller);
+  const keyCount = id => fx.herdr.keys.filter(k => k.pane === id).length;
+  const readCount = id => fx.herdr.reads.filter(k => k.pane === id).length;
+  const permission = 'Requesting permission for: ls\nRun this command?\n❯ 1. Yes, allow\nUse arrows to select an option · Enter to submit';
+  await action('adopt', fx.caller);
+  await action('queue_pause', fx.caller);
+  const pi = await action('start', undefined, { kind: 'pi', name: 'view-role' });
+  await action('role_set', 'view-role', { kind: 'pi' });
+  await action('role_bind', 'view-role', { pane: pi.pane_id });
+  await action('role_set', 'headless-view', { kind: 'codex', perm: 'readonly' });
+  await action('role_bind', 'headless-view', { headless: true });
+  await action('role_set', 'unbound-view', { kind: 'pi' });
+  const codex = await action('start', undefined, { kind: 'codex', name: 'view-worker' });
+  const task = await action('send', 'view-role', { task: 'controller-blocked', brief: 'Wait for an explicit answer' });
+  fx.herdr.setAgent(pi.pane_id, { agent_status: 'blocked', screen: 'User question: Which approach? Select an option · Enter to submit' });
+  await eventually(async () => (await state()).tasks.find(t => t.task === task.task)?.block?.kind === 'question');
+  const s = await state(), c = s.controller_views.find(c => c.pane_id === fx.caller);
+  assert.equal(c.display_name, 'workspace · Antigravity');
+  assert.equal(c.kind, 'agy');
+  assert.equal(c.harness_label, 'Antigravity');
+  assert.equal(c.location_label, 'Engineering / Review');
+  assert.equal(c.workspace_label, 'Engineering');
+  assert.equal(c.tab_label, 'Review');
+  assert.equal(c.cwd, fx.workspace);
+  assert.equal(c.agent_status, 'idle');
+  assert.equal(c.live, true);
+  assert.equal(c.managed, true);
+  assert.equal(c.native_perm, 'unknown');
+  assert.equal(c.perm_mode, 'native');
+  assert.equal(c.paused, true);
+  assert.equal(c.typing, false);
+  assert.equal(c.managed_roles_count, 2);
+  assert.equal(c.managed_workers_count, s.managed_panes.filter(p => !p.role && !p.is_controller && p.live && p.controller?.pane === fx.caller).length);
+  assert.equal(c.active_tasks_count, 1);
+  assert.equal(c.blocked_tasks_count, 1);
+  assert.equal(c.queued_count, s.queue.filter(e => e.recipient.pane === fx.caller).length);
+  assert.ok(c.queued_count > 0);
+  assert.equal(s.roles.find(r => r.role === 'headless-view').native_perm, 'readonly');
+  assert.equal(s.roles.find(r => r.role === 'headless-view').perm_mode, 'native');
+  assert.equal(s.roles.find(r => r.role === 'unbound-view').perm_mode, 'native');
+  const scoped = await jsonRequest(ui.url, '/api/snapshot?project=' + c.project_id);
+  assert.ok(scoped.body.data.controller_views.every(row => row.project_id === c.project_id));
+
+  fx.herdr.setAgent(fx.caller, { focused: true, screen: '› unfinished operator draft' });
+  await action('queue_resume', fx.caller);
+  await eventually(async () => (await controller()).typing, { message: 'Controller typing flag must reflect deferred receipts' });
+  assert.equal((await controller()).paused, false);
+  await action('queue_pause', fx.caller);
+  fx.herdr.setAgent(fx.caller, { focused: false, screen: '' });
+  await action('cancel', task.task);
+  fx.herdr.setAgent(pi.pane_id, { agent_status: 'idle' });
+
+  await action('set_perm', pi.pane_id, { perm: 'readonly' });
+  assert.equal((await pane(pi.pane_id)).perm_mode, 'restart_required');
+  assert.equal((await state()).roles.find(r => r.role === 'view-role').native_perm, 'ask');
+  assert.equal((await state()).roles.find(r => r.role === 'view-role').perm_mode, 'restart_required');
+  await action('set_perm', pi.pane_id, { perm: 'yolo' });
+  assert.equal((await pane(pi.pane_id)).perm_mode, 'native');
+  await action('set_perm', pi.pane_id, { perm: 'ask' });
+  await action('set_perm', codex.pane_id, { perm: 'yolo' });
+  assert.equal((await pane(codex.pane_id)).native_perm, 'ask');
+  assert.equal((await pane(codex.pane_id)).perm_mode, 'proxy');
+  await action('set_perm', codex.pane_id, { perm: 'readonly' });
+  assert.equal((await pane(codex.pane_id)).perm_mode, 'restart_required');
+  const readonly = await action('start', undefined, { kind: 'codex', name: 'readonly-worker', perm: 'readonly' });
+  await action('set_perm', readonly.pane_id, { perm: 'yolo' });
+  assert.equal((await pane(readonly.pane_id)).perm_mode, 'restart_required');
+  const roReads = readCount(readonly.pane_id);
+  fx.herdr.setAgent(readonly.pane_id, { agent_status: 'blocked', screen: permission });
+  await sleep(650);
+  assert.equal(keyCount(readonly.pane_id), 0);
+  assert.equal(readCount(readonly.pane_id), roReads, 'Readonly native processes are excluded from the pane guard');
+  const nativeYolo = await action('start', undefined, { kind: 'claude', name: 'native-yolo', perm: 'yolo' });
+  await action('set_perm', nativeYolo.pane_id, { perm: 'ask' });
+  assert.equal((await pane(nativeYolo.pane_id)).perm_mode, 'restart_required');
+
+  const beforeOptIn = keyCount(fx.caller);
+  fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', screen: permission });
+  await sleep(650);
+  assert.equal(keyCount(fx.caller), beforeOptIn, 'Adoption alone must leave permission prompts to the operator');
+  const reads = readCount(fx.caller);
+  await action('set_perm', fx.caller, { perm: 'yolo' });
+  await eventually(() => keyCount(fx.caller) === beforeOptIn + 1);
+  assert.equal((await pane(fx.caller)).auto_guard, true);
+  assert.equal((await controller()).perm_mode, 'proxy');
+  assert.deepEqual(fx.herdr.keys.at(-1).keys, ['enter']);
+  assert.equal(readCount(fx.caller), reads + 1);
+  const idleReads = readCount(fx.caller);
+  await sleep(650);
+  assert.equal(readCount(fx.caller), idleReads, 'Working/idle taskless panes require zero guard screen reads');
+  fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', screen: permission + '\nSecond permission' });
+  await eventually(() => keyCount(fx.caller) === beforeOptIn + 2);
+
+  const blocked = async (screen, assertion) => {
+    const before = keyCount(fx.caller), read = readCount(fx.caller);
+    const seq = fx.herdr.agents.get(fx.caller).state_change_seq + 1;
+    fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', screen, state_change_seq: seq });
+    await eventually(() => readCount(fx.caller) > read);
+    await sleep(180);
+    assert.equal(keyCount(fx.caller), before, assertion);
+    await state();
+    await sleep(550);
+    assert.equal(readCount(fx.caller), read + 1, 'A handled state sequence must be read only once');
+  };
+  await blocked('User question: Should I request permission to run this command? Select an option · Enter to submit',
+    'Explicit user-question markers outrank permission words and footer hints');
+  fx.herdr.setAgent(fx.caller, { agent_status: 'idle' });
+  await action('set_perm', fx.caller, { perm: 'auto-workspace' });
+  await eventually(async () => (await pane(fx.caller)).agent_status === 'idle');
+  for (const choice of ['No', 'Deny', 'Cancel', 'Always', 'Allow always', 'Yes, and allow all', 'Yes, allow always', 'Allow in this session', 'Yes, allow for this session'])
+    await blocked('Permission required\n❯ 1. ' + choice + '\nEnter to submit', 'Unsafe highlighted choice: ' + choice);
+  const approved = async screen => {
+    const before = keyCount(fx.caller), previousAudit = (await state()).audit[0]?.id ?? 0;
+    const seq = fx.herdr.agents.get(fx.caller).state_change_seq + 1;
+    fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', screen, state_change_seq: seq });
+    await eventually(async () => (await state()).audit.some(a => a.id > previousAudit && a.event === 'pane_auto_approved' && a.detail === fx.caller + ' seq=' + seq));
+    assert.equal(keyCount(fx.caller), before + 1);
+    assert.deepEqual(fx.herdr.keys.at(-1).keys, ['enter']);
+  };
+  for (const command of ['rm -rf ../victim', 'sudo reboot'])
+    await approved('Requesting permission for: ' + command + '\nRun this command?\n❯ 1. Yes, allow\nEnter to submit');
+  await approved(permission);
+  await action('set_perm', fx.caller, { perm: 'ask' });
+  assert.equal((await pane(fx.caller)).auto_guard, false);
+  const afterAsk = keyCount(fx.caller), afterAskReads = readCount(fx.caller);
+  fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', screen: permission });
+  await sleep(650);
+  assert.equal(keyCount(fx.caller), afterAsk);
+  assert.equal(readCount(fx.caller), afterAskReads);
+
+  // A repeated signature gets at most three attempts even as Herdr increments its block sequence.
+  fx.herdr.setAgent(fx.caller, { agent_status: 'idle', screen: permission, unblockOnKey: false });
+  await action('set_perm', fx.caller, { perm: 'yolo' });
+  const loopStart = keyCount(fx.caller);
+  for (let n = 0; n < 3; n++) {
+    fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', state_change_seq: fx.herdr.agents.get(fx.caller).state_change_seq + 1 });
+    await eventually(() => keyCount(fx.caller) === loopStart + n + 1);
+  }
+  await blocked(permission, 'The fourth identical permission block must stay under human control');
+  assert.equal(keyCount(fx.caller), loopStart + 3);
+  assert.ok((await state()).audit.some(a => a.event === 'pane_auto_approve_skipped' && a.detail === fx.caller + ' approval_loop'));
+  await action('set_perm', fx.caller, { perm: 'ask' });
+
+  // Operator restart installs the requested native sandbox in the same terminal for each Harness.
+  for (const id of [pi.pane_id, codex.pane_id, nativeYolo.pane_id]) {
+    fx.herdr.setAgent(id, { agent_status: 'idle' });
+    const switched = await action('switch', id, { perm: 'readonly', restart: true, allow_last: true });
+    assert.equal(switched.native_perm, 'readonly');
+    assert.equal((await pane(id)).perm_mode, 'native');
+  }
+  fx.herdr.setAgent(fx.caller, { agent_status: 'idle' });
+  const restarted = await action('switch', fx.caller, { perm: 'readonly', restart: true, allow_last: true });
+  assert.equal(restarted.restarted, true);
+  assert.equal(restarted.native_perm, 'readonly');
+  assert.equal((await pane(fx.caller)).perm_mode, 'native');
+  assert.ok(fx.herdr.starts.at(-1).extra.includes('--mode'));
+  assert.ok(fx.herdr.starts.at(-1).extra.includes('plan'));
+  assert.ok((await state()).audit.some(a => a.event === 'pane_auto_approved'));
+  fx.herdr.setAgent(readonly.pane_id, { agent_status: 'idle' });
+  await action('adopt', readonly.pane_id);
+  assert.equal((await pane(readonly.pane_id)).native_perm, 'readonly', 'Re-adoption must preserve known native permission facts');
+  assert.equal((await pane(readonly.pane_id)).perm_mode, 'restart_required');
+});
+
+test('E2E-28 native workspace shell guards ignore status chrome and exclude controllers from workers', { timeout: 60_000 }, async t => {
+  const fx = await createFixture(t);
+  fx.herdr.setAgent(fx.caller, { agent: 'agy', name: 'agy-a1b2c3' });
+  const ui = await startUi(t, fx);
+  const html = await (await fetch(ui.url + '/')).text();
+  const token = html.match(/"csrfToken"\s*:\s*"([0-9a-f]{64})"/)?.[1];
+  assert.ok(token);
+  const headers = { Origin: ui.url, 'X-Chflow-Token': token, 'Content-Type': 'application/json' };
+  const action = async (action, target, opts = {}) => {
+    const response = await jsonRequest(ui.url, '/api/action', {
+      method: 'POST', headers, body: JSON.stringify({ action, target, opts }),
+    });
+    assert.equal(response.status, 200, action + ': ' + JSON.stringify(response.body));
+    assert.equal(response.body.ok, true);
+    return response.body.data;
+  };
+  const state = () => snapshot(ui.url);
+  const keys = id => fx.herdr.keys.filter(k => k.pane === id).length;
+  const controller = async () => (await state()).controller_views.find(c => c.pane_id === fx.caller);
+  const realistic = command => [
+    'Read(~/WORK/Agent_CLI/private-notes.md)',
+    'Earlier trace: sudo reboot and rm -f /tmp/old-output',
+    '',
+    '\x1b[36mRequesting permission for: Bash\x1b[0m',
+    command,
+    'Run this command?',
+    '❯ 1. Yes, allow',
+    '  2. Allow for this session',
+    'Use arrows to select an option · Enter to submit',
+    '──────────────────────────────────────',
+    '~/…/Agent_CLI/multi-harness-workflow · accept-edits',
+  ].join('\n');
+  await action('adopt', fx.caller);
+  await action('queue_pause', fx.caller);
+  await t.test('self-adopted and subordinate controllers are excluded from worker totals', async () => {
+    assert.equal((await controller()).managed_workers_count, 0);
+    await command(fx, ['adopt', fx.otherCaller], { pane: fx.caller });
+    fx.herdr.addAgent('w1:p281');
+    await command(fx, ['adopt', 'w1:p281'], { pane: fx.otherCaller });
+    assert.equal((await controller()).managed_workers_count, 0, 'A child controller must stay outside temporary worker totals');
+    fx.herdr.addAgent('w1:p282');
+    await command(fx, ['adopt', 'w1:p282'], { pane: fx.caller });
+    assert.equal((await controller()).managed_workers_count, 1);
+  });
+  await t.test('native agy accept-edits guards taskless shell prompts with realistic status bars', async () => {
+    const restarted = await action('switch', fx.caller, { perm: 'auto-workspace', restart: true, allow_last: true });
+    assert.equal(restarted.native_perm, 'auto-workspace');
+    assert.equal(restarted.auto_guard, true);
+    const approved = async (text, key = 'enter') => {
+      const before = keys(fx.caller), seq = fx.herdr.agents.get(fx.caller).state_change_seq + 1;
+      const previousAudit = (await state()).audit[0]?.id ?? 0;
+      fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', screen: text, state_change_seq: seq });
+      await eventually(async () => (await state()).audit.some(a => a.id > previousAudit && a.event === 'pane_auto_approved' && a.detail === fx.caller + ' seq=' + seq),
+        { message: 'Native workspace guard failed to approve: ' + text });
+      assert.equal(keys(fx.caller), before + 1);
+      assert.deepEqual(fx.herdr.keys.at(-1).keys, [key]);
+    };
+    for (const cmd of ['git status', 'npm test', 'touch .tmp-probe', 'touch "' + fx.workspace + '/inside file.txt"'])
+      await approved(realistic(cmd));
+    const footerVariant = realistic('npm test').replace('~/…/Agent_CLI/multi-harness-workflow · accept-edits',
+      'agy-model · ~/WORK/Agent_CLI/multi-harness-workflow · accept-edits');
+    await approved(footerVariant);
+    await approved(footerVariant.replace('──────────────────────────────────────\n', ''));
+    const denied = async (text, event, detail) => {
+      const before = keys(fx.caller), seq = fx.herdr.agents.get(fx.caller).state_change_seq + 1;
+      const previousAudit = (await state()).audit[0]?.id ?? 0;
+      fx.herdr.setAgent(fx.caller, { agent_status: 'blocked', screen: text, state_change_seq: seq });
+      await eventually(async () => (await state()).audit.some(a => a.id > previousAudit && a.event === event && a.detail === fx.caller + ' ' + detail),
+        { message: 'Missing pane guard audit: ' + detail });
+      assert.equal(keys(fx.caller), before);
+    };
+    for (const cmd of ['touch /tmp/outside.txt', 'rm -f /tmp/outside.txt', 'touch ../outside.txt', 'touch build/../../outside.txt',
+      'touch ~/outside.txt', 'touch $HOME/outside.txt', 'touch ${HOME}/outside.txt', 'touch .ssh/config', 'sudo reboot', 'git push origin +main',
+      'printf ok > /dev/null', 'cat .env.example']) await approved(realistic(cmd));
+    await approved(realistic('printf safe\n\nrm -f /tmp/second-line.txt'));
+    await approved(realistic('rm -f /tmp/above-confirmation.txt\nDo you want to run this command?'));
+    await approved('Would you like to run this command?\nrm -f /tmp/above-notice.txt\nApproval required\n❯ 1. Yes, allow');
+    await approved('Permission required\n────────────────\n│ ~/outside-command.sh\n❯ 1. Yes');
+    for (const stale of ['ask_user_question: old question', 'Use arrows to select an option'])
+      await approved(stale + '\n\n' + realistic('npm test'));
+    await denied('User question: Which direction? select an option', 'pane_auto_approve_skipped', 'kind=question');
+    await denied('Waiting for operator decision on an unfamiliar screen', 'pane_auto_approve_skipped', 'kind=unknown');
+    await denied('Allow execution of command\n▸ 1. Allow for this session', 'pane_auto_approve_skipped', 'unsafe_selection');
+    await denied('Confirm execution\n▶ 1. Deny', 'pane_auto_approve_skipped', 'unsafe_selection');
+    for (const banner of ['Allow execution', 'Execute this command', 'Run shell command', 'Do you want to run', 'Allow command',
+      'Confirm execution', 'This command requires approval', 'This command needs approval', 'Waiting for approval',
+      'This command runs outside the sandbox', 'This command will bypass sandbox'])
+      await approved(banner + '\nnpm test\n▶ 1. Yes, allow');
+    fx.herdr.setAgent(fx.caller, { agent_status: 'idle', foreground_cwd: fx.env.HOME });
+    await approved(realistic('touch ~/inside-home.txt'));
+    fx.herdr.setAgent(fx.caller, { agent_status: 'idle', foreground_cwd: fx.workspace });
+    await action('set_perm', fx.caller, { perm: 'yolo' });
+    await approved(realistic('touch /tmp/outside.txt'));
+    await approved('Custom tool banner\n▶ 1. Deny');
+    await approved('Permission required\n❯ 1. Always');
+    for (const hint of ['[y/n]', '(y/n)', 'press y', 'type y']) await approved('Custom tool banner\n' + hint, 'y');
+    await approved('Custom tool banner\ntype yes to approve');
+    await denied('pi-ask-user: Which answer? select an option', 'pane_auto_approve_skipped', 'kind=question');
+    await denied('ask_user_question: Should we allow execution?', 'pane_auto_approve_skipped', 'kind=question');
+    fx.herdr.setAgent(fx.caller, { agent_status: 'idle' });
+    const yoloRestart = await action('switch', fx.caller, { perm: 'yolo', restart: true, allow_last: true });
+    assert.equal(yoloRestart.auto_guard, true);
+    assert.equal(yoloRestart.native_perm, 'yolo');
+    await approved('Vendor-specific confirmation banner\n▶ 1. Cancel');
+    fx.herdr.setAgent(fx.caller, { agent_status: 'idle', unblockOnKey: false });
+    for (let n = 0; n < 3; n++) await approved('Unrecognized vendor gate loop');
+    await denied('Unrecognized vendor gate loop', 'pane_auto_approve_skipped', 'approval_loop');
+    assert.ok((await state()).audit.some(a => a.event === 'pane_auto_approved'));
+    fx.herdr.setAgent(fx.caller, { agent_status: 'idle', unblockOnKey: true });
+    const ask = await action('switch', fx.caller, { perm: 'ask', restart: true, allow_last: true });
+    assert.equal(ask.auto_guard, false);
+  });
+  await t.test('native task-bearing agy and Claude workspace workers also approve shell commands', async () => {
+    for (const kind of ['agy', 'claude']) {
+      const worker = await action('start', undefined, { kind, name: 'native-' + kind, perm: 'auto-workspace' });
+      const task = await action('send', worker.pane_id, { brief: 'Exercise native workspace shell approvals', perm: 'auto-workspace' });
+      assert.equal(task.reused, false);
+      fx.herdr.setAgent(worker.pane_id, { agent_status: 'blocked', screen: realistic('npm test') });
+      await eventually(() => keys(worker.pane_id) === 1, { message: kind + ' native workspace task did not auto-approve' });
+      await eventually(async () => (await state()).audit.some(a => a.task === task.task && a.event === 'auto_approved'));
+      const approveTask = async (text, key = 'enter') => {
+        const before = keys(worker.pane_id);
+        fx.herdr.setAgent(worker.pane_id, { agent_status: 'blocked', screen: text,
+          state_change_seq: fx.herdr.agents.get(worker.pane_id).state_change_seq + 1 });
+        await eventually(() => keys(worker.pane_id) === before + 1);
+        assert.deepEqual(fx.herdr.keys.filter(k => k.pane === worker.pane_id).at(-1).keys, [key]);
+      };
+      const holdTask = async (text, blockKind) => {
+        const before = keys(worker.pane_id);
+        const seq = fx.herdr.setAgent(worker.pane_id, { agent_status: 'blocked', screen: text,
+          state_change_seq: fx.herdr.agents.get(worker.pane_id).state_change_seq + 1 }).state_change_seq;
+        const current = await eventually(async () => {
+          const current = (await state()).tasks.find(t => t.task === task.task);
+          return current?.block?.seq === seq && !current.block.approved && current;
+        });
+        assert.equal(current.block.kind, blockKind);
+        assert.equal(keys(worker.pane_id), before);
+        return current;
+      };
+      await approveTask(realistic('touch /tmp/outside.txt; printf ok > /dev/null; cat .env.example'));
+      await approveTask('ask_user_question: previous turn\nselect an option\n\n' + realistic('npm test'));
+      await holdTask('Opaque vendor tool banner', 'unknown');
+      const beforeYolo = keys(worker.pane_id);
+      await action('set_perm', task.task, { perm: 'yolo' });
+      await eventually(() => keys(worker.pane_id) === beforeYolo + 1);
+      await approveTask('Opaque tool gate\n▶ 1. Deny');
+      await approveTask('Permission required\n❯ 1. Allow for this session');
+      await approveTask('Custom tool gate\n(y/n)', 'y');
+      await holdTask('ask_user_question: Which path should we choose?', 'question');
+      await holdTask('Choose a direction; select an option', 'question');
+      fx.herdr.setAgent(worker.pane_id, { unblockOnKey: false });
+      for (let n = 0; n < 3; n++) await approveTask('Opaque task approval loop');
+      assert.equal((await holdTask('Opaque task approval loop', 'unknown')).block.reason, 'approval_loop');
+      await action('cancel', task.task);
+      fx.herdr.setAgent(worker.pane_id, { agent_status: 'idle' });
+      const readonly = await action('start', undefined, { kind, name: 'readonly-' + kind, perm: 'readonly' });
+      for (const perm of ['auto-workspace', 'yolo']) {
+        const protectedTask = await action('send', readonly.pane_id, { brief: 'Native readonly policy remains authoritative', perm });
+        fx.herdr.setAgent(readonly.pane_id, { agent_status: 'blocked', screen: realistic('npm test') });
+        await eventually(async () => (await state()).tasks.find(t => t.task === protectedTask.task)?.block?.kind === 'permission');
+        assert.equal(keys(readonly.pane_id), 0);
+        await action('cancel', protectedTask.task);
+        fx.herdr.setAgent(readonly.pane_id, { agent_status: 'idle' });
+      }
+    }
+  });
+});
+
+test('E2E-31 five permission tiers preserve native auto and selectable workspace bases', { timeout: 90_000 }, async t => {
+  const fx = await createFixture(t);
+  fx.herdr.setAgent(fx.caller, { agent: 'claude' });
+  const ui = await startUi(t, fx);
+  const html = await (await fetch(ui.url + '/')).text();
+  const token = html.match(/"csrfToken"\s*:\s*"([0-9a-f]{64})"/)?.[1];
+  assert.ok(token);
+  const headers = { Origin: ui.url, 'X-Chflow-Token': token, 'Content-Type': 'application/json' };
+  const post = (action, target, opts = {}) => jsonRequest(ui.url, '/api/action', {
+    method: 'POST', headers, body: JSON.stringify({ action, target, opts }),
+  });
+  const action = async (name, target, opts = {}) => {
+    const result = await post(name, target, opts);
+    assert.equal(result.status, 200, name + ': ' + JSON.stringify(result.body));
+    assert.equal(result.body.ok, true);
+    return result.body.data;
+  };
+  const state = () => snapshot(ui.url);
+  const pane = async id => (await state()).managed_panes.find(p => p.pane_id === id);
+  const keyCount = id => fx.herdr.keys.filter(k => k.pane === id).length;
+  const permission = 'Permission required\nAllow this command? [y/N]';
+  const autoFlags = { agy: ['--mode', 'auto'], claude: ['--permission-mode', 'auto'], codex: ['--approve-for-me'], pi: [] };
+  const defaults = { agy: 'accept-edits', claude: 'accept-edits', codex: 'workspace-write' };
+  const alternates = { agy: 'auto', claude: 'auto', codex: 'approve-for-me' };
+  await action('adopt', fx.caller);
+  for (const kind of ['agy', 'claude', 'codex', 'pi']) {
+    await t.test(kind + ' native auto never sends approval keys', async () => {
+      const worker = await action('start', undefined, { kind, perm: 'auto', name: 'native-auto-' + kind, attended: true });
+      assert.deepEqual(fx.herdr.starts.at(-1).extra, autoFlags[kind]);
+      assert.equal(worker.native_perm, 'auto');
+      assert.equal(worker.perm_mode, 'native');
+      assert.equal(worker.auto_guard, false);
+      fx.herdr.setAgent(worker.pane_id, { agent_status: 'blocked', screen: permission });
+      await eventually(async () => (await pane(worker.pane_id)).agent_status === 'blocked');
+      await sleep(180);
+      assert.equal(keyCount(worker.pane_id), 0);
+      assert.equal(fx.herdr.reads.filter(r => r.pane === worker.pane_id).length, 0);
+      fx.herdr.setAgent(worker.pane_id, { agent_status: 'idle' });
+      const task = await action('send', worker.pane_id, { perm: 'auto', brief: 'Let the Harness own all approvals', attended: true });
+      fx.herdr.setAgent(worker.pane_id, { agent_status: 'blocked', screen: permission });
+      await eventually(async () => (await state()).tasks.find(t => t.task === task.task)?.block?.kind === 'permission');
+      await action('set_perm', task.task, { perm: 'auto', ...(alternates[kind] ? { workspace_mode: alternates[kind] } : {}) });
+      const current = (await state()).tasks.find(t => t.task === task.task);
+      assert.equal(current.launch.workspace_mode, alternates[kind]);
+      assert.equal((await pane(worker.pane_id)).auto_guard, false);
+      assert.equal(keyCount(worker.pane_id), 0);
+      await action('cancel', task.task);
+      fx.herdr.setAgent(worker.pane_id, { agent_status: 'idle' });
+    });
+    if (kind === 'pi') continue;
+    await t.test(kind + ' workspace base defaults, proxy switch and native restart', async () => {
+      const asked = await action('start', undefined, { kind, perm: 'ask', name: 'ask-to-auto-' + kind, attended: true });
+      await action('set_perm', asked.pane_id, { perm: 'auto' });
+      assert.equal((await pane(asked.pane_id)).perm_mode, 'restart_required');
+      const worker = await action('start', undefined, { kind, perm: 'auto-workspace', name: 'workspace-base-' + kind, attended: true });
+      const defaultFlags = kind === 'codex' ? ['-a', 'never', '-s', 'workspace-write'] :
+        [kind === 'agy' ? '--mode' : '--permission-mode', kind === 'agy' ? 'accept-edits' : 'acceptEdits'];
+      assert.deepEqual(fx.herdr.starts.at(-1).extra, defaultFlags);
+      assert.equal(worker.workspace_mode, defaults[kind]);
+      assert.equal(worker.native_workspace_mode, defaults[kind]);
+      assert.equal(worker.auto_guard, true);
+      await action('set_perm', worker.pane_id, { perm: 'auto' });
+      assert.equal((await pane(worker.pane_id)).perm_mode, 'restart_required');
+      assert.equal((await pane(worker.pane_id)).auto_guard, false);
+      await action('set_perm', worker.pane_id, { perm: 'auto-workspace', workspace_mode: alternates[kind] });
+      const proxy = await pane(worker.pane_id);
+      assert.equal(proxy.workspace_mode, alternates[kind]);
+      assert.equal(proxy.native_workspace_mode, defaults[kind]);
+      assert.equal(proxy.perm_mode, 'proxy');
+      assert.equal((await action('switch', worker.pane_id, { workspace_mode: alternates[kind] })).suggested_restart, true);
+      const restarted = await action('switch', worker.pane_id, { restart: true, allow_last: true });
+      assert.deepEqual(fx.herdr.starts.at(-1).extra.slice(-autoFlags[kind].length), autoFlags[kind]);
+      assert.equal(restarted.native_workspace_mode, alternates[kind]);
+      assert.equal(restarted.perm_mode, 'native');
+      assert.equal(restarted.auto_guard, true);
+      await action('set_perm', worker.pane_id, { perm: 'auto' });
+      assert.equal((await pane(worker.pane_id)).perm_mode, 'native', 'Matching native workspace auto is also native auto');
+      assert.equal((await pane(worker.pane_id)).auto_guard, false);
+      const native = await action('switch', worker.pane_id, { perm: 'auto', restart: true, allow_last: true });
+      assert.equal(native.native_perm, 'auto');
+      assert.equal(native.native_workspace_mode, undefined);
+      assert.equal(native.auto_guard, false);
+      const alternate = await action('start', undefined, { kind, perm: 'auto-workspace', workspace_mode: alternates[kind], name: 'alternate-' + kind, attended: true });
+      assert.deepEqual(fx.herdr.starts.at(-1).extra, autoFlags[kind]);
+      assert.equal(alternate.native_workspace_mode, alternates[kind]);
+      assert.equal(alternate.perm_mode, 'native');
+    });
+  }
+  for (const [kind, workspace_mode] of [['agy', 'workspace-write'], ['claude', 'approve-for-me'], ['codex', 'auto'], ['pi', 'accept-edits']]) {
+    const count = fx.herdr.starts.length;
+    const bad = await post('start', undefined, { kind, perm: 'auto-workspace', workspace_mode, name: 'bad-' + kind, attended: true });
+    assert.equal(bad.status, 400);
+    assert.equal(bad.body.error.code, 'invalid_args');
+    assert.equal(fx.herdr.starts.length, count);
+    const target = fx.herdr.starts.find(start => start.name === 'native-auto-' + kind).pane;
+    const previous = await pane(target);
+    const update = await post('set_perm', target, { perm: 'auto-workspace', workspace_mode });
+    assert.equal(update.status, 400);
+    assert.equal(update.body.error.code, 'invalid_args');
+    assert.equal((await pane(target)).perm, previous.perm);
+    assert.equal((await pane(target)).workspace_mode, previous.workspace_mode);
+  }
+  const global = await command(fx, ['role', 'set', 'workspace-role', '--global', '--kind', 'claude', '--perm', 'auto-workspace', '--workspace-mode', 'acceptEdits']);
+  assert.equal(global.default_workspace_mode, 'accept-edits');
+  const bound = await action('role_bind', 'workspace-role', { spawn: true });
+  assert.equal(bound.workspace_mode, 'accept-edits');
+  assert.equal(bound.native_workspace_mode, 'accept-edits');
+  assert.equal(bound.default_workspace_mode, 'accept-edits');
+  const yaml = await readFile(join(fx.env.XDG_CONFIG_HOME, 'chflow', 'roles.yaml'), 'utf8');
+  assert.match(yaml, /workspace_mode: accept-edits/);
+  await action('set_perm', bound.pane_id, { perm: 'auto-workspace', workspace_mode: 'auto' });
+  const projected = (await state()).roles.find(role => role.role === 'workspace-role');
+  assert.equal(projected.workspace_mode, 'auto');
+  assert.equal(projected.native_workspace_mode, 'accept-edits');
+  assert.equal(projected.perm_mode, 'proxy');
+  const changedKind = await command(fx, ['role', 'set', 'workspace-role', '--global', '--kind', 'codex']);
+  assert.equal(changedKind.default_workspace_mode, undefined, 'Changing Harness drops an incompatible inherited base');
+  const controller = (await state()).controller_views.find(c => c.pane_id === fx.caller);
+  assert.equal(controller.workspace_mode, 'accept-edits');
 });

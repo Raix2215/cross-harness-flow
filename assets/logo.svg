@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="chflow logo">
+  <style>
+    .ink { color: #111317; }
+    @media (prefers-color-scheme: dark) {
+      .ink { color: #f3f4f6; }
+    }
+  </style>
+  <g class="ink">
+    <path fill-rule="evenodd" d="M8.5 7H19.5C20.9 7 22 8.1 22 9.5V38.5C22 39.9 20.9 41 19.5 41H8.5C7.1 41 6 39.9 6 38.5V9.5C6 8.1 7.1 7 8.5 7Z M11.4 18.6L16.8 24L11.4 29.4L9.7 27.7L13.4 24L9.7 20.3Z" fill="currentColor"/>
+    <path fill-rule="evenodd" d="M28 7H39.5C40.9 7 42 8.1 42 9.5V14.8C42 16.2 40.9 17.3 39.5 17.3H28C26.6 17.3 25.5 16.2 25.5 14.8V9.5C25.5 8.1 26.6 7 28 7Z M36.8 10.7A1.45 1.45 0 1 0 36.8 13.6A1.45 1.45 0 1 0 36.8 10.7Z" fill="currentColor"/>
+    <rect x="26.7" y="20.4" width="14.1" height="7.8" rx="2.1" fill="none" stroke="currentColor" stroke-width="2.4"/>
+    <rect x="29.8" y="23.2" width="5.2" height="2.2" rx="1" fill="currentColor"/>
+    <path d="M28 31.3H39.5C40.9 31.3 42 32.4 42 33.8V38.5C42 39.9 40.9 41 39.5 41H28C26.6 41 25.5 39.9 25.5 38.5V33.8C25.5 32.4 26.6 31.3 28 31.3Z" fill="currentColor"/>
+  </g>
+</svg>

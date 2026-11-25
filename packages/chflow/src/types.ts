@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 
-export const VERSION = '3.5.0';
+export const VERSION = '3.6.0';
 export const PROTOCOL = 1;
 export const kinds = ['codex', 'claude', 'pi', 'agy'] as const;
-export const perms = ['readonly', 'ask', 'auto-workspace', 'yolo'] as const;
+export const perms = ['readonly', 'ask', 'auto', 'auto-workspace', 'yolo'] as const;
+export const workspaceModes = ['accept-edits', 'auto', 'workspace-write', 'approve-for-me'] as const;
+export type WorkspaceMode = (typeof workspaceModes)[number];
 export type Kind = typeof kinds[number];
 export type Perm = typeof perms[number];
 export type Opts = Record<string, string | number | boolean | string[] | undefined>;
@@ -18,23 +20,23 @@ export interface Agent {
   failure?: string | {code?: string}; error?: string | {code?: string}; failure_reason?: string; stop_reason?: string;
 }
 export interface Recipient { route: Route; pane: string; label: string; terminal?: string; kind?: Kind; session?: Session }
-export interface ManagedPane {agent:Agent; launch:Launch; route:Route; alias:string; controller?:Recipient; adopted:boolean; native_perm:Perm|'unknown'; adopted_sent?:boolean; project_id?:string; pre_role_alias?:string}
+export interface ManagedPane {agent:Agent; launch:Launch; route:Route; alias:string; controller?:Recipient; adopted:boolean; native_perm:Perm|'unknown'; native_workspace_mode?:WorkspaceMode; auto_guard?:boolean; adopted_sent?:boolean; project_id?:string; pre_role_alias?:string}
 export interface Context { cwd: string; route: Route; caller?: Recipient; workspace?: string; tty?: boolean; operator?: boolean }
-export interface Launch { kind: Kind; perm: Perm; model?: string; effort?: string; provider?: string; attended?: boolean; channel?: string }
+export interface Launch { kind: Kind; perm: Perm; workspace_mode?: WorkspaceMode; model?: string; effort?: string; provider?: string; attended?: boolean; channel?: string }
 export interface Project {
   project_id: string; name: string; root: string; source: 'config'|'override'|'worktree'|'folder';
 }
 export interface GlobalRoleTemplate {
   role: string; description?: string;
   default_kind?: Kind; default_model?: string; default_effort?: string; default_provider?: string;
-  default_channel?: string; default_perm?: Perm; worktree?: boolean; cwd?: string;
+  default_channel?: string; default_perm?: Perm; default_workspace_mode?: WorkspaceMode; worktree?: boolean; cwd?: string;
 }
-export interface Role {
+export interface Role extends GlobalRoleTemplate {
   project_id: string; role: string; source: 'config'|'manual'; description?: string;
   default_kind?: Kind; default_model?: string; default_effort?: string; default_provider?: string;
-  default_channel?: string; default_perm?: Perm; worktree?: boolean; cwd?: string;
+  default_channel?: string; default_perm?: Perm; default_workspace_mode?: WorkspaceMode; worktree?: boolean; cwd?: string;
   config_root?: string;
-  config_overrides?: Partial<Pick<Role,'description'|'default_kind'|'default_model'|'default_effort'|'default_provider'|'default_channel'|'default_perm'|'worktree'|'cwd'>>;
+  config_overrides?: Partial<Pick<Role,'description'|'default_kind'|'default_model'|'default_effort'|'default_provider'|'default_channel'|'default_perm'|'default_workspace_mode'|'worktree'|'cwd'>>;
   binding_mode: 'pane'|'headless'|'unbound'; pane_id?: string; terminal_id?: string;
   route?: Route; launch?: Launch; controller?: Recipient; launch_cwd?: string;
 }
@@ -53,12 +55,13 @@ export interface Task {
   reason?: string; diag?: string; note?: string; stop_reason?: string; finished?: boolean; closeOwner?: string;
   recoveryProbe?: ProgressProbe;
   process?: {pid: number; stamp?: string};
+  native_extra?: string[];
 }
 export interface ProgressProbe { seq?: number; revision?: number; artifact?: string }
 export type EventType = 'result'|'interrupted'|'settled_no_reply'|'quota_exhausted'|'pane_gone'|'blocked'|'stalled'|'progress'|'fallback_switched'|'scheduled_retry'|'handed_off';
 export const pendingDeliveryStates=['queued','deferred_user_typing','pending_unreachable','paused_by_operator'];
 export interface Delivery {
-  event_id: string; task: string; attempt: string; turn: number; recipient: Recipient; worker: string; perm: Perm;
+  event_id: string; task: string; project_id?: string; attempt: string; turn: number; recipient: Recipient; worker: string; perm: Perm;
   type: EventType; status: string; note?: string; out?: string; diag?: string; seq?: number; created: number;
   state: string; failures: number; nextAt?: number; batch?: string; probe?: ProgressProbe;
 }

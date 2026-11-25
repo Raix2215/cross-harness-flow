@@ -45,18 +45,19 @@ export function roleDefaults(o:Opts,root:string,prior?:Partial<GlobalRoleTemplat
   const kind=o.kind!==undefined?kindOf(o.kind):prior?.default_kind;
   const model=str(o,'model')??prior?.default_model, effort=str(o,'effort')??prior?.default_effort;
   const provider=str(o,'provider')??(kind&&kind!=='pi'?undefined:prior?.default_provider);
-  launch(kind??(provider?'pi':'codex'),{model,effort,provider,perm:o.perm});
+  const checked=launch(kind??(provider?'pi':'codex'),{model,effort,provider,perm:o.perm,workspace_mode:o.workspace_mode},
+    {kind:prior?.default_kind??'codex',perm:prior?.default_perm??'ask',workspace_mode:prior?.default_workspace_mode});
   const desc=str(o,'desc')??prior?.description, cwd=str(o,'cwd');
   if(desc!==undefined&&(!desc.trim()||desc.length>512||/[\u0000-\u001f\u007f]/.test(desc)))return invalid('Use a single-line role description of at most 512 characters.');
   if(cwd!==undefined&&(!cwd||/[\u0000-\u001f\u007f]/.test(cwd)))return invalid('Provide a valid role directory.');
   return {
     description:desc===undefined?undefined:clean(desc),default_kind:kind,default_model:model,default_effort:effort,
     default_provider:provider,default_channel:str(o,'channel')??prior?.default_channel,
-    default_perm:o.perm!==undefined?permission(o):prior?.default_perm,
+    default_perm:o.perm!==undefined?permission(o):prior?.default_perm,default_workspace_mode:checked.workspace_mode,
     worktree:typeof o.worktree==='boolean'?o.worktree:prior?.worktree,cwd:cwd===undefined?prior?.cwd:clean(resolve(root,cwd)),
   };
 }
-const roleFields=new Map('description kind model effort provider channel perm worktree cwd'.split(' ').map(k=>[k,k==='description'?'desc':k]));
+const roleFields=new Map('description kind model effort provider channel perm workspace_mode worktree cwd'.split(' ').map(k=>[k,k==='description'?'desc':k]));
 export const globalRolesPath=()=>join(configDir(),'roles.yaml');
 function parseRolesBlock(data:string,root:string):GlobalRoleTemplate[]{
   const definitions=new Map<string,Opts>();
@@ -103,6 +104,7 @@ function writeGlobalRoles(list:GlobalRoleTemplate[]){
     if(r.default_provider)lines.push('    provider: '+yamlQuote(r.default_provider));
     if(r.default_channel)lines.push('    channel: '+yamlQuote(r.default_channel));
     if(r.default_perm)lines.push('    perm: '+yamlQuote(r.default_perm));
+    if(r.default_workspace_mode)lines.push('    workspace_mode: '+yamlQuote(r.default_workspace_mode));
     if(typeof r.worktree==='boolean')lines.push('    worktree: '+String(r.worktree));
     if(r.cwd)lines.push('    cwd: '+yamlQuote(r.cwd));
   }

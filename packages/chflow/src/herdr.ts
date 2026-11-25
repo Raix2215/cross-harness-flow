@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { FlowError, json, routeKey, type Agent, type Context, type Invocation, type Route, str, invalid, seconds } from './types.js';
-import { clean } from './sensitive.js';
+import { clean, redact } from './sensitive.js';
 export const transient = /^(?:timeout|cli_timeout|.*(?:connect|transport|socket|ssh|unreachable|temporar|broken_pipe|econn|eof|reset|offline).*)$/i;
 export const missing = /(?:pane|agent|target)_(?:not_found|missing|gone|not_running)|not_found/;
 export const idle = (a:Agent) => ['idle','done'].includes(a.agent_status) && a.interactive_ready!==false && !a.launch_pending;
@@ -74,10 +74,13 @@ export async function inputPosition(r:Route,pane:string,terminal:string) {
     ready:p.agent_status==='idle'||p.agent_status==='done'};
 }
 export async function hasDraft(r:Route,pane:string) {
-  const lines=(await screen(r,pane,3)).trimEnd().split(/\r?\n/).slice(-3);
+  const lines=(await screen(r,pane,16)).trimEnd().split(/\r?\n/).slice(-16);
   const input=lines.findLastIndex(line=>/^\s*(?:[❯›]|>(?:\s|$))/.test(line));
-  return input>=0&&(/^\s*[❯>›]\s*\S/.test(lines[input])||
-    lines.slice(input+1).some(line=>/^\s+[^─━═\s]/.test(line)));
+  if(input<0)return false;
+  const rest=lines.slice(input);
+  const bottom=rest.findIndex((line,i)=>i>0&&(/^\s*[─━═┄┈-]{6,}\s*$/.test(line)||/^\s*[╰└][─━═-]{4,}/.test(line)));
+  const box=bottom<0?rest:rest.slice(0,bottom);
+  return /^\s*[❯>›]\s*\S/.test(box[0])||box.slice(1).some(line=>/\S/.test(line));
 }
 export async function notifyTyping(r:Route,count:number) {
   await herdr(r,['notification','show',`chflow: ${count} 条回执待投递`,'--body','清空草稿后自动送达，或执行 chflow flush。','--sound','none'],{mutate:true});
@@ -97,13 +100,13 @@ export async function listHerdrLabels(r:Route):Promise<HerdrLabels> {
   if(Array.isArray(ws?.workspaces)){
     for(const item of ws.workspaces){
       if(typeof item?.workspace_id==='string'&&typeof item?.label==='string'&&item.label.trim())
-        workspaces[item.workspace_id]=clean(item.label.trim());
+        workspaces[item.workspace_id]=redact(item.label.trim());
     }
   }
   if(Array.isArray(tb?.tabs)){
     for(const item of tb.tabs){
       if(typeof item?.tab_id==='string'&&typeof item?.label==='string'&&item.label.trim())
-        tabs[item.tab_id]=clean(item.label.trim());
+        tabs[item.tab_id]=redact(item.label.trim());
     }
   }
   return {workspaces,tabs};

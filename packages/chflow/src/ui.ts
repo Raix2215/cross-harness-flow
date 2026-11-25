@@ -14,13 +14,13 @@ const loopbacks=['127.0.0.1','localhost','::1'];
 const urlHost=(host:string)=>isIP(host)===6?'['+host+']':host;
 const bodyLimit=128*1024;
 const actionOptions=new Map<string,string[]>([
-  ['start','kind name perm readonly resume place worktree base worktree_path trust_repository workspace direction label focus pane cwd model effort provider machine session attended timeout matrix channel controller project role'.split(' ')],
-  ['send','task brief perm readonly cwd machine session attended model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn'.split(' ')],
-  ['run','kind task transport perm readonly bg brief cwd model effort provider attended timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller'.split(' ')],
-  ['switch','model effort provider perm readonly restart allow_last machine session timeout attended matrix channel'.split(' ')],
-  ['adopt','name perm readonly controller takeover machine session attended matrix channel project role'.split(' ')],
+  ['start','kind name perm workspace_mode readonly resume place worktree base worktree_path trust_repository workspace direction label focus pane cwd model effort provider machine session attended timeout matrix channel controller project role'.split(' ')],
+  ['send','task brief perm workspace_mode readonly cwd machine session attended model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn'.split(' ')],
+  ['run','kind task transport perm workspace_mode readonly bg brief cwd model effort provider attended timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller'.split(' ')],
+  ['switch','model effort provider perm workspace_mode readonly restart allow_last machine session timeout attended matrix channel'.split(' ')],
+  ['adopt','name perm workspace_mode readonly controller takeover machine session attended matrix channel project role'.split(' ')],
   ['handoff',['to','to_session','to_machine','notify_old','machine','session']],
-  ['set_perm',['perm']],
+  ['set_perm',['perm','workspace_mode']],
   ['terminal_control',['keys','text','submit_key','prompt']],
   ['respond',['expect_visible','key','text','submit_key','force']],
   ['resume',['brief','attended']],
@@ -38,12 +38,13 @@ const actionOptions=new Map<string,string[]>([
   ['cancel_retry',[]],
   ['assign_project',['project','machine','session']],
   ['focus_pane',['machine','session']],
+  ['release_pane',['machine','session']],
   ['prune',['tasks','project','machine','session']],
   ['daemon_stop',['force']],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,roleActionOptions(action)!.split(' ')] as [string,string[]]),
 ]);
 const operatorCommands=new Map([
-  ['assign_project','ui.assign_project'],['focus_pane','ui.focus_pane'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
+  ['assign_project','ui.assign_project'],['focus_pane','ui.focus_pane'],['release_pane','ui.release_pane'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,'ui.role.'+action] as const),
   ['set_perm','ui.set_perm'],['terminal_control','ui.terminal'],['inspect_screen','ui.screen'],['cancel_retry','ui.cancel_retry'],
   ...['queue_pause','queue_resume','queue_deliver_now','queue_consume','queue_drop','queue_reroute'].map(a=>[a,'ui.'+a] as const),
@@ -62,7 +63,7 @@ function status(reply:Reply){
   if(conflicts.has(code))return 409;
   if(code==='body_too_large'||code==='file_too_large')return 413;
   if(code.startsWith('ipc_')||code==='daemon_unavailable'||transient.test(code))return 503;
-  return ['invalid_args','attempt_required','sensitive_input'].includes(code)?400:500;
+  return ['invalid_args','invalid_mailbox','attempt_required','sensitive_input'].includes(code)?400:500;
 }
 
 function respond(res:ServerResponse,reply:Reply,action=false){

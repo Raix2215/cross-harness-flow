@@ -3,7 +3,7 @@ const patterns = [
   /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
   /\b(?:sk-(?:proj-)?[\w-]{16,}|AIza[\w-]{24,}|gh[pousr]_[\w]{20,}|github_pat_[\w]{24,}|xox[baprs]-[\w-]{12,}|AKIA[A-Z0-9]{16}|eyJ[\w-]+\.[\w-]+\.[\w-]+)\b/g,
   /\b(?:authorization\s*:\s*bearer|bearer)\s+[\w.+/=_-]{8,}/gi,
-  /\b(?:[\w-]*(?:api[_-]?key|oauth[_-]?token|access[_-]?token|refresh[_-]?token)|(?:set-)?cookie|password|client[_-]?secret)\s*[:=]\s*["']?[\w.+/%=:_-]{8,}/gi,
+  /\b(?:[\w-]*(?:api[_-]?key|oauth[_-]?token|access[_-]?token|refresh[_-]?token)|(?:set-)?cookie|password|client[_-]?secret)(?:\\?["'])?\s*[:=]\s*(?:"(?:\\.|[^"\\])+"|'(?:\\.|[^'\\])+'|\\"(?:\\\\.|\\[^"]|[^\\])+\\"|(?:\\?["'])?[\w.+/%=:_-]{8,})/gi,
 ];
 export function redact(value: string): string {
   return patterns.reduce((s,r)=>s.replace(r,'[redacted]'),value);

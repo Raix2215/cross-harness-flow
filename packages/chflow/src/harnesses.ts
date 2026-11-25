@@ -1,6 +1,6 @@
 import { fileText } from './mailbox.js';
 import { clean } from './sensitive.js';
-import { FlowError, invalid, kinds, perms, str, type Context, type Kind, type Launch, type Opts, type Perm, type Route, type Session } from './types.js';
+import { FlowError, invalid, kinds, perms, str, type Context, type Kind, type Launch, type Opts, type Perm, type Route, type Session, type WorkspaceMode } from './types.js';
 import { same } from './herdr.js';
 const efforts=['off','minimal','low','medium','high','xhigh','max'];
 const model=/^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$/;
@@ -15,8 +15,35 @@ export function permission(o:Opts, base:Perm='ask'):Perm {
   if(!perms.includes(p as Perm)) return invalid('Invalid permission tier.');
   return p as Perm;
 }
+export function allowedWorkspaceModes(kind:Kind):WorkspaceMode[]{
+  return kind==='codex'?['workspace-write','approve-for-me']:kind==='pi'?[]:['accept-edits','auto'];
+}
+export function defaultWorkspaceMode(kind:Kind):WorkspaceMode|undefined{
+  return kind==='codex'?'workspace-write':kind==='pi'?undefined:'accept-edits';
+}
+export function workspaceMode(kind:Kind,value:unknown):WorkspaceMode|undefined{
+  if(value===undefined)return undefined;
+  const normalized=kind==='claude'&&value==='acceptEdits'?'accept-edits':value;
+  if(!allowedWorkspaceModes(kind).includes(normalized as WorkspaceMode))return invalid('Unsupported workspace mode for '+kind+'.');
+  return normalized as WorkspaceMode;
+}
+export function effectivePermMode(kind:Kind,perm:Perm,nativePerm?:Perm|'unknown',wsMode?:WorkspaceMode,nativeWsMode?:WorkspaceMode):'native'|'proxy'|'restart_required' {
+  if(kind==='pi')return (perm==='readonly')!==(nativePerm==='readonly')?'restart_required':'native';
+  if(perm==='readonly'||nativePerm==='readonly')return nativePerm===perm?'native':'restart_required';
+  if(perm==='ask')return ['auto','auto-workspace','yolo'].includes(nativePerm??'unknown')?'restart_required':'native';
+  const autoBase=kind==='codex'?'approve-for-me':'auto';
+  if(perm==='auto')return nativePerm==='auto'||nativePerm==='auto-workspace'&&nativeWsMode===autoBase?'native':'restart_required';
+  if(perm==='auto-workspace'){
+    const target=wsMode??defaultWorkspaceMode(kind),current=nativePerm==='auto-workspace'?
+      nativeWsMode??defaultWorkspaceMode(kind):nativePerm==='auto'?autoBase:undefined;
+    return target&&target===current?'native':'proxy';
+  }
+  return nativePerm==='yolo'?'native':'proxy';
+}
 export function launch(kind:Kind,o:Opts,base?:Launch):Launch{
-  const result={kind,perm:permission(o,base?.perm),model:str(o,'model')??base?.model,effort:str(o,'effort')??base?.effort,provider:str(o,'provider')??base?.provider,attended:!!o.attended||base?.attended,channel:str(o,'channel')??base?.channel};
+  const workspace_mode=o.workspace_mode!==undefined?workspaceMode(kind,o.workspace_mode):
+    base?.workspace_mode&&allowedWorkspaceModes(kind).includes(base.workspace_mode)?base.workspace_mode:undefined;
+  const result={kind,perm:permission(o,base?.perm),workspace_mode,model:str(o,'model')??base?.model,effort:str(o,'effort')??base?.effort,provider:str(o,'provider')??base?.provider,attended:!!o.attended||base?.attended,channel:str(o,'channel')??base?.channel};
   for(const s of [result.model,result.provider]) if(s&&(!model.test(s)||!clean(s))) return invalid('Invalid model or provider.');
   if(result.provider&&kind!=='pi') return invalid('--provider is only supported for Pi.');
   if(result.effort&&!efforts.includes(result.effort)) return invalid('Invalid reasoning effort.');
@@ -44,10 +71,13 @@ export function native(l:Launch,extra:string[]=[]):string[]{
     args.push(kind==='codex'?'-c':kind==='pi'?'--thinking':'--effort',kind==='codex'?`model_reasoning_effort="${v}"`:v);
   }
   const map:Record<Kind,Record<Perm,string[]>>={
-    codex:{readonly:['-s','read-only'],ask:[], 'auto-workspace':['-a','never','-s','workspace-write'],yolo:['--dangerously-bypass-approvals-and-sandbox']},
-    claude:{readonly:['--permission-mode','plan'],ask:[], 'auto-workspace':['--permission-mode','acceptEdits'],yolo:['--dangerously-skip-permissions']},
-    pi:{readonly:['--no-mcp','--tools','read,grep,find,ls'],ask:[], 'auto-workspace':[],yolo:[]},
-    agy:{readonly:['--mode','plan'],ask:[], 'auto-workspace':['--mode','accept-edits'],yolo:['--dangerously-skip-permissions']},
+    codex:{readonly:['-s','read-only'],ask:[],auto:['--approve-for-me'],
+      'auto-workspace':l.workspace_mode==='approve-for-me'?['--approve-for-me']:['-a','never','-s','workspace-write'],yolo:['--dangerously-bypass-approvals-and-sandbox']},
+    claude:{readonly:['--permission-mode','plan'],ask:[],auto:['--permission-mode','auto'],
+      'auto-workspace':['--permission-mode',l.workspace_mode==='auto'?'auto':'acceptEdits'],yolo:['--dangerously-skip-permissions']},
+    pi:{readonly:['--no-mcp','--tools','read,grep,find,ls'],ask:[],auto:[], 'auto-workspace':[],yolo:[]},
+    agy:{readonly:['--mode','plan'],ask:[],auto:['--mode','auto'],
+      'auto-workspace':['--mode',l.workspace_mode==='auto'?'auto':'accept-edits'],yolo:['--dangerously-skip-permissions']},
   };
   return [...args,...map[kind][perm],...extra];
 }
@@ -109,7 +139,7 @@ export function compliance(l:Launch,r:Route,o:Opts,ctx:Context,headless=false, m
   if(l.kind==='agy'){
     if(o.bg||o.unattended||headless) throw new FlowError('compliance_blocked','agy requires a supervised interactive pane; background, unattended and headless execution are disabled.');
     const foreground=!!ctx.caller&&same(r,ctx.caller.route)||!!ctx.tty&&!('machine' in r);
-    if ((!foreground || ['readonly','auto-workspace','yolo'].includes(l.perm))&&!l.attended)
+    if ((!foreground || ['readonly','auto','auto-workspace','yolo'].includes(l.perm))&&!l.attended)
       throw new FlowError('compliance_blocked','Pass --attended for supervised agy.');
     if(o.retry_at||o.retry_after||o.at||o.after||o.retry_backoff||Number(o.max_retries??0)>0)
       throw new FlowError('compliance_blocked','Automated retries are disabled for agy.');

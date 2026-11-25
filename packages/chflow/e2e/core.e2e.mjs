@@ -37,7 +37,7 @@ const promptsTo = (fx, pane) => fx.herdr.prompts.filter((prompt) => prompt.pane 
 
 async function reply(fx, pane, task, args = ['--ok']) {
   const { attempt } = await inspect(fx, task);
-  return checked(await fx.cli(['reply', task, '--attempt', attempt, ...args], { pane }), [0, 2]);
+  return checked(await fx.cli(['reply', task, '--attempt', attempt, ...args], { pane }), [0]);
 }
 
 function waitPrompt(fx, pane, predicate, message) {
@@ -185,19 +185,20 @@ test('E2E-03 minimal dispatch and result prompts expose file references only', {
   assert.equal((await readFile(info.out, 'utf8')).trimEnd(), body.trimEnd());
 });
 
-test('E2E-04 read screen only once per block and on explicit inspect', { timeout }, async (t) => {
-  const fx = await createFixture(t, { env: { CHFLOW_STALL_MS: '160' } });
+test('E2E-04 bounded stall probes, one screen read per block and explicit inspect', { timeout }, async (t) => {
+  const fx = await createFixture(t, { env: { CHFLOW_STALL_MS: '160', CHFLOW_STALL_CONFIRM_MS: '100' } });
   const normal = worker(1);
   const blocked = worker(2);
   fx.herdr.addAgent(normal, { screen: 'SCREEN_NORMAL_SENTINEL\n' });
   fx.herdr.addAgent(blocked);
   const task = await send(fx, normal, 'Work until a stalled event, then reply.');
   await waitPrompt(fx, fx.caller, (text) => text.includes(task) && text.includes('status=stalled'), 'Missing stalled event');
-  assert.equal(fx.herdr.reads.length, 0);
+  assert.equal(fx.herdr.reads.length, 2);
+  for (const read of fx.herdr.reads) assert.deepEqual(read.params, [normal, '--source', 'visible', '--lines', '20']);
   fx.herdr.setAgent(fx.caller, { agent_status: 'idle' });
   await reply(fx, normal, task, ['--ok', '--body', 'Normal result']);
   await waitPrompt(fx, fx.caller, (text) => text.includes(task) && text.includes('status=succeeded'), 'Missing normal result');
-  assert.equal(fx.herdr.reads.length, 0);
+  assert.equal(fx.herdr.reads.length, 2);
 
   fx.herdr.setAgent(fx.caller, { agent_status: 'idle' });
   const blockedTask = await send(fx, blocked, 'Wait for a simulated blocked state.');
@@ -205,26 +206,26 @@ test('E2E-04 read screen only once per block and on explicit inspect', { timeout
   const wake = await waitPrompt(fx, fx.caller, (text) => text.includes(blockedTask) && text.includes('status=blocked'), 'Missing blocked event');
   const diag = await getDiag(fx, blockedTask, question);
   assertEnvelope(wake.text, { task: blockedTask, from: blocked, to: fx.caller, scope: 'ask', status: 'blocked', path: `diag=${diag}` });
-  assert.equal(fx.herdr.reads.length, 1);
-  assert.deepEqual(fx.herdr.reads[0].params, [blocked, '--source', 'visible', '--lines', '40']);
+  assert.equal(fx.herdr.reads.length, 3);
+  assert.deepEqual(fx.herdr.reads[2].params, [blocked, '--source', 'visible', '--lines', '40']);
   const state = await command(fx, ['inspect', blockedTask, '--screen', '--lines', '7']);
   assert.ok(JSON.stringify(state).includes('SCREEN_QUESTION_SENTINEL'));
-  assert.equal(fx.herdr.reads.length, 2);
-  assert.deepEqual(fx.herdr.reads[1].params, [blocked, '--source', 'visible', '--lines', '7']);
+  assert.equal(fx.herdr.reads.length, 4);
+  assert.deepEqual(fx.herdr.reads[3].params, [blocked, '--source', 'visible', '--lines', '7']);
 });
 
 const nativeFlags = {
   codex: {
-    readonly: ['-s', 'read-only'], ask: [], 'auto-workspace': ['-a', 'never', '-s', 'workspace-write'], yolo: ['--dangerously-bypass-approvals-and-sandbox'],
+    readonly: ['-s', 'read-only'], ask: [], auto: ['--approve-for-me'], 'auto-workspace': ['-a', 'never', '-s', 'workspace-write'], yolo: ['--dangerously-bypass-approvals-and-sandbox'],
   },
   claude: {
-    readonly: ['--permission-mode', 'plan'], ask: [], 'auto-workspace': ['--permission-mode', 'acceptEdits'], yolo: ['--dangerously-skip-permissions'],
+    readonly: ['--permission-mode', 'plan'], ask: [], auto: ['--permission-mode', 'auto'], 'auto-workspace': ['--permission-mode', 'acceptEdits'], yolo: ['--dangerously-skip-permissions'],
   },
   pi: {
-    readonly: ['--no-mcp', '--tools', 'read,grep,find,ls'], ask: [], 'auto-workspace': [], yolo: [],
+    readonly: ['--no-mcp', '--tools', 'read,grep,find,ls'], ask: [], auto: [], 'auto-workspace': [], yolo: [],
   },
   agy: {
-    readonly: ['--mode', 'plan'], ask: [], 'auto-workspace': ['--mode', 'accept-edits'], yolo: ['--dangerously-skip-permissions'],
+    readonly: ['--mode', 'plan'], ask: [], auto: ['--mode', 'auto'], 'auto-workspace': ['--mode', 'accept-edits'], yolo: ['--dangerously-skip-permissions'],
   },
 };
 
@@ -263,6 +264,7 @@ test('E2E-05 native permission translation, readonly conflicts, and agy restrict
     assert.equal(fx.herdr.prompts.length, prompts);
     return result;
   }
+  await rejected(['start', 'agy-auto-unattended', '--kind', 'agy', '--perm', 'auto']);
   const marker = 'CHFLOW_TEST_PRIVATE_ARG_VALUE';
   const conflict = await rejected(['start', 'forbidden', '--kind', 'codex', '--perm', 'readonly', '--', `--dangerously-bypass-approvals-and-sandbox=${marker}`]);
   assert.ok(!`${conflict.stdout}${conflict.stderr}`.includes(marker));
@@ -300,7 +302,7 @@ test('E2E-05 native permission translation, readonly conflicts, and agy restrict
   assert.equal((await listAll(fx)).scheduled_retries.length, 0);
 });
 
-test('E2E-06 auto-approves reused panes only for allowed permission prompts', { timeout }, async (t) => {
+test('E2E-06 auto-approves reused panes while preserving control-plane prompt safety', { timeout }, async (t) => {
   const fx = await createFixture(t);
   for (const [index, mode] of ['auto-workspace', 'yolo'].entries()) {
     const pane = worker(index + 1);
@@ -324,7 +326,8 @@ test('E2E-06 auto-approves reused panes only for allowed permission prompts', { 
   const denied = [
     { mode: 'auto-workspace', screen: question, status: 'blocked(question)', reason: 'user_question' },
     { mode: 'yolo', screen: question, status: 'blocked(question)', reason: 'user_question' },
-    { mode: 'auto-workspace', screen: `${permission}git push --force\nSCREEN_BLACKLIST_SENTINEL\n`, status: 'blocked(permission)', reason: 'blacklist_hit' },
+    { mode: 'auto-workspace', screen: 'Custom unrecognized tool banner\nSCREEN_UNKNOWN_SENTINEL\n', status: 'blocked(unknown)', reason: 'unknown_prompt' },
+    { mode: 'auto-workspace', screen: 'Permission required\n❯ 1. Deny', status: 'blocked(permission)', reason: 'approval_required' },
   ];
   for (const [index, { mode, screen, status, reason }] of denied.entries()) {
     const pane = worker(index + 3);

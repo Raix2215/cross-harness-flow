@@ -72,6 +72,8 @@ function agentResult({ screen, unblockOnKey, promptStatus, paneFocusOnly, ...age
 function fakeHerdr(workspace, socketPath, promptDelayMs) {
   const agents = new Map();
   const panes = new Map();
+  const workspaces = new Map([['w1', { workspace_id: 'w1', label: 'WORK' }]]);
+  const tabs = new Map([['w1:t1', { tab_id: 'w1:t1', workspace_id: 'w1', label: 'main' }]]);
   const failures = new Map();
   const clients = new Set();
   const requests = [];
@@ -79,8 +81,16 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
   const keys = [];
   const reads = [];
   const starts = [];
+  const focuses = [];
   const notifications = [];
   let nextPane = 100;
+
+  function setWorkspace(id, label) {
+    workspaces.set(id, { workspace_id: id, label });
+  }
+  function setTab(id, workspace_id, label) {
+    tabs.set(id, { tab_id: id, workspace_id, label });
+  }
 
   function addAgent(pane, overrides = {}) {
     const agent = {
@@ -189,6 +199,15 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
         keys.push({ ...record, keys: params.slice(1) });
         if (found.unblockOnKey && found.agent_status === 'blocked') setAgent(pane, { agent_status: 'working' });
         return ok(id, {});
+      case 'agent.focus':
+        if (!found) return errorResult('pane_not_found', `No agent at ${target}`);
+        focuses.push({ ...record, pane: found.pane_id });
+        for (const a of agents.values()) a.focused = a.pane_id === found.pane_id;
+        return ok(id, {});
+      case 'workspace.list':
+        return ok(id, { workspaces: [...workspaces.values()] });
+      case 'tab.list':
+        return ok(id, { tabs: [...tabs.values()] });
       case 'pane.get':
         return panes.has(pane) ? ok(id, { pane: panes.get(pane) }) : errorResult('pane_not_found', `No pane at ${target}`);
       case 'pane.split':
@@ -228,7 +247,7 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
   });
 
   return {
-    addAgent, setAgent, removeAgent, failNext, agents, requests, prompts, keys, reads, starts, notifications,
+    addAgent, setAgent, removeAgent, setWorkspace, setTab, failNext, agents, workspaces, tabs, requests, prompts, keys, reads, starts, focuses, notifications,
     async listen() {
       await new Promise((resolve, reject) => {
         server.once('error', reject);

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-export const VERSION = '3.4.0';
+export const VERSION = '3.5.0';
 export const PROTOCOL = 1;
 export const kinds = ['codex', 'claude', 'pi', 'agy'] as const;
 export const perms = ['readonly', 'ask', 'auto-workspace', 'yolo'] as const;
@@ -23,6 +23,11 @@ export interface Context { cwd: string; route: Route; caller?: Recipient; worksp
 export interface Launch { kind: Kind; perm: Perm; model?: string; effort?: string; provider?: string; attended?: boolean; channel?: string }
 export interface Project {
   project_id: string; name: string; root: string; source: 'config'|'override'|'worktree'|'folder';
+}
+export interface GlobalRoleTemplate {
+  role: string; description?: string;
+  default_kind?: Kind; default_model?: string; default_effort?: string; default_provider?: string;
+  default_channel?: string; default_perm?: Perm; worktree?: boolean; cwd?: string;
 }
 export interface Role {
   project_id: string; role: string; source: 'config'|'manual'; description?: string;

@@ -151,7 +151,7 @@ test('E2E-15 Web UI leases, live SSE updates without read-screen, and bounded ma
   await stream.next(s => s.herdr === 'reachable', 'SSE did not include the initial Herdr discovery');
   assert.equal(first.route.socket, fx.socketPath);
   assert.equal(first.daemon.pid, ui.daemon_pid);
-  assert.equal(first.daemon.version, '3.4.0');
+  assert.equal(first.daemon.version, '3.5.0');
   assert.ok(Number.isFinite(Date.parse(first.daemon.started_at)));
   assert.ok(Number.isSafeInteger(first.now));
 
@@ -1267,4 +1267,120 @@ test('E2E-22 exited-agent live UI sync, passive WebUI idle exit, and explicit st
   assert.equal(stopped.running, false);
   await eventually(() => access(join(quitFx.stateDir, 'daemon.json')).then(() => false, e => e.code === 'ENOENT'),
     { message: 'Daemon did not stop cleanly after chflow quit' });
+});
+
+test('E2E-23 global role templates, lazy instantiation, readable Herdr labels and focus_pane', { timeout: 45_000 }, async t => {
+  const fx = await createFixture(t);
+  const projA = join(fx.root, 'proj-alpha');
+  const projB = join(fx.root, 'proj-beta');
+  await Promise.all([mkdir(projA, { recursive: true }), mkdir(projB, { recursive: true })]);
+
+  // 1. Global role template CRUD in isolated XDG_CONFIG_HOME/chflow/roles.yaml (zero credentials).
+  const created = await command(fx, ['role', 'set', 'reviewer', '--global', '--kind', 'claude', '--model', 'sonnet-tpl', '--perm', 'readonly', '--desc', 'Global diff reviewer'], { cwd: projA });
+  assert.equal(created.scope, 'global');
+  assert.equal(created.role, 'reviewer');
+  assert.equal(created.default_kind, 'claude');
+  assert.equal(created.default_perm, 'readonly');
+  const globalYamlPath = join(fx.env.XDG_CONFIG_HOME, 'chflow', 'roles.yaml');
+  const yamlText = await readFile(globalYamlPath, 'utf8');
+  assert.match(yamlText, /reviewer:/);
+  assert.match(yamlText, /kind: claude/);
+
+  // Sensitive values must be blocked from global templates.
+  const badSecret = await command(fx, ['role', 'set', 'leak', '--global', '--desc', 'contact me@example.org'], { cwd: projA }, [1]);
+  assert.equal(badSecret.error.code, 'sensitive_input');
+
+  // Global templates list via --global, but MUST NOT auto-pollute project roles (lazy instantiation).
+  const listedGlobal = await command(fx, ['role', 'list', '--global'], { cwd: projA });
+  assert.deepEqual(listedGlobal.global_roles.map(r => r.role), ['reviewer']);
+  assert.deepEqual((await command(fx, ['role', 'list'], { cwd: projA })).roles, []);
+  assert.deepEqual((await command(fx, ['role', 'list'], { cwd: projB })).roles, []);
+
+  // 2. Lazy instantiation on send --spawn in projA inherits template defaults; projB stays untouched.
+  const sent = await command(fx, ['send', 'reviewer', '--spawn', '--brief', 'Review alpha diff', '--task', 'alpha-review'], { cwd: projA });
+  assert.equal(sent.role, 'reviewer');
+  assert.equal(sent.kind, 'claude');
+  assert.equal(sent.perm, 'readonly');
+  assert.equal((await command(fx, ['role', 'list'], { cwd: projA })).roles.length, 1);
+  assert.equal((await command(fx, ['role', 'list'], { cwd: projB })).roles.length, 0);
+
+  // Project-level edit only overrides projA and does not mutate global template.
+  await command(fx, ['role', 'set', 'reviewer', '--perm', 'auto-workspace', '--desc', 'Alpha-only reviewer'], { cwd: projA });
+  assert.equal((await command(fx, ['role', 'list'], { cwd: projA })).roles[0].default_perm, 'auto-workspace');
+  assert.equal((await command(fx, ['role', 'list', '--global'], { cwd: projA })).global_roles[0].default_perm, 'readonly');
+
+  // Lazy instantiation on role bind --pane in projB inherits unmodified global template defaults.
+  const betaPane = 'w2:p41';
+  const dupPane = 'w2:p42';
+  fx.herdr.setWorkspace('w2', 'LAB');
+  fx.herdr.setTab('w2:tA', 'w2', 'Backend');
+  fx.herdr.setTab('w2:tB', 'w2', 'Review');
+  fx.herdr.addAgent(betaPane, { agent: 'agy', cwd: projB, workspace_id: 'w2', tab_id: 'w2:tA', name: betaPane });
+  fx.herdr.addAgent(dupPane, { agent: 'agy', cwd: projB, workspace_id: 'w2', tab_id: 'w2:tB', name: dupPane });
+
+  const health = await command(fx, ['health'], { cwd: projB });
+  const unmA = health.unmanaged_live_agents.find(a => a.pane_id === betaPane);
+  const unmB = health.unmanaged_live_agents.find(a => a.pane_id === dupPane);
+  assert.equal(unmA.workspace_label, 'LAB');
+  assert.equal(unmA.tab_label, 'Backend');
+  assert.equal(unmA.location_label, 'LAB / Backend');
+  assert.equal(unmA.harness_label, 'Antigravity');
+  assert.notEqual(unmA.display_name, unmB.display_name, 'Duplicate folder+harness panes must be disambiguated');
+  assert.ok(unmA.display_name.includes('proj-beta') && unmA.display_name.includes('Antigravity'));
+  assert.ok(!unmA.display_name.includes('w2:p41'));
+
+  const bound = await command(fx, ['role', 'bind', 'reviewer', '--pane', betaPane], { cwd: projB });
+  assert.equal(bound.role, 'reviewer');
+  assert.equal(bound.default_perm, 'readonly');
+  assert.equal(bound.pane_id, betaPane);
+
+  // 3. WebUI snapshot includes global_roles + readable labels, and focus_pane invokes herdr agent focus.
+  const ui = await startUi(t, fx);
+  const html = await (await fetch(ui.url + '/')).text();
+  const token = html.match(/"csrfToken"\s*:\s*"([0-9a-f]{64})"/)?.[1];
+  assert.ok(token);
+  const headers = { Origin: ui.url, 'X-Chflow-Token': token, 'Content-Type': 'application/json' };
+  const snap = await snapshot(ui.url);
+  assert.ok(snap.global_roles.some(r => r.role === 'reviewer'));
+  const managedBeta = snap.managed_panes.find(p => p.pane_id === betaPane);
+  assert.equal(managedBeta.location_label, 'LAB / Backend');
+  assert.equal(managedBeta.display_name, '@reviewer');
+
+  const focusRes = await jsonRequest(ui.url, '/api/action', {
+    method: 'POST', headers, body: JSON.stringify({ action: 'focus_pane', target: dupPane, opts: {} }),
+  });
+  assert.equal(focusRes.status, 200);
+  assert.deepEqual(focusRes.body.data, { focused: true, pane_id: dupPane });
+  assert.ok(fx.herdr.focuses.some(f => f.pane === dupPane));
+
+  // WebUI global role template save + remove via API & CLI.
+  const uiGlobal = await jsonRequest(ui.url, '/api/action', {
+    method: 'POST', headers,
+    body: JSON.stringify({ action: 'role_set', target: 'docs-writer', opts: { global: true, kind: 'pi', perm: 'auto-workspace' } }),
+  });
+  assert.equal(uiGlobal.status, 200);
+  assert.equal(uiGlobal.body.data.scope, 'global');
+  assert.ok((await snapshot(ui.url)).global_roles.some(r => r.role === 'docs-writer'));
+  const removed = await command(fx, ['role', 'remove', 'docs-writer', '--global'], { cwd: projA });
+  assert.equal(removed.removed, true);
+  assert.equal((await command(fx, ['role', 'list', '--global'], { cwd: projA })).global_roles.some(r => r.role === 'docs-writer'), false);
+
+  // 4. MCP flow_role supports global templates while staying at 19 tools & < 10KB.
+  const mcp = spawn(process.execPath, [fx.cliPath, 'mcp'], { cwd: projA, env: fx.env, stdio: 'pipe' });
+  t.after(() => { if (mcp.exitCode === null && mcp.signalCode === null) mcp.kill(); });
+  const ended = new Promise(resolve => mcp.once('close', resolve));
+  const lines = createInterface({ input: mcp.stdout });
+  const rpc = async (id, method, params) => {
+    const next = new Promise(resolve => lines.once('line', resolve));
+    mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+    const line = await next;
+    return { bytes: Buffer.byteLength(line), result: JSON.parse(line).result };
+  };
+  const list = await rpc(1, 'tools/list');
+  assert.equal(list.result.tools.length, 19);
+  assert.ok(list.bytes < 10_000, 'MCP tools/list bytes: ' + list.bytes);
+  const gList = await rpc(2, 'tools/call', { name: 'flow_role', arguments: { action: 'list', global: true } });
+  assert.ok(gList.result.structuredContent.data.global_roles.some(r => r.role === 'reviewer'));
+  mcp.stdin.end();
+  assert.equal(await ended, 0);
 });

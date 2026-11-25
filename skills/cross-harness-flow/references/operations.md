@@ -1,4 +1,12 @@
-# chflow v3 操作手册
+# chflow v3.5 操作手册
+
+## 四层工作流与全局角色模板
+
+`chflow` 按四层解耦协同职责：**① 意图编排层**（主控 Agent + Skill 自动推导分工与默认权限）→ **② 项目与角色层**（全局角色模板按需懒实例化为项目角色）→ **③ 会话与执行层**（可热替换的 Herdr 窗格或一次性无头 `chflow run`）→ **④ 信箱与控制面**（`.chflow/` 信箱 + 常驻 Daemon + WebUI/CLI）。
+
+- **全局角色模板**存放于 `$XDG_CONFIG_HOME/chflow/roles.yaml`（可通过 `CHFLOW_CONFIG_DIR` 覆盖，默认 `~/.config/chflow/roles.yaml`，零凭据）。用 `chflow role set <name> --global ...`、`chflow role list --global`、`chflow role remove <name> --global` 管理。
+- **懒实例化**：全局模板不会自动出现在未启用它的项目画布里；在项目内首次执行 `chflow role bind <name>` 或 `chflow send <name> --spawn` 时，系统自动继承全局模板默认值并实例化为该项目角色。
+- **四级覆盖优先级**：单次派发参数 > 项目角色实例（含 `.chflow/project.yaml`）> 全局角色模板 > Skill 场景默认值。项目级 `role set` 仅作用于当前项目，不影响全局模板。
 
 ## 安装与离线分发
 
@@ -13,19 +21,19 @@ npm run build
 npm install -g --prefix "$HOME/.local" .
 ```
 
-将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.4.0.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
+将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.5.0.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
 
-跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.4.0.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
+跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.5.0.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
 
 ```sh
 # Linux：任选一种用户级安装方式
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.4.0.tgz
-pnpm add -g --offline ./chflow-3.4.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.5.0.tgz
+pnpm add -g --offline ./chflow-3.5.0.tgz
 ```
 
 ```powershell
 # Windows：使用可写的用户 npm prefix，并让其位于 PATH
-npm install --offline -g .\chflow-3.4.0.tgz
+npm install --offline -g .\chflow-3.5.0.tgz
 ```
 
 安装完成后，在实际运行 CLI 或启动 MCP 的环境检查 `command -v chflow`（PowerShell：`Get-Command chflow`），再执行 `chflow health`。从 v2 切换时，将项目 MCP 入口改为 `chflow mcp`，在 v3 新建任务；历史 v2 工位和状态单独处理。
@@ -72,8 +80,8 @@ Herdr 路由只覆盖终端控制面。若缺共享挂载或回程，向用户�
 
 | 命令 | 用法 |
 | --- | --- |
-| `daemon start\|stop\|status\|logs` | 管理当前用户 Daemon；一般由业务命令懒启动，查询 `status` 或 `stop` 本身保持停机状态。 |
-| `role list\|set\|bind\|unbind\|remove` | 管理项目稳定角色（如 `backend`、`reviewer`）并热替换底层 Harness/窗格/无头配置；绑定关闭的窗格后自动回到 `unbound` 待命，可在 `.chflow/project.yaml` 声明项目预设。 |
+| `daemon start\|stop\|status\|logs` / `stop [--force]` / `quit` | 管理或显式停止当前用户 Daemon；存在活跃任务时 `stop`/`quit` 默认拦截，须加 `--force`。查询 `status` 或 `stop` 不会触发懒启动。 |
+| `role list\|set\|bind\|unbind\|remove [--global]` | 管理项目稳定角色（如 `backend`、`reviewer`）并热替换底层 Harness/窗格/无头配置；加 `--global` 管理用户级全局模板（`~/.config/chflow/roles.yaml`），首次 `bind` / `send --spawn` 自动懒实例化到项目。绑定窗格关闭或会话退出后自动回到 `unbound` 待命，也可用 `.chflow/project.yaml` 声明项目预设。 |
 | `prune [--tasks] [--project ID]` | 清理 Herdr 中已关闭且无活跃任务的离线窗格记录；加 `--tasks` 一并归档清理已终结的历史任务。 |
 | `start [name] --kind codex\|claude\|pi\|agy` | 建交互工位；用 `--resume <id\|last>` 恢复已有会话，可选 `--role <role>` 与 `--project <id>`。用 `--place pane\|split\|tab\|workspace` 布局，`--worktree <branch>` 隔离变更（使用 `workspace` 布局），`--session <name>` 指定 Herdr session，`--machine <profile>` 跨机。按工位能力传 `--model`、`--effort`、Pi `--provider` 或 `--perm`。 |
 | `adopt <pane> [--name ALIAS] [--takeover]` | 纳管已在线工位，按需指定 `--role`、`--project`、`--perm` 或 `--controller <pane>`；显式接管会带走未投递回执。 |

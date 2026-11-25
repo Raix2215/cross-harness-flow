@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { basename } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { channels, compliance, kindOf, launch, native, resumeArgs } from './harnesses.js';
-import { checkedAgent, closePane, get, herdr, idle, keys, missing, prompt, route, same, screen, startIn, startPane } from './herdr.js';
+import { checkedAgent, closePane, get, herdr, idle, keys, listHerdrLabels, missing, prompt, route, same, screen, startIn, startPane, type HerdrLabels } from './herdr.js';
 import { paneCwd, Projects, roleActive, samePane } from './projects.js';
 import { sessionsEqual } from './queue.js';
 import { clean } from './sensitive.js';
@@ -65,9 +66,29 @@ async function startWithTrust(inv:Invocation,r:Route,name:string,launch:Launch,f
 const liveView=(a:Agent)=>({pane_id:a.pane_id,name:a.name,kind:a.agent,terminal_id:a.terminal_id,agent_status:a.agent_status,
   cwd:a.foreground_cwd??a.cwd,state_change_seq:a.state_change_seq,agent_session:a.agent_session,workspace_id:a.workspace_id,tab_id:a.tab_id});
 const isLiveStatus=(status:string)=>!['exited','stopped','closed','offline','dead'].includes(status.toLowerCase());
+const HARNESS_NAMES:Record<string,string>={agy:'Antigravity',claude:'Claude Code',codex:'Codex',pi:'Pi'};
+export const harnessLabel=(kind?:string)=>kind?HARNESS_NAMES[kind]??kind:'Agent';
+function readableLocation(ws?:string,tab?:string){
+  const parts=[ws?.trim(),tab?.trim()].filter((v):v is string=>!!v);
+  if(parts.length===2&&parts[0]===parts[1])return parts[0];
+  return parts.join(' / ');
+}
+function folderName(cwd?:string){
+  if(!cwd)return '';
+  const cleaned=cwd.replace(/[\\/]+$/,'');
+  return basename(cleaned)||cleaned;
+}
+function readableDisplayName(opts:{pane_id:string;kind?:string;name?:string;alias?:string;role?:string;cwd?:string}){
+  if(opts.role)return '@'+opts.role;
+  const custom=[opts.alias,opts.name].find(v=>typeof v==='string'&&v.trim()&&v.trim()!==opts.pane_id);
+  if(custom)return custom.trim();
+  const dir=folderName(opts.cwd), h=harnessLabel(opts.kind);
+  return dir?`${dir} · ${h}`:h;
+}
 export type LiveTopology={
   herdr:string;
   agents:ReturnType<typeof liveView>[];
+  labels?:HerdrLabels;
   checkedPanes?:Set<string>;
   checkedRoles?:Set<string>;
 };
@@ -76,6 +97,7 @@ const bindingIdentity=(r:Role)=>JSON.stringify([r.project_id,r.role,r.pane_id,r.
 
 export class Workspaces {
   private locks=new Set<string>();
+  private labelCache=new Map<string,{at:number;labels:HerdrLabels}>();
   readonly projects:Projects;
   constructor(private db:Store){this.projects=new Projects(db);}
   async lock<T>(r:Route,p:string,fn:()=>Promise<T>):Promise<T>{
@@ -395,7 +417,12 @@ export class Workspaces {
       // Reject an incomplete sample before it can erase registered identities.
       // Exclude exited/stopped agent processes even when their Herdr pane remains open.
       const agents=entries.map(a=>liveView(checkedAgent(a))).filter(a=>isLiveStatus(a.agent_status));
-      return {agents,herdr:'reachable',checkedPanes,checkedRoles};
+      const rk=routeKey(r), cached=this.labelCache.get(rk);
+      const needsRefresh=!cached||Date.now()-cached.at>3000||agents.some(a=>
+        (a.workspace_id&&!cached.labels.workspaces[a.workspace_id])||(a.tab_id&&!cached.labels.tabs[a.tab_id]));
+      const labels=needsRefresh?await listHerdrLabels(r):cached.labels;
+      if(needsRefresh)this.labelCache.set(rk,{at:Date.now(),labels});
+      return {agents,herdr:'reachable',labels,checkedPanes,checkedRoles};
     }catch(e){return {agents:[],herdr:e instanceof FlowError?e.code:'unreachable'};}
   }
 
@@ -426,18 +453,45 @@ export class Workspaces {
     return pruned;
   }
 
-  topologyView(r:Route,{agents,herdr}:LiveTopology,cwd:string){
+  topologyView(r:Route,{agents,herdr,labels}:LiveTopology,cwd:string){
+    const wsMap=labels?.workspaces??{}, tabMap=labels?.tabs??{};
     const online=new Map(agents.map(a=>[a.pane_id,a]));
     const managed_panes=this.db.panes().filter(p=>same(p.route,r)).map(p=>{
       const a=online.get(p.agent.pane_id);
       const live=a!==undefined&&a.terminal_id===p.agent.terminal_id;
       if(live)online.delete(a.pane_id);
       const current=live?a:p.agent;
-      return {...paneView(p),cwd:(live?a.cwd:undefined)??paneCwd(p.agent),live,agent_status:live?a.agent_status:'offline',
-        state_change_seq:current.state_change_seq,workspace_id:current.workspace_id??null,tab_id:current.tab_id??null,
-        project_id:this.projects.pane(r,live?a:p.agent,cwd,undefined,p).project_id,role:this.binding(p)?.role};
+      const resolvedCwd=(live?a.cwd:undefined)??paneCwd(p.agent);
+      const wsId=current.workspace_id??null, tabId=current.tab_id??null;
+      const wsLabel=wsId?wsMap[wsId]:undefined, tabLabel=tabId?tabMap[tabId]:undefined;
+      const role=this.binding(p)?.role;
+      return {...paneView(p),cwd:resolvedCwd,live,agent_status:live?a.agent_status:'offline',
+        state_change_seq:current.state_change_seq,workspace_id:wsId,tab_id:tabId,
+        workspace_label:wsLabel??null,tab_label:tabLabel??null,
+        location_label:readableLocation(wsLabel,tabLabel)||null,
+        harness_label:harnessLabel(p.agent.agent),
+        display_name:readableDisplayName({pane_id:p.agent.pane_id,kind:p.agent.agent,name:p.agent.name,alias:p.alias,role,cwd:resolvedCwd}),
+        project_id:this.projects.pane(r,live?a:p.agent,cwd,undefined,p).project_id,role};
     });
-    const unmanaged_live_agents=[...online.values()].map(a=>({...a,project_id:this.projects.pane(r,a,cwd).project_id}));
+    const rawUnm=[...online.values()].map(a=>{
+      const wsLabel=a.workspace_id?wsMap[a.workspace_id]:undefined, tabLabel=a.tab_id?tabMap[a.tab_id]:undefined;
+      const base=readableDisplayName({pane_id:a.pane_id,kind:a.kind,name:a.name,cwd:a.cwd});
+      return {...a,workspace_label:wsLabel??null,tab_label:tabLabel??null,
+        location_label:readableLocation(wsLabel,tabLabel)||null,
+        harness_label:harnessLabel(a.kind),display_name:base,
+        project_id:this.projects.pane(r,a,cwd).project_id};
+    });
+    // Disambiguate identical unnamed display names within the same list
+    const counts=new Map<string,number>();
+    for(const item of rawUnm)counts.set(item.display_name,(counts.get(item.display_name)??0)+1);
+    const seen=new Map<string,number>();
+    const unmanaged_live_agents=rawUnm.map(item=>{
+      if((counts.get(item.display_name)??0)<=1)return item;
+      const idx=(seen.get(item.display_name)??0)+1;
+      seen.set(item.display_name,idx);
+      const suffix=item.tab_label&&!item.display_name.includes(item.tab_label)?` (${item.tab_label})`:` #${idx}`;
+      return {...item,display_name:item.display_name+suffix};
+    });
     return {managed_panes,unmanaged_live_agents,herdr};
   }
 }

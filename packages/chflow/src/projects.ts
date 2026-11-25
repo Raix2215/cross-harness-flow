@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto';
-import { closeSync, constants, fstatSync, openSync, readSync, realpathSync, statSync } from 'node:fs';
+import { chmodSync, closeSync, constants, fstatSync, mkdirSync, openSync, readSync, realpathSync, statSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { kindOf, launch, permission } from './harnesses.js';
+import { configDir } from './ipc.js';
+import { atomic } from './mailbox.js';
 import { clean } from './sensitive.js';
 import type { Store } from './store.js';
-import { invalid, routeKey, str, terminal, type Agent, type ManagedPane, type Opts, type Project, type Role, type Route, type Task } from './types.js';
+import { invalid, routeKey, str, terminal, type Agent, type GlobalRoleTemplate, type ManagedPane, type Opts, type Project, type Role, type Route, type Task } from './types.js';
 
 export const roleName=(value?:string)=>value&&/^[a-z][a-z0-9_-]{0,31}$/.test(value)?value:invalid('Role must match [a-z][a-z0-9_-]{0,31}.');
 export const projectId=(value:string)=>/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$/.test(value)?clean(value):invalid('Provide a valid project ID.');
@@ -39,7 +41,7 @@ function scalar(raw:string){
   const quoted=/^(['"])(.*?)\1(?:\s+#.*)?$/.exec(value);
   return quoted?quoted[2]:value.replace(/(?:^|\s+)#.*$/,'').trim();
 }
-export function roleDefaults(o:Opts,root:string,prior?:Role){
+export function roleDefaults(o:Opts,root:string,prior?:Partial<GlobalRoleTemplate>){
   const kind=o.kind!==undefined?kindOf(o.kind):prior?.default_kind;
   const model=str(o,'model')??prior?.default_model, effort=str(o,'effort')??prior?.default_effort;
   const provider=str(o,'provider')??(kind&&kind!=='pi'?undefined:prior?.default_provider);
@@ -55,6 +57,80 @@ export function roleDefaults(o:Opts,root:string,prior?:Role){
   };
 }
 const roleFields=new Map('description kind model effort provider channel perm worktree cwd'.split(' ').map(k=>[k,k==='description'?'desc':k]));
+export const globalRolesPath=()=>join(configDir(),'roles.yaml');
+function parseRolesBlock(data:string,root:string):GlobalRoleTemplate[]{
+  const definitions=new Map<string,Opts>();
+  let inRoles=false, role:Opts|undefined, roleIndent=0, fieldIndent=0;
+  for(const line of data.split(/\r?\n/)){
+    if(!line.trim()||line.trimStart().startsWith('#'))continue;
+    const match=/^( *)([\w-]+):\s*(.*)$/.exec(line);
+    if(!match)return invalid('Invalid roles.yaml mapping.');
+    const [,indent,key,raw]=match,value=scalar(raw),depth=indent.length;
+    if(!depth){
+      if(key!=='roles'||value||inRoles)return invalid('Invalid roles.yaml root field.');
+      inRoles=true; role=undefined; continue;
+    }
+    if(!inRoles)return invalid('Role definitions must be under roles.');
+    roleIndent ||= depth;
+    if(depth===roleIndent){
+      const name=roleName(key);
+      if(value||definitions.has(name))return invalid('Invalid roles.yaml role.');
+      role={}; definitions.set(name,role); continue;
+    }
+    fieldIndent ||= depth;
+    const field=roleFields.get(key);
+    if(!role||depth!==fieldIndent||depth<=roleIndent||!field||Object.hasOwn(role,field)||!value)
+      return invalid('Invalid roles.yaml role field.');
+    if(field==='worktree'&&value!=='true'&&value!=='false')return invalid('Role worktree must be true or false.');
+    role[field]=field==='worktree'?value==='true':value;
+  }
+  return [...definitions].map(([name,o]):GlobalRoleTemplate=>({role:name,...roleDefaults(o,root)}));
+}
+function yamlQuote(v:string){
+  return /^[A-Za-z0-9._/@+-]+$/.test(v)&&!['true','false','null'].includes(v.toLowerCase())?v:JSON.stringify(v);
+}
+function writeGlobalRoles(list:GlobalRoleTemplate[]){
+  const dir=configDir();
+  mkdirSync(dir,{recursive:true,mode:0o700});
+  if(process.platform!=='win32')chmodSync(dir,0o700);
+  const lines=['# Global role templates (metadata only; never store credentials or emails)','roles:'];
+  for(const r of [...list].sort((a,b)=>a.role.localeCompare(b.role))){
+    lines.push('  '+r.role+':');
+    if(r.description)lines.push('    description: '+yamlQuote(r.description));
+    if(r.default_kind)lines.push('    kind: '+yamlQuote(r.default_kind));
+    if(r.default_model)lines.push('    model: '+yamlQuote(r.default_model));
+    if(r.default_effort)lines.push('    effort: '+yamlQuote(r.default_effort));
+    if(r.default_provider)lines.push('    provider: '+yamlQuote(r.default_provider));
+    if(r.default_channel)lines.push('    channel: '+yamlQuote(r.default_channel));
+    if(r.default_perm)lines.push('    perm: '+yamlQuote(r.default_perm));
+    if(typeof r.worktree==='boolean')lines.push('    worktree: '+String(r.worktree));
+    if(r.cwd)lines.push('    cwd: '+yamlQuote(r.cwd));
+  }
+  const content=clean(lines.join('\n')+'\n');
+  atomic(globalRolesPath(),content);
+}
+export function readGlobalRoles():GlobalRoleTemplate[]{
+  const data=boundedFile(globalRolesPath(),65536);
+  return data===undefined?[]:parseRolesBlock(data,configDir());
+}
+export function globalRole(name:string):GlobalRoleTemplate|undefined{
+  return readGlobalRoles().find(r=>r.role===name);
+}
+export function saveGlobalRole(name:string,o:Opts,cwd:string):GlobalRoleTemplate{
+  const list=readGlobalRoles();
+  const prior=list.find(r=>r.role===name);
+  const next:GlobalRoleTemplate={role:name,...roleDefaults(o,cwd,prior)};
+  const updated=[...list.filter(r=>r.role!==name),next];
+  writeGlobalRoles(updated);
+  return next;
+}
+export function removeGlobalRole(name:string):boolean{
+  const list=readGlobalRoles();
+  const next=list.filter(r=>r.role!==name);
+  if(next.length===list.length)return false;
+  writeGlobalRoles(next);
+  return true;
+}
 function readProject(root:string){
   const data=boundedFile(join(root,'.chflow','project.yaml'),65536);
   if(data===undefined)return;

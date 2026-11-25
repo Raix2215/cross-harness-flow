@@ -19,14 +19,14 @@ export const commandOptions:Record<string,string>={
   inbox:'machine session', flush:'machine session',
 };
 const roleOptions=new Map([
-  ['list','project machine session'],
-  ['set','project desc kind model effort provider channel perm worktree cwd'],
+  ['list','project global machine session'],
+  ['set','project global desc kind model effort provider channel perm worktree cwd'],
   ['bind','project pane spawn headless kind model effort provider channel perm worktree cwd controller close_old attended machine session timeout matrix'],
-  ['unbind','project'],['remove','project'],
+  ['unbind','project'],['remove','project global'],
 ]);
 export const roleActionOptions=(action:string)=>roleOptions.get(action);
 const cliOptions=new Map([
-  ['role','project desc kind model effort provider channel perm worktree cwd pane spawn headless controller close_old attended machine session timeout matrix'],
+  ['role','project global desc kind model effort provider channel perm worktree cwd pane spawn headless controller close_old attended machine session timeout matrix'],
   ['prune','tasks project machine session'],
   ['ui','port host open session machine allow_remote standalone'],
   ['open','port host session machine allow_remote standalone'],
@@ -41,16 +41,16 @@ const operatorOptions=new Map([
   ['respond',commandOptions.respond+' force'],['ui.set_perm','perm'],['ui.terminal','keys text submit_key prompt'],
   ['ui.screen','lines'],['ui.queue_pause',''],['ui.queue_resume',''],['ui.queue_deliver_now','event_id'],
   ['ui.queue_consume','event_id'],['ui.queue_drop','event_id'],['ui.queue_reroute','event_id to to_session to_machine'],
-  ['ui.cancel_retry',''],['ui.assign_project','project machine session'],
+  ['ui.cancel_retry',''],['ui.assign_project','project machine session'],['ui.focus_pane','machine session'],
   ['ui.prune',cliOptions.get('prune')!],
   ...[...roleOptions].filter(([action])=>action!=='list').map(([action,opts])=>['ui.role.'+action,opts] as const),
 ]);
-const operatorRequired=new Set(['ui.set_perm','ui.terminal','ui.screen','ui.cancel_retry','ui.assign_project']);
+const operatorRequired=new Set(['ui.set_perm','ui.terminal','ui.screen','ui.cancel_retry','ui.assign_project','ui.focus_pane']);
 const operatorOptional=new Set([
   'ui.queue_pause','ui.queue_resume','ui.queue_deliver_now','ui.queue_consume','ui.queue_drop','ui.queue_reroute',
 ]);
 export const flag=(name:string,method?:string)=>booleanOptions.has(name)||name==='worktree'&&(method==='role'||!!method?.includes('role.'));
-const booleanOptions=new Set('readonly takeover notify_old restart allow_last watch wait attended unattended bg ok fail question progress stdin screen diag close_pane reconcile all panes enable_respond no_respond trust_repository focus open force allow_remote standalone spawn headless close_old tasks'.split(' '));
+const booleanOptions=new Set('readonly takeover notify_old restart allow_last watch wait attended unattended bg ok fail question progress stdin screen diag close_pane reconcile all panes enable_respond no_respond trust_repository focus open force allow_remote standalone spawn headless close_old tasks global'.split(' '));
 const repeatable=new Set(['key','keys']);
 const required=new Set('adopt handoff switch send reply wait watch respond inspect resume retry finish cancel'.split(' '));
 export const acceptsTarget=(method:string)=>required.has(method)||['start','health','inbox','flush'].includes(method);

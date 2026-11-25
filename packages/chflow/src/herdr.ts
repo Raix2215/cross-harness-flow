@@ -86,6 +86,28 @@ export async function prompt(r:Route,pane:string,text:string) {return herdr(r,['
 export async function keys(r:Route,pane:string,k:string[]) {if(k.length) await herdr(r,['agent','send-keys',pane,...k],{mutate:true});}
 export async function literal(r:Route,pane:string,text:string) {await herdr(r,['pane','send-text',pane,...(text.startsWith('-')?['--']:[]),text],{mutate:true});}
 export async function closePane(r:Route,pane:string) {return herdr(r,['pane','close',pane],{mutate:true});}
+export async function focusAgent(r:Route,pane:string) {return herdr(r,['agent','focus',pane],{mutate:true});}
+export interface HerdrLabels { workspaces:Record<string,string>; tabs:Record<string,string>; }
+export async function listHerdrLabels(r:Route):Promise<HerdrLabels> {
+  const workspaces:Record<string,string>={}, tabs:Record<string,string>={};
+  const [ws,tb]=await Promise.all([
+    herdr(r,['workspace','list'],{timeout:4000}).catch(()=>undefined),
+    herdr(r,['tab','list'],{timeout:4000}).catch(()=>undefined),
+  ]);
+  if(Array.isArray(ws?.workspaces)){
+    for(const item of ws.workspaces){
+      if(typeof item?.workspace_id==='string'&&typeof item?.label==='string'&&item.label.trim())
+        workspaces[item.workspace_id]=clean(item.label.trim());
+    }
+  }
+  if(Array.isArray(tb?.tabs)){
+    for(const item of tb.tabs){
+      if(typeof item?.tab_id==='string'&&typeof item?.label==='string'&&item.label.trim())
+        tabs[item.tab_id]=clean(item.label.trim());
+    }
+  }
+  return {workspaces,tabs};
+}
 const option=(key:string,v?:string)=> v===undefined?[]:[key,v];
 export async function startPane(inv:Invocation,r:Route,name:string,kind:string,native:string[]){
   const o=inv.opts, target=str(o,'pane'), cwd=str(o,'cwd'), workspace=str(o,'workspace'), worktree=str(o,'worktree');

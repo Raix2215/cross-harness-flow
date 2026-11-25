@@ -1,47 +1,48 @@
 # cross-harness-flow (`chflow`)
 
-**基于 [Herdr](https://github.com/herdrdev/herdr) 的多项目、角色化跨 Harness Agent 协同工作流**
+**基于 [Herdr](https://github.com/herdrdev/herdr) 的多项目、分层角色化跨 Harness Agent 协同工作流**
 
 简体中文 · [English](./README.en.md)
 
-[![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)](#安装)
+[![Version](https://img.shields.io/badge/version-3.5.0-blue.svg)](#安装)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.13.0-339933.svg)](#依赖与-herdr-耦合说明)
 [![Herdr](https://img.shields.io/badge/herdr-%3E%3D0.9.5-4b5563.svg)](#依赖与-herdr-耦合说明)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
 
-[快速上手](#快速上手) · [界面预览](#界面预览) · [核心特性](#核心特性) · [依赖与 Herdr 耦合说明](#依赖与-herdr-耦合说明) · [安装](#安装) · [稳定角色与多项目](#稳定角色与多项目) · [Web 控制台与 CLI 看板](#web-控制台与-cli-看板) · [项目级 MCP](#项目级-mcp)
+[快速上手](#快速上手) · [界面预览](#界面预览) · [核心特性](#核心特性) · [依赖与 Herdr 耦合说明](#依赖与-herdr-耦合说明) · [安装](#安装) · [四层工作流与全局/项目角色](#四层工作流与全局项目角色) · [Web 控制台与 CLI 看板](#web-控制台与-cli-看板) · [项目级 MCP](#项目级-mcp)
 
 ---
 
-`cross-harness-flow` 是一套**以 [Herdr](https://github.com/herdrdev/herdr) 为核心构建**的本地多 Agent 协同 **通用 Skill 与运行时（`chflow` v3.4.0）**。它依托 Herdr 的多窗格终端控制面，将 **Pi、Codex、Claude Code、Antigravity** 统一到同一套文件信箱、每用户常驻 Daemon、稳定项目角色与实时 Web/CLI 控制面中（同时支持无头一次性任务的独立运行），让主控 Agent 按项目角色派发任务、随时热替换底层会话与模型，同时把关键审批与全局观测权留给人类。
+`cross-harness-flow` 是一套**以 [Herdr](https://github.com/herdrdev/herdr) 为核心构建**的本地多 Agent 协同 **通用 Skill 与运行时（`chflow` v3.5.0）**。它依托 Herdr 的多窗格终端控制面，将 **Pi、Codex、Claude Code、Antigravity** 统一到四层协同体系中（意图编排 → 全局/项目角色 → 可热替换会话 → 信箱与控制面），让主控 Agent 能按场景自动建立角色与持久会话、随时热替换底层 Harness/模型，同时通过高可读的实时 Web/CLI 控制台将关键审批、窗格定位与全局观测权留给人类。
 
 ## 快速上手
 
 ### 直接发给主控 Agent（推荐）
 
-在任意工作区复制下面这段提示词给主控 Agent（Pi / Codex / Claude Code / Antigravity），即可自动检查并引导安装，然后启动多角色协同：
+在任意工作区复制下面这段提示词给主控 Agent（Pi / Codex / Claude Code / Antigravity），即可自动检查安装并按你的任务目标自主推导角色、建立持久会话与完成派发：
 
 ```text
 请使用 cross-harness-flow（chflow）配合 Herdr，在当前工作区协助我开展多 Agent 协同：
 - 项目与安装文档：https://github.com/Raix2215/cross-harness-flow（交互编排依赖 Herdr：https://github.com/herdrdev/herdr）
 1. 先检查本机是否已安装 chflow、herdr 及 cross-harness-flow Skill；若缺失，请从上述仓库（或 Releases）按 README 的用户权限方式协助安装并加载 Skill。
-2. 开始派发前，先与我确认角色分工（如 backend / reviewer）、各角色使用的 Harness 与模型、是否启用 worktree 隔离及权限档位（默认 ask）。
-3. 确认后用 chflow role set/bind 创建并绑定角色，通过 .chflow/ 信箱派发任务并汇总验收。
+2. 探测本机可用的 Harness、在线工位与全局角色模板（chflow health / chflow role list --global），结合我的任务目标自主推导角色分工、权限与执行形态（Git 代码改动默认 auto-workspace + --worktree，非 Git 目录直接当前目录 auto-workspace，审查/调研默认 readonly；多轮协作建持久 Herdr 角色窗格，一次性只读核查走无头 chflow run），无需逐项追问常规配置。
+3. 仅在涉及 yolo、跨目录破坏性操作或缺少可用渠道时先向我确认；其余情况直接建/复用角色并通过 .chflow/ 信箱派发、核验与汇总交付。
 ```
 
 ### 常用 CLI 流程
 
 ```sh
-# 定义并绑定项目角色（带 --worktree 自动隔离工作区）
-chflow role set backend  --kind codex  --perm auto-workspace --worktree --desc "后端实现与测试"
-chflow role set reviewer --kind claude --perm readonly       --desc "异构代码审查"
-chflow role bind backend --spawn && chflow role bind reviewer --spawn
+# 1. 沉淀可复用的全局角色模板（写入 ~/.config/chflow/roles.yaml，不污染其他项目画布）
+chflow role set reviewer --global --kind claude --perm readonly --desc "异构代码与安全审查"
+chflow role list --global
 
-# 按角色派发任务（可随时用 role bind --spawn 热替换底层会话/模型，延续原 --task）
+# 2. 定义项目角色或直接懒实例化全局模板并派发（支持随时 role bind --spawn 热替换会话/模型）
+chflow role set backend --kind codex --perm auto-workspace --worktree --desc "后端实现与测试"
+chflow role bind backend --spawn
 chflow send backend  --brief-file backend-brief.md
-chflow send reviewer --brief-file review-brief.md --wait --timeout 180
+chflow send reviewer --spawn --brief-file review-brief.md --wait --timeout 180
 
-# 验收结单并清理（一次性无头任务无需 Herdr：chflow run --kind codex --perm readonly --brief-file audit.md）
+# 3. 验收结单并清理（一次性无头任务无需 Herdr：chflow run --kind codex --perm readonly --brief-file audit.md）
 chflow finish <task-id> --ok --note "审查与回归全部通过" && chflow prune --tasks
 ```
 
@@ -51,13 +52,13 @@ chflow finish <task-id> --ok --note "审查与回归全部通过" && chflow prun
 
 ### 随 Daemon 常驻的多项目角色拓扑控制台（WebUI）
 
-内置控制台随每用户 Daemon 自动启动（默认 `http://127.0.0.1:4317`，端口冲突自动回退）。采用百分比宽屏布局、清晰大字号与统一线性 SVG 图标（零 Emoji），提供**全宽零交叉 DAG 派发画布 / 卡片视图双切换**、条件置顶的「需要你介入」焦点待办、滑出式角色详情抽屉（一键热替换、实时权限切换、脱敏终端现场与信箱查看）以及顶栏显式 **「停止服务」** 按钮。
+内置控制台随每用户 Daemon 自动启动（默认 `http://127.0.0.1:4317`，端口冲突自动回退）。采用百分比宽屏布局、清晰大字号与统一线性 SVG 图标（零 Emoji），提供**全宽零交叉 DAG 派发画布 / 卡片视图双切换**、**高可读的 Herdr 会话命名与 `工作区 / 标签页` 定位跳转**、全视图一致展示的外部在线会话区、全局模板一键填充/沉淀弹窗、滑出式角色详情抽屉以及顶栏显式 **「停止服务」** 按钮。
 
 ![chflow WebUI 多项目角色拓扑与实时控制台](./assets/webui-preview.png)
 
 ### 零读屏 CLI 实时状态与终端看板（`chflow` / `chflow top`）
 
-在交互终端直接运行 `chflow` 即可查看多项目摘要、稳定角色绑定、活跃任务、实时在线工位与控制台地址；运行 `chflow top`（或 `chflow status -w`）进入基于 Daemon 事件推送的零读屏实时看板。
+在交互终端直接运行 `chflow` 即可查看多项目摘要、稳定角色绑定、活跃任务、带可读名称与 Herdr 位置的在线工位及控制台地址；运行 `chflow top`（或 `chflow status -w`）进入基于 Daemon 事件推送的零读屏实时看板。
 
 ![chflow CLI 实时状态看板](./assets/cli-dashboard.png)
 
@@ -65,14 +66,15 @@ chflow finish <task-id> --ok --note "审查与回归全部通过" && chflow prun
 
 ## 核心特性
 
-- **稳定项目角色与会话热替换（`chflow role`）**：把“项目中的固定分工（如 `backend`、`reviewer`、`docs`）”与“底层运行中的 Harness/会话窗格”解耦。额度耗尽或需要切换模型时，直接 `role bind` 热替换底层窗格或切至无头执行器，原有任务线程（`--task`）与 `.chflow/` 信箱历史无缝延续。
+- **四层协同与两级角色模型（全局模板 + 项目实例）**：通过 `chflow role set <name> --global` 将通用角色预设沉淀到 `~/.config/chflow/roles.yaml`（零凭据）；全局模板不会污染未使用的项目，仅在项目首次 `role bind` 或 `send --spawn` 时自动懒实例化。覆盖遵循四级优先级：**单次派发参数 > 项目角色实例（含 `.chflow/project.yaml`）> 全局角色模板 > Skill 场景默认值**。
+- **高自主编排 Skill**：主控 Agent 主动探测本机 Harness、在线工位与全局模板，自动按场景分流权限与形态（Git 代码改动走 `auto-workspace` + `--worktree`，非 Git 目录直接当前目录 `auto-workspace`，审查/调研走 `readonly`；多轮协作建持久 Herdr 窗格，一次性只读核查走无头 `chflow run`），仅对高危或缺失渠道请求确认。
+- **高可读会话标识与一键定位 Herdr 窗格**：后端自动同步 Herdr `workspace` / `tab` 标签，WebUI 与 CLI 统一展示 `@角色` 或 `目录名 · Harness`（附 `工作区 / 标签页` 副标题），将 `w1:p2Z` 这类底层编号退为抽屉内可复制的技术 ID；所有在线工位支持在 WebUI 一键聚焦跳转到对应 Herdr 窗格（`herdr agent focus`），且未纳管在线会话在 DAG 与卡片视图下均一致可见、可直接派发或绑定。
+- **稳定角色与会话热替换（`chflow role`）**：把“项目固定分工”与“底层运行中的 Harness 窗格”解耦。额度耗尽或需切换模型时，直接 `role bind` 热替换底层窗格或切至无头执行器，原有任务线程（`--task`）与 `.chflow/` 信箱历史无缝延续。
 - **多项目与多主控视图（`--project`）**：三层项目归组优先级——显式指定（`--project` / WebUI 归组 / 可选 `.chflow/project.yaml`）> Git 关联工作树自动合并到主仓库（独立嵌套仓库保持独立）> 工作目录兜底。同一项目天然支持多个主控会话并发工作、各自独立接收回执。
 - **与 Herdr 实时状态强同步**：以 Herdr `agent list`（`pane_id` + `terminal_id` + 在线运行态）为真值；无论是关闭窗格还是窗格内会话已退出（`exited` 但窗格未关），均即时同步移出临时窗格、将绑定角色回退为 `unbound` 待命，有活跃任务的离线窗格显式标为 `offline`，并支持 `chflow prune [--tasks]` 手动整理。
 - **可控的 Daemon 生命周期与显式退出**：支持双层空闲自动退出——无客户端静置满 `CHFLOW_IDLE_TIMEOUT_SEC`（默认 30 分钟），或仅剩浏览器被动 WebUI 标签页且无任何在线会话与活跃任务静置满 `CHFLOW_UI_IDLE_TIMEOUT_SEC`（默认 60 分钟）时，Daemon 主动推送 `shutdown` 事件优雅退出且前端不再死循环重连；同时支持 `chflow stop` / `chflow quit`（活跃任务保护 + `--force`）、WebUI 顶栏「停止服务」按钮及 `chflow top` 快捷键 `x` 显式停机。
-- **零上下文污染的文件信箱协议**：长文本任务书与交付正文全部落盘工作区 `.chflow/tasks/<task>/t<N>-brief.md` 与 `t<N>-reply.md`（Git 仓库自动通过 `.git/info/exclude` 忽略），跨会话唤醒仅传递 3–5 行纯文本路由与路径。
-- **防打断投递与最小读屏**：收件窗格忙时自动入队防抖合并；检测到用户聚焦打字或底部草稿时自动暂缓（`deferred_user_typing`），可用 `chflow inbox` / `chflow flush` 无侵入查看消费。常规监看零读屏，仅在 `blocked` 时按状态序列自动读屏一次并将脱敏快照写入 `diag`。
-- **智能重试与合规回退链**：默认提供 4 档指数退避重试，支持 `--retry-after` / `--at` 定时恢复与 `--fallback` 有序回退链（自动排除主渠道自身，且 WebUI 仅在实际进入 `retrying` / `scheduled_retry` 时展示回退节点），并显式区分人机交互（`--attended`）与无人值守自动化边界。
-- **面向人类的轻量接管**：交互终端提供 `chflow open`、`approve`、`perm`、`queue`、`view` 快捷指令（不污染 Agent 的 MCP 工具表）；WebUI 提供权限档位热切换、终端直控台与单条队列强推/改派/丢弃。
+- **零上下文污染的文件信箱与防打断投递**：长文本任务书与交付正文全部落盘工作区 `.chflow/tasks/<task>/t<N>-brief.md` 与 `t<N>-reply.md`（Git 仓库自动通过 `.git/info/exclude` 忽略），跨会话唤醒仅传递 3–5 行纯文本路由与路径；收件窗格忙时自动入队防抖合并，检测到用户聚焦打字或底部草稿时自动暂缓（`deferred_user_typing`），常规监看零读屏。
+- **智能重试与合规回退链**：默认提供 4 档指数退避重试，支持 `--retry-after` / `--at` 定时恢复与 `--fallback` 有序回退链（自动排除主渠道自身，且 WebUI 仅在实际进入 `retrying` / `scheduled_retry` 时展示回退节点），显式区分人机交互（`--attended`）与无人值守自动化边界。
 
 ---
 
@@ -82,7 +84,7 @@ chflow finish <task-id> --ok --note "审查与回归全部通过" && chflow prun
 
 | 依赖组件                                            | 版本要求       | 是否必需                               | 作用与耦合边界                                                                                                                                                                             |
 | --------------------------------------------------- | -------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **[Herdr](https://github.com/herdrdev/herdr)** | `>= 0.9.5`   | **交互编排必需**（无头模式可选） | 负责交互式多窗格终端会话的创建、纳管、状态探测、文本注入、受控按键与跨机 SSH 路由。全部 Herdr 交互逻辑隔离在单一适配层 [`packages/chflow/src/herdr.ts`](./packages/chflow/src/herdr.ts)。 |
+| **[Herdr](https://github.com/herdrdev/herdr)** | `>= 0.9.5`   | **交互编排必需**（无头模式可选） | 负责交互式多窗格终端会话的创建、纳管、工作区/标签页元数据读取、状态探测、窗口聚焦、文本注入、受控按键与跨机 SSH 路由。全部 Herdr 交互逻辑隔离在单一适配层 [`packages/chflow/src/herdr.ts`](./packages/chflow/src/herdr.ts)。 |
 | **Node.js**                                   | `>= 22.13.0` | **必需**                         | 运行 `chflow` CLI、每用户常驻 Daemon、SQLite 状态库、MCP 服务与内置 Web 控制台。                                                                                                         |
 | **Harness CLI**                               | 已登录/可用    | **按需必需**                     | 至少安装一个目标代理 CLI（`codex`、`claude`、`pi`、`agy`）并位于 `PATH`。                                                                                                     |
 
@@ -103,7 +105,7 @@ cross-harness-flow/
 │   ├── webui-preview-en.png               # Web 控制台多项目与角色拓扑预览（英文）
 │   ├── cli-dashboard.png                  # CLI 实时状态看板预览（中文）
 │   └── cli-dashboard-en.png               # CLI 实时状态看板预览（英文）
-├── packages/chflow/                       # chflow v3.4.0 运行时源码与黑盒 E2E 套件
+├── packages/chflow/                       # chflow v3.5.0 运行时源码与黑盒 E2E 套件
 │   ├── LICENSE
 │   ├── README.md
 │   ├── package.json
@@ -137,17 +139,17 @@ npm install -g --prefix "$HOME/.local" .
 ```sh
 cd packages/chflow
 npm ci && npm run build && npm pack
-pnpm add -g --offline ./chflow-3.4.0.tgz
+pnpm add -g --offline ./chflow-3.5.0.tgz
 ```
 
-跨机离线分发只需复制 `chflow-3.4.0.tgz` 到目标机并执行：
+跨机离线分发只需复制 `chflow-3.5.0.tgz` 到目标机并执行：
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.4.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.5.0.tgz
 
 # Windows（PowerShell，确保用户级 npm prefix 位于 PATH）
-npm install --offline -g .\chflow-3.4.0.tgz
+npm install --offline -g .\chflow-3.5.0.tgz
 ```
 
 ### 2. 安装 Skill 文档
@@ -163,11 +165,30 @@ chflow health
 
 ---
 
-## 稳定角色与多项目
+## 四层工作流与全局/项目角色
+
+| 层级 | 职责 | 载体 |
+| --- | --- | --- |
+| **① 意图编排层** | 拆解目标，按场景自主推导角色分工、权限与持久/无头形态 | 主控 Agent + `cross-harness-flow` Skill |
+| **② 项目与角色层** | 全局角色模板沉淀复用，项目内按需懒实例化并维持独立配置 | `~/.config/chflow/roles.yaml` + 项目角色 / `.chflow/project.yaml` |
+| **③ 会话与执行层** | 角色绑定到可热替换的 Herdr 持久窗格或一次性无头执行器 | Herdr 多窗格会话 / `chflow run` |
+| **④ 信箱与控制面** | 文件信箱防污染交接、防打断投递、实时观测与人类快捷接管 | `.chflow/` 信箱 + 常驻 Daemon + WebUI / CLI |
+
+### 全局角色模板（`~/.config/chflow/roles.yaml`）
+
+用 `--global` 定义跨项目复用的个人角色模板（支持 `CHFLOW_CONFIG_DIR` 或 `XDG_CONFIG_HOME` 覆盖路径，严禁写入密钥或账号）：
+
+```sh
+chflow role set reviewer --global --kind claude --perm readonly --desc "异构代码审查"
+chflow role set backend  --global --kind codex  --perm auto-workspace --worktree --desc "后端实现与回归"
+```
+
+- 全局模板**不会自动塞进所有项目的画布**；仅当你或主控 Agent 在某项目执行 `chflow role bind reviewer`、`chflow send reviewer --spawn`，或在 WebUI 新建角色弹窗从模板一键填充保存时，才会懒实例化为该项目角色。
+- 项目级覆盖不会反写全局模板；若要修改全局预设，显式传 `--global` 或勾选 WebUI 中的「同时保存为全局角色模板」。
 
 ### 可选项目声明文件（`.chflow/project.yaml`）
 
-在仓库根目录放置可选 `.chflow/project.yaml`（纯元数据，禁止写入密钥或账号），即可自动统一项目名、关联工作树并预载团队角色槽位：
+在仓库根目录放置可选 `.chflow/project.yaml`（纯元数据），即可统一项目名、关联工作树并预载团队角色槽位：
 
 ```yaml
 project: acme-api
@@ -185,7 +206,7 @@ roles:
 ```
 
 - 未声明 `.chflow/project.yaml` 时，`chflow` 自动按 **Git 关联工作树 → 规范化工作目录** 归组项目，无需额外配置。
-- 向处于 `unbound` 待命状态的角色直接 `send` 时，默认返回 `role_unbound` 安全拦截，防止静默误拉起消耗额度；显式追加 `--spawn` 即可按角色预设一键拉起并派发。
+- 向处于 `unbound` 待命状态的角色直接 `send` 时，默认返回 `role_unbound` 安全拦截，防止静默误拉起消耗额度；显式追加 `--spawn` 即可按项目角色或全局模板一键拉起并派发。
 
 ---
 
@@ -214,7 +235,7 @@ roles:
 
 ## 项目级 MCP
 
-`chflow mcp` 是复用同一 Daemon 的 Stdio 薄代理，默认暴露 **19 个紧凑核心工具**（含 `flow_role`、`flow_adopt`、`flow_handoff`、`flow_inbox`、`flow_flush`），高风险按键工具 `flow_respond` 默认隐藏（仅显式 `--enable-respond` 开启）。
+`chflow mcp` 是复用同一 Daemon 的 Stdio 薄代理，默认暴露 **19 个紧凑核心工具**（含支持 `--global` 模板的 `flow_role`，以及 `flow_adopt`、`flow_handoff`、`flow_inbox`、`flow_flush`），高风险按键工具 `flow_respond` 默认隐藏（仅显式 `--enable-respond` 开启）。
 
 <details>
 <summary><b>Claude Code（<code>.mcp.json</code>）与 Antigravity（<code>.agents/plugins/</code>）配置</b></summary>
@@ -268,7 +289,7 @@ args = ["mcp"]
 
 ## 安全与合规边界
 
-- **凭据零落盘**：[`templates/matrix.template.yaml`](./templates/matrix.template.yaml) 与 `.chflow/` 信箱仅保存逻辑渠道名与能力属性；运行时内置敏感内容扫描拦截明文 Key、Token、Cookie 与邮箱泄漏。
+- **凭据零落盘**：[`templates/matrix.template.yaml`](./templates/matrix.template.yaml)、`~/.config/chflow/roles.yaml` 与 `.chflow/` 信箱仅保存逻辑渠道名与能力属性；运行时内置敏感内容扫描拦截明文 Key、Token、Cookie 与邮箱泄漏。
 - **人机边界**：显式区分有人在场交互（`--attended`）与无人值守自动化阶段，消费级交互渠道默认保持在场交互，不自动进入 `--unattended`、`--bg`、自动重试或自动回退链。
 - **四档受控权限**：`readonly` / `ask`（默认） / `auto-workspace`（自动筛查拒绝高危命令） / `yolo`（需明确授权或外部隔离）。
 

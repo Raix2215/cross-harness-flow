@@ -10,6 +10,7 @@ export interface UiSnapshotData {
   daemon?: { pid: number; version: string; started_at?: string; ui_url?: string; ui_auth_required?: boolean };
   projects?: Array<Record<string, unknown>>;
   roles?: Array<Record<string, unknown>>;
+  global_roles?: Array<Record<string, unknown>>;
   managed_panes?: Array<Record<string, unknown>>;
   unmanaged_live_agents?: Array<Record<string, unknown>>;
   tasks?: Array<Record<string, unknown>>;
@@ -139,7 +140,7 @@ function statusChip(state: string, c: ReturnType<typeof paint>): string {
   if (state === 'working' || state === 'submitted' || state === 'dispatching') return c.blue('● ' + state);
   if (state === 'retrying' || state === 'scheduled_retry') return c.magenta('↻ ' + state);
   if (state === 'idle' || state === 'done' || state === 'succeeded') return c.green('✓ ' + state);
-  if (state === 'headless') return c.cyan('⚡ headless');
+  if (state === 'headless') return c.cyan('◆ headless');
   if (state === 'unbound') return c.gray('◌ unbound');
   if (state === 'failed' || state === 'cancelled') return c.red('✕ ' + state);
   if (state === 'offline') return c.gray('○ offline');
@@ -223,7 +224,7 @@ export function renderHelp(
   if (['send', 'run', 'retry'].includes(method)) {
     lines.push('Business recovery defaults to four retries (5s, 15s, 45s, 120s). Use --max-retries and --retry-backoff to customize; schedule quota recovery with --retry-at/--retry-after (retry: --at/--after). Set --fallback at dispatch or --switch on retry. For role targets, pass --spawn to launch an unbound role. agy permits attended interactive work only, with no automatic retries.');
   } else if (method === 'role') {
-    lines.push('Manage stable project role slots and hot-swap underlying sessions. Examples: chflow role list | chflow role set backend --kind codex --perm auto-workspace | chflow role bind backend --pane w2:p1 | chflow role bind backend --spawn --kind claude');
+    lines.push('Manage global role templates (--global) and project role slots with session hot-swapping. Examples: chflow role list --global | chflow role set implementer --global --kind codex --perm auto-workspace --worktree | chflow role bind implementer --spawn');
   } else if (method === 'prune') {
     lines.push('Remove stale offline pane records. Pass --tasks to also archive-clean terminal tasks with no pending deliveries.');
   } else if (method === 'ui') {
@@ -382,29 +383,30 @@ export function renderStatusSnapshot(
     for (const p of managed.slice(0, opts.compact ? 6 : 10)) {
       const live = p.live !== false;
       const st = live ? String(p.agent_status ?? 'idle') : 'offline';
-      const model = [p.kind, p.model, p.effort].filter(Boolean).join(':');
-      const ctrl = (p.controller as Record<string, unknown> | null)?.pane;
-      const rolePrefix = p.role ? `@${String(p.role)} ` : '';
+      const hName = String(p.harness_label ?? p.kind ?? '');
+      const model = [hName, p.model, p.effort].filter(Boolean).join(':');
+      const loc = p.location_label ? String(p.location_label) : shortPath(p.cwd);
+      const label = String(p.display_name ?? (p.role ? `@${String(p.role)}` : p.alias ?? p.name ?? p.pane_id));
       paneRows.push([
         statusChip(st, c),
-        c.bold(clip(rolePrefix + String(p.alias ?? p.name ?? p.pane_id), 20)),
-        c.cyan(String(p.pane_id ?? '—')),
-        clip(model || String(p.kind ?? ''), 18),
+        c.bold(clip(label, 24)),
+        clip(model, 20),
         permChip(String(p.perm ?? 'ask'), c),
-        c.dim(`${ctrl ? '←' + String(ctrl) + ' ' : ''}${shortPath(p.cwd)}`),
+        c.dim(`${loc} (${String(p.pane_id ?? '—')})`),
       ]);
     }
     for (const u of unmanaged.slice(0, opts.compact ? 4 : 8)) {
+      const label = String(u.display_name ?? u.name ?? u.pane_id);
+      const loc = u.location_label ? String(u.location_label) : shortPath(u.cwd);
       paneRows.push([
         c.gray('◌ unmng'),
-        c.dim(clip(String(u.name ?? u.pane_id), 20)),
-        c.dim(String(u.pane_id ?? '—')),
-        c.dim(String(u.kind ?? 'unknown')),
+        c.cyan(clip(label, 24)),
+        c.dim(String(u.agent_status ?? 'live')),
         c.dim('—'),
-        c.dim(`${String(u.agent_status ?? 'live')} · ${shortPath(u.cwd)}`),
+        c.dim(`${loc} (${String(u.pane_id ?? '—')})`),
       ]);
     }
-    lines.push(...formatTable(paneRows, [12, 20, 9, 18, 8, 20]));
+    lines.push(...formatTable(paneRows, [12, 24, 20, 8, 28]));
   }
 
   // Queue & retries compact block
@@ -419,7 +421,7 @@ export function renderStatusSnapshot(
     }
     for (const r of activeRetries.slice(0, 3)) {
       lines.push(
-        `  ${c.magenta('⏰')} ${c.bold(String(r.task))}  ${c.magenta(fmtRel(r.at))}  ${c.dim(new Date(Number(r.at)).toLocaleTimeString())}`,
+        `  ${c.magenta('↻')} ${c.bold(String(r.task))}  ${c.magenta(fmtRel(r.at))}  ${c.dim(new Date(Number(r.at)).toLocaleTimeString())}`,
       );
     }
   }
@@ -475,9 +477,29 @@ export function renderReply(r: Reply, method: string, opts: RenderOptions): { st
     };
   }
   if (method === 'role' && v) {
+    if (v.scope === 'global' && Array.isArray(v.global_roles)) {
+      const globals = v.global_roles as Array<Record<string, unknown>>;
+      if (!globals.length) return { stdout: (opts.tty ? c.dim('(暂无全局角色模板；可用 chflow role set <name> --global --kind codex 创建)\n') : 'global_roles=0\n'), stderr: '', exitCode: r.exit_code };
+      if (!opts.tty) {
+        return {
+          stdout: globals.map(rl => ['global', rl.role, rl.default_kind ?? '', rl.default_perm ?? 'ask', rl.worktree ? 'worktree' : ''].filter(Boolean).join(' ')).join('\n') + '\n',
+          stderr: '',
+          exitCode: r.exit_code,
+        };
+      }
+      const rows = globals.map(rl => [
+        c.cyan('global'),
+        c.bold(String(rl.role ?? '')),
+        String(rl.default_kind ?? '—'),
+        permChip(String(rl.default_perm ?? 'ask'), c),
+        rl.worktree ? c.green('worktree') : c.dim('—'),
+        c.dim(String(rl.description ?? '')),
+      ]);
+      return { stdout: formatTable(rows, [8, 16, 12, 10, 10, 28]).join('\n') + '\n', stderr: '', exitCode: r.exit_code };
+    }
     if (Array.isArray(v.roles)) {
       const roles = v.roles as Array<Record<string, unknown>>;
-      if (!roles.length) return { stdout: (opts.tty ? c.dim('(暂无角色；可用 chflow role set <name> --kind codex 创建)\n') : 'roles=0\n'), stderr: '', exitCode: r.exit_code };
+      if (!roles.length) return { stdout: (opts.tty ? c.dim('(暂无项目角色；可用 chflow role set <name> 或从全局模板 chflow role bind <name> --spawn 启用)\n') : 'roles=0\n'), stderr: '', exitCode: r.exit_code };
       if (!opts.tty) {
         return {
           stdout: roles.map(rl => [rl.project_id, rl.role, rl.binding_mode, rl.pane_id ?? rl.kind ?? rl.default_kind ?? '', rl.agent_status].filter(Boolean).join(' ')).join('\n') + '\n',
@@ -495,7 +517,7 @@ export function renderReply(r: Reply, method: string, opts: RenderOptions): { st
       ]);
       return { stdout: formatTable(rows, [13, 16, 18, 18, 8, 24]).join('\n') + '\n', stderr: '', exitCode: r.exit_code };
     }
-    const label = `${String(v.project_id ? String(v.project_id) + '/' : '')}${String(v.role ?? 'role')}`;
+    const label = `${v.scope === 'global' ? 'global/' : v.project_id ? String(v.project_id) + '/' : ''}${String(v.role ?? 'role')}`;
     const state = String(v.removed ? 'removed' : (v.binding_mode ?? 'updated'));
     const detail = v.pane_id ? ` -> ${String(v.kind ?? '')}(${String(v.pane_id)})` : '';
     return {

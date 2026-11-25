@@ -9,6 +9,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { type Context, type Reply, type Route, FlowError, PROTOCOL, VERSION, invalid, json } from './types.js';
 import { clean } from './sensitive.js';
 export const stateDir=()=>resolve(process.env.CHFLOW_STATE_DIR||join(homedir(),'.local','state','chflow'));
+export const configDir=()=>resolve(process.env.CHFLOW_CONFIG_DIR||(process.env.XDG_CONFIG_HOME?join(process.env.XDG_CONFIG_HOME,'chflow'):join(homedir(),'.config','chflow')));
 export const socketPath=(root:string)=>join(root,'daemon.sock');
 export const cliPath=()=>process.argv[1];
 export const MAX_LINE=4*1024*1024;

@@ -72,6 +72,7 @@ code,.mono{font-family:var(--mono)}
 .btn.danger-ghost:hover{background:var(--danger-soft)}
 .btn.sm{height:30px;padding:0 11px;font-size:13px;border-radius:8px;gap:5px}
 .btn.icon{width:36px;padding:0}
+.btn.icon.sm{width:30px;padding:0}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
 .topbar{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--border)}
@@ -150,6 +151,9 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 .pill.head{background:var(--head-soft);color:var(--head)}
 .pill.danger{background:var(--danger-soft);color:var(--danger)}
 .tag{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;font-size:12.5px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.loc-chip{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:6px;font-size:12.5px;background:var(--accent-soft);color:var(--accent-text);font-weight:500}
+.tech-id{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;font-family:var(--mono);font-size:12px;background:var(--surface-2);color:var(--text-3);border:1px solid var(--border);cursor:pointer}
+.tech-id:hover{color:var(--text);border-color:var(--border-strong)}
 
 .dag-shell{position:relative;height:max(540px, calc(100vh - 270px));border-radius:16px;border:1px solid var(--border);background:var(--canvas-bg);background-image:radial-gradient(var(--canvas-dot) 1.25px, transparent 1.25px);background-size:22px 22px;overflow:hidden;box-shadow:var(--shadow);user-select:none}
 .dag-shell.expanded{position:fixed;inset:2vh 2vw;height:auto;z-index:42;border-radius:16px;box-shadow:var(--shadow-lg)}
@@ -167,10 +171,10 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 .dag-node{position:absolute;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s,border-color .15s;display:flex;flex-direction:column}
 .dag-node:hover{box-shadow:var(--shadow-hover);border-color:var(--border-strong)}
 .dag-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-hover)}
-.dag-node.dragging{cursor:grabbing;z-index:25;box-shadow:var(--shadow-lg)}
+.dag-node.dragging{cursor:grabbing;z-index:25;box-shadow:var(--shadow-lg);transition:none}
 
-.dag-node.ctrl{width:268px;border-left:4px solid var(--accent)}
-.dag-node.role{width:336px}
+.dag-node.ctrl{width:274px;border-left:4px solid var(--accent)}
+.dag-node.role{width:342px}
 .dag-node.role.st-blocked{border-color:var(--warn);background:linear-gradient(180deg,color-mix(in srgb,var(--warn-soft) 55%,var(--surface)) 0%,var(--surface) 44%)}
 .dag-node.role.st-working{border-color:color-mix(in srgb,var(--ok) 45%,var(--border))}
 .dag-node.role.st-retry{border-color:color-mix(in srgb,var(--retry) 50%,var(--border))}
@@ -180,7 +184,7 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 
 .dn-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .dn-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dn-sub{font-size:13px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dn-sub{font-size:13px;color:var(--text-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
 .dn-task{margin-top:8px;padding:7px 10px;border-radius:9px;background:var(--surface-2);font-size:13.5px;color:var(--text-2)}
 .dn-task-top{display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:600;color:var(--text)}
 .dn-task-note{font-size:12.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -209,16 +213,16 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 .dag-zoom-val{min-width:46px;text-align:center;font-size:13px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
 
 .empty-canvas{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:32px;color:var(--text-2)}
-.empty-card{max-width:460px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px 28px;box-shadow:var(--shadow)}
+.empty-card{max-width:480px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px 28px;box-shadow:var(--shadow)}
 
-.unmanaged-box{margin-top:16px;padding:14px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface)}
+.unmanaged-box{margin-top:16px;padding:15px 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface)}
 .unm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;gap:12px;flex-wrap:wrap}
 .unm-title{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px}
-.unm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
-.unm-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border-radius:11px;border:1px solid var(--border);background:var(--surface-2)}
-.unm-info{min-width:0}
-.unm-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.unm-sub{font-size:12.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:10px}
+.unm-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-radius:11px;border:1px solid var(--border);background:var(--surface-2)}
+.unm-info{min-width:0;flex:1}
+.unm-name{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.unm-sub{font-size:12.5px;color:var(--text-3);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 .proj-section{margin-bottom:26px}
 .proj-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
@@ -227,12 +231,16 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 .ctrl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .ctrl-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:13.5px;cursor:pointer}
 .ctrl-chip:hover{border-color:var(--border-strong);background:var(--surface-2)}
-.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.role-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s;min-height:170px}
+.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.role-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s;min-height:172px}
 .role-card:hover{box-shadow:var(--shadow-hover);border-color:var(--border-strong)}
 .role-card.st-blocked{border-color:var(--warn)}
 .role-card.st-unbound{border-style:dashed}
 .role-card.st-offline{border-color:var(--danger-border)}
+
+.tmpl-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
+.tmpl-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:13px;cursor:pointer}
+.tmpl-chip:hover{border-color:var(--accent);color:var(--accent-text)}
 
 .section-h{font-size:18px;font-weight:700;margin:0 0 4px}
 .section-sub{font-size:14px;color:var(--text-3);margin:0 0 18px}
@@ -260,7 +268,7 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 .drawer.open{transform:translateX(0)}
 .dr-head{padding:18px 22px 0;border-bottom:1px solid var(--border)}
 .dr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.dr-crumb{font-size:13px;color:var(--text-3);display:flex;align-items:center;gap:6px}
+.dr-crumb{font-size:13px;color:var(--text-3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dr-name{font-size:21px;font-weight:700;display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
 .dr-desc{font-size:14px;color:var(--text-2);margin-top:3px}
 .dr-tabs{display:flex;gap:6px;margin-top:14px}
@@ -285,14 +293,14 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 
 .mail-pre{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;font-family:var(--mono);font-size:13px;line-height:1.65;white-space:pre-wrap;color:var(--text);max-height:360px;overflow:auto}
 
-.ctx-menu{position:fixed;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;z-index:80}
+.ctx-menu{position:fixed;min-width:210px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;z-index:80}
 .ctx-item{width:100%;display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;border:0;background:transparent;font-size:13.5px;cursor:pointer;text-align:left}
 .ctx-item:hover{background:var(--surface-2)}
 .ctx-item.danger{color:var(--danger)}
 .ctx-item.danger:hover{background:var(--danger-soft)}
 
 .modal-back{position:fixed;inset:0;background:var(--scrim);z-index:70;display:grid;place-items:center;padding:20px}
-.modal{width:500px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden}
+.modal{width:520px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden}
 .modal-h{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:16.5px;font-weight:700}
 .modal-b{padding:18px 20px;max-height:72vh;overflow-y:auto}
 .modal-f{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--surface-2)}
@@ -301,7 +309,7 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 .field input,.field select,.field textarea{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:14px}
 .field textarea{min-height:92px;resize:vertical}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.check-row{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-2);margin-top:6px}
+.check-row{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-2);margin-top:6px;cursor:pointer}
 .check-row input{width:auto}
 
 .toasts{position:fixed;bottom:20px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:90}
@@ -336,7 +344,6 @@ const SVG_SPRITE = `<svg style="display:none" aria-hidden="true">
     <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M21.5 12.5h-5.5l-2 3h-4l-2-3H2.5"/><path d="M5.5 5.1L2.5 12.5v5.5a2 2 0 0 0 2 2h15a2 2 0 0 0 2-2v-5.5l-3-7.4a2 2 0 0 0-1.8-1.1H7.3a2 2 0 0 0-1.8 1.1z"/></symbol>
     <symbol id="i-activity" viewBox="0 0 24 24"><path d="M21.5 12h-4l-3 8.5-5-17-3 8.5h-4"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M21.5 18.5a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h4.8l2 2.8h8.2a2 2 0 0 1 2 2z"/></symbol>
-    <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6.5" cy="5.5" r="2.2"/><circle cx="6.5" cy="18.5" r="2.2"/><circle cx="17.5" cy="7.5" r="2.2"/><path d="M6.5 7.7v8.6M17.5 9.7c0 4.3-5.5 3.6-9.6 7.1"/></symbol>
     <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.8 8.2l-2 5.6-5.6 2 2-5.6 5.6-2z"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5v5h-5"/></symbol>
@@ -349,17 +356,23 @@ const SVG_SPRITE = `<svg style="display:none" aria-hidden="true">
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
     <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
     <symbol id="i-minimize" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></symbol>
+    <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18"/></symbol>
   </defs>
 </svg>`;
 
 const APP_JS = `
 (function(){
 'use strict';
-const BOOT = window.__CHFLOW_BOOT__ || { mode: 'preview', version: '3.4.0' };
+const BOOT = window.__CHFLOW_BOOT__ || { mode: 'preview', version: '3.5.0' };
 const ic = (name, cls='') => '<svg class="ic ' + cls + '"><use href="#i-' + name + '"/></svg>';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const TERMINAL_STATES = new Set(['succeeded','failed','cancelled']);
 const PENDING_QUEUE = new Set(['queued','deferred_user_typing','paused_by_operator','delivering','pending_unreachable']);
+const HARNESS_NAMES = { agy: 'Antigravity', claude: 'Claude Code', codex: 'Codex', pi: 'Pi' };
+const harnessName = k => HARNESS_NAMES[k] || k || 'Agent';
+
 const PERMS = [
   {id:'readonly', zh:'只读', desc:'只能读取文件与运行只读命令，拒绝所有写入。'},
   {id:'ask', zh:'逐项询问', desc:'写文件与执行命令前暂停等待人工确认。'},
@@ -383,6 +396,27 @@ function shortPath(p){
   if (!p) return '';
   const parts = String(p).split(/[\\/]/).filter(Boolean);
   return parts.length > 2 ? '.../' + parts.slice(-2).join('/') : String(p);
+}
+function folderBase(p){
+  if (!p) return '';
+  const parts = String(p).split(/[\\/]/).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : String(p);
+}
+function paneTitle(p){
+  if (!p) return 'Agent';
+  if (p.display_name) return p.display_name;
+  if (p.role) return '@' + p.role;
+  const custom = [p.alias, p.name].find(v => v && v !== p.pane_id);
+  if (custom) return custom;
+  const dir = folderBase(p.cwd), h = harnessName(p.kind);
+  return dir ? (dir + ' · ' + h) : h;
+}
+function paneLoc(p){
+  if (!p) return '';
+  if (p.location_label) return p.location_label;
+  const parts = [p.workspace_label, p.tab_label].filter(Boolean);
+  if (parts.length) return parts.join(' / ');
+  return shortPath(p.cwd);
 }
 function fmtUptime(startedAt, now){
   if (!startedAt) return '';
@@ -408,7 +442,12 @@ function makePreviewSnapshot(){
   const now = Date.now(), min = 60000;
   return {
     seq: 42, now, herdr: 'reachable',
-    daemon: { pid: 48213, version: BOOT.version || '3.4.0', started_at: new Date(now - (3*60+12)*min).toISOString(), ui_url: 'http://127.0.0.1:4317', running: true },
+    daemon: { pid: 48213, version: BOOT.version || '3.5.0', started_at: new Date(now - (3*60+12)*min).toISOString(), ui_url: 'http://127.0.0.1:4317', running: true },
+    global_roles: [
+      { role: 'implementer', description: '通用功能实现与单元测试', default_kind: 'codex', default_perm: 'auto-workspace', worktree: true },
+      { role: 'reviewer', description: '异构代码与安全审阅', default_kind: 'claude', default_perm: 'readonly', worktree: false },
+      { role: 'researcher', description: '架构调研与方案对比', default_kind: 'pi', default_perm: 'readonly', worktree: false }
+    ],
     projects: [
       { project_id: 'acme-api', name: 'acme-api', root: '~/workspace/acme-api', source: 'config', controllers: ['w1:p2','w1:p5'], roles_count: 4, live_panes: 4, active_tasks: 3, blocked_count: 1 },
       { project_id: 'web-portal', name: 'web-portal', root: '~/workspace/web-portal', source: 'git', controllers: ['w3:p1'], roles_count: 2, live_panes: 2, active_tasks: 2, blocked_count: 0 }
@@ -422,16 +461,16 @@ function makePreviewSnapshot(){
       { project_id: 'web-portal', role: 'tester', description: '黑盒 E2E 与回归测试', source: 'manual', binding_mode: 'headless', kind: 'codex', default_kind: 'codex', perm: 'auto-workspace', model: 'codex-mini', live: true, agent_status: 'retrying', active_task: 'checkout-e2e', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } }
     ],
     managed_panes: [
-      { pane_id: 'w2:p1', alias: 'backend', role: 'backend', kind: 'codex', model: 'codex-model', perm: 'auto-workspace', project_id: 'acme-api', live: true, agent_status: 'working', cwd: '~/workspace/acme-api', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' } },
-      { pane_id: 'w2:p3', alias: 'reviewer', role: 'reviewer', kind: 'claude', model: 'sonnet', perm: 'ask', project_id: 'acme-api', live: true, agent_status: 'blocked', cwd: '~/workspace/acme-api', controller: { pane: 'w1:p5', label: '主控 B', kind: 'codex' } },
-      { pane_id: 'w3:p2', alias: 'frontend', role: 'frontend', kind: 'agy', model: 'primary-interactive', perm: 'auto-workspace', project_id: 'web-portal', live: true, agent_status: 'working', cwd: '~/workspace/web-portal', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } }
+      { pane_id: 'w2:p1', alias: 'backend', role: 'backend', display_name: '@backend', harness_label: 'Codex', location_label: 'WORK / API 研发', kind: 'codex', model: 'codex-model', perm: 'auto-workspace', project_id: 'acme-api', live: true, agent_status: 'working', cwd: '~/workspace/acme-api', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' } },
+      { pane_id: 'w2:p3', alias: 'reviewer', role: 'reviewer', display_name: '@reviewer', harness_label: 'Claude Code', location_label: 'WORK / 审查台', kind: 'claude', model: 'sonnet', perm: 'ask', project_id: 'acme-api', live: true, agent_status: 'blocked', cwd: '~/workspace/acme-api', controller: { pane: 'w1:p5', label: '主控 B', kind: 'codex' } },
+      { pane_id: 'w3:p2', alias: 'frontend', role: 'frontend', display_name: '@frontend', harness_label: 'Antigravity', location_label: 'Web / 结算页', kind: 'agy', model: 'primary-interactive', perm: 'auto-workspace', project_id: 'web-portal', live: true, agent_status: 'working', cwd: '~/workspace/web-portal', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' } }
     ],
     unmanaged_live_agents: [
-      { pane_id: 'w1:p2', name: '主控 A', kind: 'claude', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' },
-      { pane_id: 'w1:p5', name: '主控 B', kind: 'codex', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' },
-      { pane_id: 'w3:p1', name: '主控 A', kind: 'agy', agent_status: 'idle', cwd: '~/workspace/web-portal', project_id: 'web-portal' },
-      { pane_id: 'w4:p1', name: 'scratch-claude', kind: 'claude', agent_status: 'idle', cwd: '~/workspace/web-portal', project_id: 'web-portal' },
-      { pane_id: 'w4:p2', name: 'scratch-codex', kind: 'codex', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' }
+      { pane_id: 'w1:p2', name: '主控 A', display_name: '主控 A', harness_label: 'Claude Code', location_label: 'WORK / API 主控', kind: 'claude', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' },
+      { pane_id: 'w1:p5', name: '主控 B', display_name: '主控 B', harness_label: 'Codex', location_label: 'WORK / 审查主控', kind: 'codex', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' },
+      { pane_id: 'w3:p1', name: '主控 A', display_name: '主控 A', harness_label: 'Antigravity', location_label: 'Web / 交互主控', kind: 'agy', agent_status: 'idle', cwd: '~/workspace/web-portal', project_id: 'web-portal' },
+      { pane_id: 'w4:p1', display_name: 'web-portal · Claude Code', harness_label: 'Claude Code', location_label: 'DevOps / 调试标签', kind: 'claude', agent_status: 'idle', cwd: '~/workspace/web-portal', project_id: 'web-portal' },
+      { pane_id: 'w4:p2', display_name: 'acme-api · Codex', harness_label: 'Codex', location_label: 'WORK / 临时终端', kind: 'codex', agent_status: 'idle', cwd: '~/workspace/acme-api', project_id: 'acme-api' }
     ],
     tasks: [
       { task: 'feat-rate-limit', turn: 2, state: 'submitted', mode: 'interactive', kind: 'codex', perm: 'auto-workspace', name: 'backend', role: 'backend', pane_id: 'w2:p1', project_id: 'acme-api', controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' }, startedAt: now - 9*min, note: '正在编写 src/store/redis-store.ts' },
@@ -441,7 +480,7 @@ function makePreviewSnapshot(){
       { task: 'checkout-e2e', turn: 1, state: 'retrying', mode: 'headless', kind: 'codex', perm: 'auto-workspace', name: 'tester', role: 'tester', project_id: 'web-portal', controller: { pane: 'w3:p1', label: '主控 A', kind: 'agy' }, startedAt: now - 3*min, retries: 1, nextAt: now + 15000, reason: '执行器瞬时超时', fallback: [{ kind: 'claude', channel: 'claude-sub' }] }
     ],
     queue: [
-      { event_id: 'ev-1', task: 'feat-rate-limit', turn: 1, state: 'deferred_user_typing', type: 'reply', status: 'succeeded', worker: 'backend(w2:p1)', perm: 'auto-workspace', note: '第 1 轮内存限流实现回执已生成，因你在 w1:p2 正在输入而暂缓投递', created: now - 65000, recipient: { pane: 'w1:p2', label: '主控 A' } }
+      { event_id: 'ev-1', task: 'feat-rate-limit', turn: 1, state: 'deferred_user_typing', type: 'reply', status: 'succeeded', worker: '@backend', perm: 'auto-workspace', note: '第 1 轮限流实现回执已生成，因你在 WORK / API 主控 正在输入而暂缓投递', created: now - 65000, recipient: { pane: 'w1:p2', label: '主控 A' } }
     ],
     scheduled_retries: [
       { task: 'sync-api-docs', state: 'pending', nextAt: now + 125000, reason: 'quota_window_429' },
@@ -449,11 +488,11 @@ function makePreviewSnapshot(){
     ],
     paused_recipients: [],
     audit: [
-      { id: 105, at: now - 4*min, task: 'review-pr-87', event: 'blocked', detail: 'permission (w2:p3)' },
-      { id: 104, at: now - 65000, task: 'feat-rate-limit', event: 'deferred_user_typing', detail: 'w1:p2' },
+      { id: 105, at: now - 4*min, task: 'review-pr-87', event: 'blocked', detail: 'permission (@reviewer)' },
+      { id: 104, at: now - 65000, task: 'feat-rate-limit', event: 'deferred_user_typing', detail: '主控 A' },
       { id: 103, at: now - 8*min, task: 'sync-api-docs', event: 'scheduled_retry', detail: 'attempt=2 fallback=codex-sub' },
-      { id: 102, at: now - 12*min, task: 'review-pr-87', event: 'submitted', detail: 'reviewer (ask)' },
-      { id: 101, at: now - 18*min, task: null, event: 'pane_pruned', detail: 'w2:p9 exited' }
+      { id: 102, at: now - 12*min, task: 'review-pr-87', event: 'submitted', detail: '@reviewer (ask)' },
+      { id: 101, at: now - 18*min, task: null, event: 'pane_pruned', detail: '已退出会话自动清理' }
     ]
   };
 }
@@ -478,9 +517,11 @@ const state = {
   workMode: 'dag',
   projMenuOpen: false,
   focusCollapsed: false,
-  drawer: null, // { kind: 'role'|'pane'|'task'|'ctrl', id, projectId?, tab: 'overview'|'mail'|'activity', turn: 1 }
+  drawer: null,
   fileCache: {},
-  dag: { tx: 24, ty: 14, scale: 0.85, offsets: {}, fitted: false, expanded: false }
+  lastFileSeq: 0,
+  dag: { tx: 24, ty: 14, scale: 0.85, offsets: {}, fitted: false, expanded: false },
+  lastLayout: null
 };
 
 let es = null, reconnectTimer = null, reconnectDelay = 1200;
@@ -509,13 +550,13 @@ async function apiAction(action, target, opts){
   return body.data;
 }
 
-async function loadTaskFile(taskId, kind, turn){
+async function loadTaskFile(taskId, kind, turn, force){
   const key = taskId + ':' + kind + (kind === 'diag' ? '' : ':' + turn);
   if (BOOT.mode === 'preview'){
     state.fileCache[key] = PREVIEW_FILES[key] || '（示例文件暂无更多正文）';
     return state.fileCache[key];
   }
-  if (state.fileCache[key] !== undefined && state.fileCache[key] !== null) return state.fileCache[key];
+  if (!force && state.fileCache[key] !== undefined && state.fileCache[key] !== null) return state.fileCache[key];
   state.fileCache[key] = null;
   const q = kind === 'diag' ? 'kind=diag' : 'kind=' + encodeURIComponent(kind) + '&turn=' + encodeURIComponent(String(turn));
   try {
@@ -534,6 +575,9 @@ function handlePreviewAction(action, target, opts){
   if (action === 'daemon_stop'){
     state.daemonStopped = true; state.stopReason = 'manual'; state.drawer = null;
     render(); return { running: false };
+  }
+  if (action === 'focus_pane'){
+    return { pane_id: target, focused: true };
   }
   if (action === 'terminal_control' || action === 'respond'){
     const t = snap.tasks.find(x => x.task === target || x.pane_id === target);
@@ -567,10 +611,28 @@ function handlePreviewAction(action, target, opts){
   } else if (action === 'role_unbind'){
     const r = snap.roles.find(x => x.role === target && (!opts.project || x.project_id === opts.project));
     if (r){ r.binding_mode = 'unbound'; r.pane_id = undefined; r.live = false; r.agent_status = 'unbound'; r.active_task = undefined; }
+  } else if (action === 'role_remove'){
+    if (opts.global) snap.global_roles = (snap.global_roles || []).filter(g => g.role !== target);
+    else snap.roles = snap.roles.filter(r => !(r.role === target && (!opts.project || r.project_id === opts.project)));
   } else if (action === 'role_set'){
-    snap.roles.push({ project_id: opts.project || snap.projects[0].project_id, role: target, description: opts.desc || '项目角色', source: 'manual', binding_mode: 'unbound', kind: opts.kind || 'codex', default_kind: opts.kind || 'codex', perm: opts.perm || 'ask', model: opts.model, live: false, agent_status: 'unbound' });
+    if (opts.global){
+      snap.global_roles = (snap.global_roles || []).filter(g => g.role !== target);
+      snap.global_roles.push({ role: target, description: opts.desc || '全局角色模板', default_kind: opts.kind || 'codex', default_perm: opts.perm || 'auto-workspace', default_model: opts.model, worktree: !!opts.worktree });
+    } else {
+      const pid = opts.project || snap.projects[0]?.project_id || 'default';
+      snap.roles = snap.roles.filter(r => !(r.role === target && r.project_id === pid));
+      snap.roles.push({ project_id: pid, role: target, description: opts.desc || '项目角色', source: 'manual', binding_mode: 'unbound', kind: opts.kind || 'codex', default_kind: opts.kind || 'codex', perm: opts.perm || 'ask', model: opts.model, live: false, agent_status: 'unbound' });
+    }
   } else if (action === 'role_bind'){
-    const r = snap.roles.find(x => x.role === target && (!opts.project || x.project_id === opts.project));
+    const pid = opts.project || snap.projects[0]?.project_id;
+    let r = snap.roles.find(x => x.role === target && (!pid || x.project_id === pid));
+    if (!r){
+      const tmpl = (snap.global_roles || []).find(g => g.role === target);
+      if (tmpl){
+        r = { project_id: pid, role: target, description: tmpl.description, source: 'manual', binding_mode: 'unbound', kind: tmpl.default_kind || 'codex', default_kind: tmpl.default_kind || 'codex', perm: tmpl.default_perm || 'ask', model: tmpl.default_model, live: false, agent_status: 'unbound' };
+        snap.roles.push(r);
+      }
+    }
     if (r){
       r.binding_mode = opts.headless ? 'headless' : 'pane';
       r.kind = opts.kind || r.kind || 'codex';
@@ -583,15 +645,30 @@ function handlePreviewAction(action, target, opts){
     const a = snap.unmanaged_live_agents.find(x => x.pane_id === target);
     if (a){
       snap.unmanaged_live_agents = snap.unmanaged_live_agents.filter(x => x.pane_id !== target);
-      snap.managed_panes.push({ pane_id: a.pane_id, alias: opts.name || a.name || a.pane_id, kind: a.kind, perm: opts.perm || 'ask', project_id: a.project_id, live: true, agent_status: a.agent_status, cwd: a.cwd });
+      snap.managed_panes.push({ ...a, alias: opts.name || a.display_name || a.pane_id, perm: opts.perm || 'ask', live: true });
     }
   } else if (action === 'send'){
-    const r = snap.roles.find(x => x.role === target && (!opts.project || x.project_id === opts.project));
+    const pid = opts.project || snap.projects[0]?.project_id;
+    let r = snap.roles.find(x => x.role === target && (!pid || x.project_id === pid));
+    if (!r){
+      const tmpl = (snap.global_roles || []).find(g => g.role === target);
+      if (tmpl && opts.spawn){
+        r = { project_id: pid, role: target, description: tmpl.description, source: 'manual', binding_mode: 'pane', pane_id: 'w2:p8', kind: tmpl.default_kind || 'codex', default_kind: tmpl.default_kind || 'codex', perm: tmpl.default_perm || 'auto-workspace', live: true, agent_status: 'working' };
+        snap.roles.push(r);
+      }
+    }
     const id = opts.task || ('task-' + Math.floor(100 + Math.random()*800));
     if (r){
       if (r.binding_mode === 'unbound'){ r.binding_mode = 'pane'; r.pane_id = 'w2:p8'; r.live = true; }
       r.agent_status = 'working'; r.active_task = id;
       snap.tasks.push({ task: id, turn: 1, state: 'submitted', mode: r.binding_mode === 'headless' ? 'headless' : 'interactive', kind: r.kind, perm: opts.perm || r.perm || 'ask', name: r.role, role: r.role, pane_id: r.pane_id, project_id: r.project_id, controller: { pane: 'w1:p2', label: '主控 A', kind: 'claude' }, startedAt: Date.now(), note: (opts.brief || '').slice(0, 48) });
+    } else {
+      const a = snap.unmanaged_live_agents.find(x => x.pane_id === target);
+      if (a){
+        snap.unmanaged_live_agents = snap.unmanaged_live_agents.filter(x => x.pane_id !== target);
+        snap.managed_panes.push({ ...a, alias: a.display_name || target, perm: opts.perm || 'ask', live: true, agent_status: 'working' });
+      }
+      snap.tasks.push({ task: id, turn: 1, state: 'submitted', mode: 'interactive', kind: a?.kind || 'codex', perm: opts.perm || 'ask', name: a?.display_name || target, pane_id: target, project_id: a?.project_id || pid, startedAt: Date.now(), note: (opts.brief || '').slice(0, 48) });
     }
   }
   render();
@@ -614,10 +691,16 @@ async function connectLive(){
   es = new EventSource('/api/events');
   es.addEventListener('snapshot', ev => {
     try {
-      state.snap = JSON.parse(ev.data);
+      const next = JSON.parse(ev.data);
+      const prevSeq = state.snap?.seq || 0;
+      state.snap = next;
       state.connected = true;
       state.daemonStopped = false;
       reconnectDelay = 1200;
+      if (next.seq > prevSeq && next.seq !== state.lastFileSeq){
+        state.fileCache = {};
+        state.lastFileSeq = next.seq;
+      }
       render();
     } catch {}
   });
@@ -645,13 +728,18 @@ async function connectLive(){
 }
 
 /* ==================== VIEW MODEL HELPERS ==================== */
-function getSnap(){ return state.snap || { projects: [], roles: [], managed_panes: [], unmanaged_live_agents: [], tasks: [], queue: [], scheduled_retries: [], paused_recipients: [], audit: [], daemon: {} }; }
+function getSnap(){ return state.snap || { projects: [], roles: [], global_roles: [], managed_panes: [], unmanaged_live_agents: [], tasks: [], queue: [], scheduled_retries: [], paused_recipients: [], audit: [], daemon: {} }; }
 function visibleProjects(){
   const list = getSnap().projects || [];
   return state.project === 'all' ? list : list.filter(p => p.project_id === state.project);
 }
 function projectName(pid){
   return (getSnap().projects || []).find(p => p.project_id === pid)?.name || pid || 'default';
+}
+function findPaneMeta(paneId){
+  if (!paneId) return null;
+  const snap = getSnap();
+  return (snap.managed_panes || []).find(p => p.pane_id === paneId) || (snap.unmanaged_live_agents || []).find(a => a.pane_id === paneId) || null;
 }
 function taskForRole(r){
   const tasks = getSnap().tasks || [];
@@ -694,18 +782,21 @@ function buildProjectWorkers(projectId){
 
   for (const r of (snap.roles || []).filter(x => x.project_id === projectId)){
     const task = taskForRole(r);
+    const pm = r.pane_id ? findPaneMeta(r.pane_id) : null;
     if (r.pane_id) boundPanes.add(r.pane_id);
     if (task) seenTasks.add(task.task);
     items.push({
       nodeId: 'role:' + r.project_id + ':' + r.role,
       itemKind: 'role',
-      name: r.role,
+      name: '@' + r.role,
+      rawRole: r.role,
       desc: r.description || (r.binding_mode === 'headless' ? '无头角色槽位' : '项目稳定角色'),
+      location: pm ? paneLoc(pm) : '',
       projectId: r.project_id,
       status: roleDisplayStatus(r, task),
-      perm: task?.perm || r.perm || 'ask',
+      perm: task?.perm || r.perm || r.default_perm || 'ask',
       kind: task?.kind || r.kind || r.default_kind || 'codex',
-      model: r.model || '',
+      model: r.model || r.default_model || '',
       bindingMode: r.binding_mode,
       paneId: r.pane_id,
       controllerPane: task?.controller?.pane || r.controller?.pane || null,
@@ -719,8 +810,9 @@ function buildProjectWorkers(projectId){
     items.push({
       nodeId: 'pane:' + p.pane_id,
       itemKind: 'pane',
-      name: p.alias || p.name || p.pane_id,
+      name: paneTitle(p),
       desc: '临时交互工位' + (p.adopted ? '（已纳管）' : ''),
+      location: paneLoc(p),
       projectId: p.project_id,
       status: paneDisplayStatus(p, task),
       perm: task?.perm || p.perm || 'ask',
@@ -734,11 +826,13 @@ function buildProjectWorkers(projectId){
   }
 
   for (const t of (snap.tasks || []).filter(x => x.project_id === projectId && !TERMINAL_STATES.has(x.state) && !seenTasks.has(x.task))){
+    const pm = t.pane_id || t.pane ? findPaneMeta(t.pane_id || t.pane) : null;
     items.push({
       nodeId: 'task:' + t.task,
       itemKind: 'task',
-      name: t.name || t.task,
+      name: t.role ? ('@' + t.role) : (pm ? paneTitle(pm) : (t.name || t.task)),
       desc: t.mode === 'headless' ? '一次性无头任务' : '活跃任务',
+      location: pm ? paneLoc(pm) : '',
       projectId: t.project_id,
       status: t.state === 'submitted' ? 'working' : t.state,
       perm: t.perm || 'ask',
@@ -756,29 +850,25 @@ function buildProjectWorkers(projectId){
 
 function buildProjectControllers(project, workers){
   const snap = getSnap();
-  const paneMeta = new Map();
-  for (const a of (snap.unmanaged_live_agents || [])) paneMeta.set(a.pane_id, a);
-  for (const p of (snap.managed_panes || [])) paneMeta.set(p.pane_id, p);
-
   const ids = new Set(project.controllers || []);
   for (const w of workers) if (w.controllerPane) ids.add(w.controllerPane);
   const paused = new Set(snap.paused_recipients || []);
 
-  const list = [...ids].map((paneId, idx) => {
-    const info = paneMeta.get(paneId);
+  return [...ids].map((paneId, idx) => {
+    const info = findPaneMeta(paneId);
     const queued = (snap.queue || []).filter(q => PENDING_QUEUE.has(q.state) && q.recipient?.pane === paneId);
     const typing = queued.some(q => q.state === 'deferred_user_typing');
-    const isPaused = paused.has(paneId);
+    const customName = info && (info.display_name || (info.name && info.name !== paneId ? info.name : '') || (info.alias && info.alias !== paneId ? info.alias : ''));
     return {
       nodeId: 'ctrl:' + project.project_id + ':' + paneId,
       paneId, projectId: project.project_id,
-      name: info?.name || info?.alias || ('主控 ' + String.fromCharCode(65 + idx)),
+      name: customName || ('主控 ' + String.fromCharCode(65 + idx)),
       kind: info?.kind || 'agent',
+      location: info ? paneLoc(info) : '',
       status: info?.agent_status || 'idle',
-      typing, paused: isPaused, queuedCount: queued.length
+      typing, paused: paused.has(paneId), queuedCount: queued.length
     };
   });
-  return list;
 }
 
 function allVisibleWorkers(){
@@ -789,7 +879,7 @@ function computeDagLayout(){
   const projs = visibleProjects();
   const lanes = [], nodes = [], edges = [];
   let cursorY = 18;
-  const colX = { ctrl: 32, role: 454, fallback: 938 };
+  const colX = { ctrl: 32, role: 460, fallback: 950 };
 
   for (const p of projs){
     const rawWorkers = buildProjectWorkers(p.project_id);
@@ -804,8 +894,8 @@ function computeDagLayout(){
     });
     const hasFallback = workers.some(w => (w.status === 'retrying' || w.status === 'scheduled_retry') && w.task?.fallback?.length);
 
-    const roleH = w => w.status === 'blocked' ? 182 : (w.status === 'scheduled_retry' || w.status === 'retrying') ? 174 : w.status === 'unbound' ? 132 : 162;
-    const ctrlH = 118, gapY = 18;
+    const roleH = w => w.status === 'blocked' ? 184 : (w.status === 'scheduled_retry' || w.status === 'retrying') ? 176 : w.status === 'unbound' ? 134 : 164;
+    const ctrlH = 120, gapY = 18;
 
     let ry = cursorY + 84;
     const centersByCtrl = new Map();
@@ -813,7 +903,7 @@ function computeDagLayout(){
     for (const w of workers){
       const h = roleH(w);
       const off = state.dag.offsets[w.nodeId] || { dx: 0, dy: 0 };
-      const rn = { kind: 'worker', id: w.nodeId, data: w, x: 20 + colX.role + off.dx, y: ry + off.dy, w: 336, h };
+      const rn = { kind: 'worker', id: w.nodeId, data: w, x: 20 + colX.role + off.dx, y: ry + off.dy, w: 342, h };
       roleNodes.push(rn);
       if (w.controllerPane){
         const arr = centersByCtrl.get(w.controllerPane) || [];
@@ -831,11 +921,11 @@ function computeDagLayout(){
       const baseY = Math.max(cursorY + 84, lastCtrlBottom + gapY, desiredY);
       lastCtrlBottom = baseY + ctrlH;
       const off = state.dag.offsets[c.nodeId] || { dx: 0, dy: 0 };
-      nodes.push({ kind: 'ctrl', id: c.nodeId, data: c, x: 20 + colX.ctrl + off.dx, y: baseY + off.dy, w: 268, h: ctrlH });
+      nodes.push({ kind: 'ctrl', id: c.nodeId, data: c, x: 20 + colX.ctrl + off.dx, y: baseY + off.dy, w: 274, h: ctrlH });
     }
 
     const bodyBottom = Math.max(rolesBottom, lastCtrlBottom);
-    const laneW = hasFallback ? 1236 : 826;
+    const laneW = hasFallback ? 1248 : 838;
     const laneH = (bodyBottom - cursorY) + 24;
     lanes.push({ project: p, x: 20, y: cursorY, w: laneW, h: laneH, hasFallback, ctrlCount: ctrls.length, roleCount: workers.length });
 
@@ -846,24 +936,31 @@ function computeDagLayout(){
         const ctrlId = 'ctrl:' + p.project_id + ':' + w.controllerPane;
         const edgeCls = w.status === 'blocked' ? 'blocked' : w.status === 'working' ? 'working' : (w.status === 'retrying' || w.status === 'scheduled_retry') ? 'retry' : 'idle';
         const permShort = w.perm === 'auto-workspace' ? 'auto-ws' : w.perm;
-        edges.push({ from: ctrlId, to: w.nodeId, cls: edgeCls, label: permShort + (w.task?.turn ? ' · #' + w.task.turn : '') });
+        edges.push({ id: ctrlId + '->' + w.nodeId, from: ctrlId, to: w.nodeId, cls: edgeCls, label: permShort + (w.task?.turn ? ' · #' + w.task.turn : '') });
       }
       if ((w.status === 'retrying' || w.status === 'scheduled_retry') && w.task?.fallback?.length){
         const fid = 'fb:' + w.nodeId;
         const foff = state.dag.offsets[fid] || { dx: 0, dy: 0 };
-        const chain = w.task.fallback.map(f => f.channel || f.kind);
+        const chain = w.task.fallback.map(f => f.channel || harnessName(f.kind));
         nodes.push({
           kind: 'fallback', id: fid, workerId: w.nodeId,
           data: { title: '回退链 · ' + chain[0], chain, retries: w.task.retries || 1, eta: fmtEta(w.task.nextAt, getSnap().now) },
           x: 20 + colX.fallback + foff.dx, y: rn.y + 18 + foff.dy, w: 264, h: 134
         });
-        edges.push({ from: w.nodeId, to: fid, cls: 'fallback', label: 'fallback' });
+        edges.push({ id: w.nodeId + '->' + fid, from: w.nodeId, to: fid, cls: 'fallback', label: 'fallback' });
       }
     }
     cursorY += laneH + 22;
   }
 
   return { lanes, nodes, edges, totalH: Math.max(cursorY + 24, 300), totalW: Math.max(...lanes.map(l => l.x + l.w), 960) + 40 };
+}
+
+function buildEdgeGeometry(a, b){
+  const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+  const x2 = b.x, y2 = b.y + b.h / 2;
+  const dx = Math.max(46, Math.abs(x2 - x1) * 0.45);
+  return { x1, y1, x2, y2, mx: (x1 + x2) / 2, my: (y1 + y2) / 2, d: 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' + (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2 };
 }
 
 /* ==================== RENDER TOPBAR & FOCUS ==================== */
@@ -910,8 +1007,15 @@ function renderFocus(){
 
   el.innerHTML = '<div class="focus"><div class="focus-head"><div class="fh-l">' + ic('alert') + '<b>需要你介入</b><span class="fh-count">' + total + ' 项</span></div><div class="fh-r"><span class="fh-hint">处理完成后自动收起</span><button class="btn sm ghost" data-action="toggleFocus">' + (state.focusCollapsed ? '展开待办' : '收起') + '</button></div></div>' +
     (state.focusCollapsed ? '' : '<div class="focus-grid">' +
-      blocked.map(t => '<div class="fi"><div class="fi-icon">' + ic('shield') + '</div><div class="fi-body"><div class="fi-title"><b>' + esc(t.role || t.name || t.task) + '</b> 等待授权 <span class="tag">' + esc(projectName(t.project_id)) + '</span></div><div class="fi-code">' + esc(t.block?.reason || t.block?.kind || 'permission_prompt') + '</div></div><div class="fi-actions"><button class="btn sm ghost" data-action="openTask" data-id="' + esc(t.task) + '">' + ic('terminal','sm') + '现场</button><button class="btn sm" data-action="denyTask" data-id="' + esc(t.task) + '">拒绝</button><button class="btn sm primary" data-action="approveTask" data-id="' + esc(t.task) + '">' + ic('check','sm') + '批准</button></div></div>').join('') +
-      deferred.map(q => '<div class="fi"><div class="fi-icon">' + ic('keyboard') + '</div><div class="fi-body"><div class="fi-title"><b>' + esc(q.worker || q.task) + '</b> 回执暂缓 <span class="tag">' + esc(q.recipient?.pane || '') + '</span></div><div class="fi-sub">' + esc(q.note || q.status || q.state) + '</div></div><div class="fi-actions"><button class="btn sm" data-action="consumeQueue" data-id="' + esc(q.event_id) + '">' + ic('eye','sm') + '仅阅</button><button class="btn sm primary" data-action="pushQueue" data-id="' + esc(q.event_id) + '">' + ic('zap','sm') + '强推</button></div></div>').join('') +
+      blocked.map(t => {
+        const who = t.role ? ('@' + t.role) : (findPaneMeta(t.pane_id || t.pane)?.display_name || t.name || t.task);
+        return '<div class="fi"><div class="fi-icon">' + ic('shield') + '</div><div class="fi-body"><div class="fi-title"><b>' + esc(who) + '</b> 等待授权 <span class="tag">' + esc(projectName(t.project_id)) + '</span></div><div class="fi-code">' + esc(t.block?.reason || t.block?.kind || 'permission_prompt') + '</div></div><div class="fi-actions"><button class="btn sm ghost" data-action="openTask" data-id="' + esc(t.task) + '">' + ic('terminal','sm') + '现场</button><button class="btn sm" data-action="denyTask" data-id="' + esc(t.task) + '">拒绝</button><button class="btn sm primary" data-action="approveTask" data-id="' + esc(t.task) + '">' + ic('check','sm') + '批准</button></div></div>';
+      }).join('') +
+      deferred.map(q => {
+        const recPane = q.recipient?.pane ? findPaneMeta(q.recipient.pane) : null;
+        const recName = recPane ? (paneLoc(recPane) || paneTitle(recPane)) : (q.recipient?.label || '');
+        return '<div class="fi"><div class="fi-icon">' + ic('keyboard') + '</div><div class="fi-body"><div class="fi-title"><b>' + esc(q.worker || q.task) + '</b> 回执暂缓 ' + (recName ? '<span class="loc-chip">' + esc(recName) + '</span>' : '') + '</div><div class="fi-sub">' + esc(q.note || q.status || q.state) + '</div></div><div class="fi-actions"><button class="btn sm" data-action="consumeQueue" data-id="' + esc(q.event_id) + '">' + ic('eye','sm') + '仅阅</button><button class="btn sm primary" data-action="pushQueue" data-id="' + esc(q.event_id) + '">' + ic('zap','sm') + '强推</button></div></div>';
+      }).join('') +
     '</div>') + '</div>';
 }
 
@@ -943,25 +1047,51 @@ function renderToolbar(){
     '</div>';
 }
 
+/* ==================== UNMANAGED LIVE SESSIONS (SHARED BY DAG & CARDS) ==================== */
+function renderUnmanagedBox(){
+  const snap = getSnap();
+  const unm = (snap.unmanaged_live_agents || []).filter(a => {
+    if (state.project !== 'all' && a.project_id !== state.project) return false;
+    return !(snap.projects || []).some(p => (p.controllers || []).includes(a.pane_id));
+  });
+  if (!unm.length) return '';
+  return '<div class="unmanaged-box"><div class="unm-head"><div class="unm-title">' + ic('monitor') + '在线未纳管会话（Herdr 实时在线）<span class="tag">' + unm.length + '</span></div><span style="font-size:13px;color:var(--text-3)">会话退出后自动移出；可一键跳转终端、纳管或绑定到项目角色</span></div><div class="unm-grid">' +
+    unm.map(a => {
+      const title = paneTitle(a);
+      const loc = paneLoc(a);
+      const st = ST[a.agent_status] || ST.idle;
+      return '<div class="unm-item" title="Herdr 窗格编号: ' + esc(a.pane_id) + '">' +
+        '<div class="unm-info">' +
+          '<div class="unm-name"><span class="dot ' + st.c + '"></span><span>' + esc(title) + '</span><span class="pill ' + st.c + '">' + st.label + '</span></div>' +
+          '<div class="unm-sub">' + (loc ? '<span class="loc-chip">' + esc(loc) + '</span>' : '') + '<span class="tag">' + esc(projectName(a.project_id)) + '</span></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:5px;flex:none">' +
+          '<button class="btn icon sm ghost" data-action="focusPane" data-pane="' + esc(a.pane_id) + '" title="在 Herdr 中定位此窗格">' + ic('locate','sm') + '</button>' +
+          '<button class="btn sm" data-action="openBindPane" data-pane="' + esc(a.pane_id) + '" data-proj="' + esc(a.project_id) + '">绑定角色</button>' +
+          '<button class="btn sm primary" data-action="adoptPane" data-pane="' + esc(a.pane_id) + '" data-proj="' + esc(a.project_id) + '">纳管</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+  '</div></div>';
+}
+
 /* ==================== DAG WORKSPACE ==================== */
 function renderDagView(){
   const snap = getSnap();
   const layout = computeDagLayout();
+  state.lastLayout = layout;
   const nodeMap = new Map(layout.nodes.map(n => [n.id, n]));
 
   let svgPaths = '', edgeBadges = '';
   for (const e of layout.edges){
     const a = nodeMap.get(e.from), b = nodeMap.get(e.to);
     if (!a || !b) continue;
-    const x1 = a.x + a.w, y1 = a.y + a.h / 2;
-    const x2 = b.x, y2 = b.y + b.h / 2;
-    const dx = Math.max(46, Math.abs(x2 - x1) * 0.45);
-    const d = 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' + (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+    const g = buildEdgeGeometry(a, b);
     const stroke = e.cls === 'blocked' ? 'var(--warn)' : e.cls === 'working' ? 'var(--accent)' : (e.cls === 'retry' || e.cls === 'fallback') ? 'var(--retry)' : 'var(--border-strong)';
-    svgPaths += '<path class="edge-path ' + e.cls + '" d="' + d + '"/>';
-    svgPaths += '<circle cx="' + x1 + '" cy="' + y1 + '" r="3.5" fill="var(--surface)" stroke="' + stroke + '" stroke-width="2"/>';
-    svgPaths += '<circle cx="' + x2 + '" cy="' + y2 + '" r="3.5" fill="' + stroke + '"/>';
-    edgeBadges += '<div class="edge-badge ' + e.cls + '" style="left:' + ((x1+x2)/2) + 'px;top:' + ((y1+y2)/2) + 'px">' + esc(e.label) + '</div>';
+    svgPaths += '<path class="edge-path ' + e.cls + '" data-edge-id="' + esc(e.id) + '" d="' + g.d + '"/>';
+    svgPaths += '<circle data-edge-start="' + esc(e.id) + '" cx="' + g.x1 + '" cy="' + g.y1 + '" r="3.5" fill="var(--surface)" stroke="' + stroke + '" stroke-width="2"/>';
+    svgPaths += '<circle data-edge-end="' + esc(e.id) + '" cx="' + g.x2 + '" cy="' + g.y2 + '" r="3.5" fill="' + stroke + '"/>';
+    edgeBadges += '<div class="edge-badge ' + e.cls + '" data-edge-badge="' + esc(e.id) + '" style="left:' + g.mx + 'px;top:' + g.my + 'px">' + esc(e.label) + '</div>';
   }
 
   const lanesHtml = layout.lanes.map(l =>
@@ -972,8 +1102,8 @@ function renderDagView(){
       '</div>' +
       '<div class="dag-col-labels">' +
         '<span class="dag-col-label" style="left:32px">' + ic('compass','sm') + '主控会话 (Controllers)</span>' +
-        '<span class="dag-col-label" style="left:454px">' + ic('layers','sm') + '项目角色与执行工位 (Roles)</span>' +
-        (l.hasFallback ? '<span class="dag-col-label" style="left:938px">' + ic('refresh','sm') + '活跃回退链 (Fallback)</span>' : '') +
+        '<span class="dag-col-label" style="left:460px">' + ic('layers','sm') + '项目角色与执行工位 (Roles)</span>' +
+        (l.hasFallback ? '<span class="dag-col-label" style="left:950px">' + ic('refresh','sm') + '活跃回退链 (Fallback)</span>' : '') +
       '</div>' +
     '</div>'
   ).join('');
@@ -984,10 +1114,10 @@ function renderDagView(){
       const c = n.data;
       const badgeCls = c.typing || c.paused ? 'warn' : 'ok';
       const badgeTxt = c.paused ? '已暂停' : c.typing ? '输入中' : '就绪';
-      return '<div class="dag-node ctrl ' + sel + '" data-node-id="' + esc(c.nodeId) + '" data-node-kind="ctrl" style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
+      return '<div class="dag-node ctrl ' + sel + '" data-node-id="' + esc(c.nodeId) + '" data-node-kind="ctrl" title="Herdr 窗格: ' + esc(c.paneId) + '" style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
         '<div class="dn-head"><div class="dn-title">' + ic('compass') + '<span>' + esc(c.name) + '</span></div><span class="pill ' + badgeCls + '">' + badgeTxt + '</span></div>' +
-        '<div class="dn-sub">' + esc(c.kind) + ' · <span class="mono">' + esc(c.paneId) + '</span></div>' +
-        '<div class="dn-foot"><span class="dn-foot-left">' + (c.queuedCount ? '候投回执 ' + c.queuedCount + ' 条' : '回执通道畅通') + '</span><span class="mono">' + esc(c.status) + '</span></div>' +
+        '<div class="dn-sub"><span>' + esc(harnessName(c.kind)) + '</span>' + (c.location ? '<span class="loc-chip">' + esc(c.location) + '</span>' : '') + '</div>' +
+        '<div class="dn-foot"><span class="dn-foot-left">' + (c.queuedCount ? '候投回执 ' + c.queuedCount + ' 条' : '回执通道畅通') + '</span><button class="btn icon sm ghost" data-action="focusPane" data-pane="' + esc(c.paneId) + '" title="在 Herdr 中定位此窗格">' + ic('locate','sm') + '</button></div>' +
       '</div>';
     }
     if (n.kind === 'fallback'){
@@ -1002,10 +1132,10 @@ function renderDagView(){
     const st = ST[w.status] || ST.idle;
     const stCls = w.status === 'blocked' ? 'st-blocked' : w.status === 'working' ? 'st-working' : (w.status === 'retrying' || w.status === 'scheduled_retry') ? 'st-retry' : w.status === 'offline' ? 'st-offline' : w.status === 'unbound' ? 'st-unbound' : '';
     const bindText = w.bindingMode === 'unbound'
-      ? ic('link','sm') + '待命 · 默认 ' + esc(w.kind)
+      ? ic('link','sm') + '待命 · 默认 ' + esc(harnessName(w.kind))
       : w.bindingMode === 'headless'
-        ? ic('cpu','sm') + '无头 · ' + esc(w.kind) + (w.model ? ' · ' + esc(w.model) : '')
-        : ic('monitor','sm') + esc(w.kind) + (w.paneId ? ' · ' + esc(w.paneId) : '');
+        ? ic('cpu','sm') + '无头 · ' + esc(harnessName(w.kind)) + (w.model ? ' · ' + esc(w.model) : '')
+        : ic('monitor','sm') + esc(harnessName(w.kind)) + (w.location ? ' · ' + esc(w.location) : '');
 
     let mid = '';
     if (w.status === 'blocked' && w.task){
@@ -1023,31 +1153,26 @@ function renderDagView(){
       mid = '<div class="dn-task"><div class="dn-task-note">' + (w.status === 'offline' ? '窗格已离线，可热替换新会话' : '空闲就绪，随时可派发任务') + '</div></div>';
     }
 
-    return '<div class="dag-node role ' + stCls + ' ' + sel + '" data-node-id="' + esc(w.nodeId) + '" data-node-kind="worker" style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
+    return '<div class="dag-node role ' + stCls + ' ' + sel + '" data-node-id="' + esc(w.nodeId) + '" data-node-kind="worker"' + (w.paneId ? ' title="Herdr 窗格: ' + esc(w.paneId) + '"' : '') + ' style="left:' + n.x + 'px;top:' + n.y + 'px;min-height:' + n.h + 'px">' +
       '<div class="dn-head"><div class="dn-title"><span>' + esc(w.name) + '</span></div><span class="pill ' + st.c + '"><span class="dot ' + st.c + '"></span>' + st.label + '</span></div>' +
       '<div class="dn-sub">' + esc(w.desc) + '</div>' +
       mid +
-      '<div class="dn-foot"><span class="dn-foot-left">' + bindText + '</span><span class="tag">' + ic('shield','sm') + esc(w.perm === 'auto-workspace' ? 'auto-ws' : w.perm) + '</span></div>' +
+      '<div class="dn-foot"><span class="dn-foot-left">' + bindText + '</span><div style="display:flex;align-items:center;gap:4px">' +
+        (w.paneId && w.status !== 'offline' ? '<button class="btn icon sm ghost" data-action="focusPane" data-pane="' + esc(w.paneId) + '" title="在 Herdr 中定位此窗格">' + ic('locate','sm') + '</button>' : '') +
+        '<span class="tag">' + ic('shield','sm') + esc(w.perm === 'auto-workspace' ? 'auto-ws' : w.perm) + '</span>' +
+      '</div></div>' +
     '</div>';
   }).join('');
 
-  const unm = (snap.unmanaged_live_agents || []).filter(a => {
-    if (state.project !== 'all' && a.project_id !== state.project) return false;
-    return !(snap.projects || []).some(p => (p.controllers || []).includes(a.pane_id));
-  });
-  const unmHtml = !unm.length ? '' : '<div class="unmanaged-box"><div class="unm-head"><div class="unm-title">' + ic('monitor') + '未纳管在线窗格（Herdr 实时在线）<span class="tag">' + unm.length + '</span></div><span style="font-size:13px;color:var(--text-3)">会话退出后自动移出；可一键纳管或绑定到项目角色</span></div><div class="unm-grid">' +
-    unm.map(a => '<div class="unm-item"><div class="unm-info"><div class="unm-name"><span class="dot ok"></span><span class="mono">' + esc(a.pane_id) + '</span><span>' + esc(a.kind) + '</span><span class="tag">' + esc(projectName(a.project_id)) + '</span></div><div class="unm-sub mono">' + esc(a.agent_status) + ' · ' + esc(shortPath(a.cwd)) + '</div></div><div style="display:flex;gap:6px"><button class="btn sm" data-action="openBindPane" data-pane="' + esc(a.pane_id) + '" data-proj="' + esc(a.project_id) + '">绑定角色</button><button class="btn sm primary" data-action="adoptPane" data-pane="' + esc(a.pane_id) + '" data-proj="' + esc(a.project_id) + '">纳管</button></div></div>').join('') +
-  '</div></div>';
-
   const emptyHtml = layout.lanes.length ? '' :
-    '<div class="empty-canvas"><div class="empty-card"><div style="margin-bottom:10px;color:var(--accent)">' + ic('dag','lg') + '</div><div style="font-size:16px;font-weight:700;margin-bottom:6px">当前暂无项目角色或活跃派发</div><div style="font-size:13.5px;color:var(--text-3);margin-bottom:16px">点击右上角「新建角色」创建固定分工，或从下方未纳管窗格一键纳管，派发后这里将实时绘制主控与角色的拓扑结构。</div><div style="display:flex;justify-content:center;gap:8px"><button class="btn" data-action="openNewRole">' + ic('user-plus','sm') + '新建角色</button><button class="btn primary" data-action="openDispatch">' + ic('send','sm') + '派发任务</button></div></div></div>';
+    '<div class="empty-canvas"><div class="empty-card"><div style="margin-bottom:10px;color:var(--accent)">' + ic('dag','lg') + '</div><div style="font-size:16px;font-weight:700;margin-bottom:6px">当前暂无项目角色或活跃派发</div><div style="font-size:13.5px;color:var(--text-3);margin-bottom:16px">点击右上角「新建角色」创建固定分工（支持保存为全局模板），或直接向下方在线会话派发任务。</div><div style="display:flex;justify-content:center;gap:8px"><button class="btn" data-action="openNewRole">' + ic('user-plus','sm') + '新建角色</button><button class="btn primary" data-action="openDispatch">' + ic('send','sm') + '派发任务</button></div></div></div>';
 
   return '<div class="dag-shell ' + (state.dag.expanded ? 'expanded' : '') + '" id="dag-shell">' +
     emptyHtml +
     '<div class="dag-stage" id="dag-stage" style="transform:translate(' + state.dag.tx + 'px,' + state.dag.ty + 'px) scale(' + state.dag.scale + ')">' +
       lanesHtml + '<svg class="dag-svg">' + svgPaths + '</svg>' + edgeBadges + nodesHtml +
     '</div>' +
-    '<div class="dag-hint">拖拽空白平移 · 滚轮缩放 · 拖动节点排布 · 点击查看详情 · 右键快捷操作</div>' +
+    '<div class="dag-hint">拖拽空白平移 · 滚轮缩放 · 拖动节点排布 · 点击查看详情 · Esc 退出浮层</div>' +
     '<div class="dag-controls">' +
       '<button data-action="dagZoomOut" title="缩小">−</button>' +
       '<span class="dag-zoom-val" id="dag-zoom-val">' + Math.round(state.dag.scale * 100) + '%</span>' +
@@ -1056,18 +1181,17 @@ function renderDagView(){
       '<button data-action="dagReset">重置</button>' +
       '<button data-action="dagExpand" title="' + (state.dag.expanded ? '退出全屏画布' : '全屏展开画布') + '">' + ic(state.dag.expanded ? 'minimize' : 'maximize','sm') + '</button>' +
     '</div>' +
-  '</div>' + unmHtml;
+  '</div>' + renderUnmanagedBox();
 }
 
 function renderCardsView(){
   const projs = visibleProjects();
-  if (!projs.length) return '<div class="box" style="color:var(--text-3)">暂无项目数据</div>';
-  return projs.map(p => {
+  const sections = projs.map(p => {
     const workers = buildProjectWorkers(p.project_id);
     const ctrls = buildProjectControllers(p, workers);
     return '<div class="proj-section">' +
       '<div class="proj-head"><div class="proj-title">' + ic('folder','lg') + '<span>' + esc(p.name) + '</span><span class="proj-meta mono">' + esc(shortPath(p.root)) + '</span></div><div style="display:flex;gap:8px"><button class="btn sm" data-action="openNewRole">' + ic('plus','sm') + '新建角色</button><button class="btn sm" data-action="openDispatch">' + ic('send','sm') + '派发任务</button></div></div>' +
-      (ctrls.length ? '<div class="ctrl-row">' + ctrls.map(c => '<div class="ctrl-chip" data-action="openCtrl" data-id="' + esc(c.nodeId) + '">' + ic('compass','sm') + '<b>' + esc(c.name) + '</b><span>' + esc(c.kind) + ' · <span class="mono">' + esc(c.paneId) + '</span></span>' + (c.typing ? '<span class="pill warn">输入中</span>' : c.paused ? '<span class="pill warn">已暂停</span>' : '') + '</div>').join('') + '</div>' : '') +
+      (ctrls.length ? '<div class="ctrl-row">' + ctrls.map(c => '<div class="ctrl-chip" data-action="openCtrl" data-id="' + esc(c.nodeId) + '">' + ic('compass','sm') + '<b>' + esc(c.name) + '</b><span>' + esc(harnessName(c.kind)) + '</span>' + (c.location ? '<span class="loc-chip">' + esc(c.location) + '</span>' : '') + (c.typing ? '<span class="pill warn">输入中</span>' : c.paused ? '<span class="pill warn">已暂停</span>' : '') + '</div>').join('') + '</div>' : '') +
       '<div class="role-grid">' + (workers.length ? workers.map(w => {
         const st = ST[w.status] || ST.idle;
         return '<div class="role-card ' + (w.status==='blocked'?'st-blocked':w.status==='unbound'?'st-unbound':w.status==='offline'?'st-offline':'') + '" data-action="openWorker" data-id="' + esc(w.nodeId) + '">' +
@@ -1075,10 +1199,11 @@ function renderCardsView(){
           '<div class="dn-sub">' + esc(w.desc) + '</div>' +
           (w.task ? '<div class="dn-task"><div class="dn-task-top"><span>' + esc(w.task.task) + '</span><span class="menu-meta">第 ' + esc(w.task.turn || 1) + ' 轮</span></div><div class="dn-task-note">' + esc(w.task.block?.reason || w.task.note || w.task.reason || st.label) + '</div></div>'
             : w.status === 'unbound' && w.role ? '<div style="margin-top:12px"><button class="btn sm primary" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('plus','sm') + '绑定或启动</button></div>' : '') +
-          '<div class="dn-foot" style="margin-top:auto"><span>' + (w.bindingMode==='unbound'?'未绑定':esc(w.kind + (w.paneId ? ' · ' + w.paneId : ' · 无头'))) + '</span><span class="tag">' + esc(w.perm === 'auto-workspace' ? 'auto-ws' : w.perm) + '</span></div>' +
+          '<div class="dn-foot" style="margin-top:auto"><span>' + (w.bindingMode==='unbound'?'未绑定':esc(harnessName(w.kind) + (w.location ? ' · ' + w.location : ''))) + '</span><span class="tag">' + esc(w.perm === 'auto-workspace' ? 'auto-ws' : w.perm) + '</span></div>' +
         '</div>';
-      }).join('') : '<div class="box" style="color:var(--text-3)">该项目尚未配置角色</div>') + '</div></div>';
+      }).join('') : '<div class="box" style="color:var(--text-3)">该项目尚未配置角色；可从下方在线会话绑定，或点击「新建角色」启用全局模板。</div>') + '</div></div>';
   }).join('');
+  return (sections || '<div class="box" style="color:var(--text-3)">暂无项目数据</div>') + renderUnmanagedBox();
 }
 
 function renderQueueView(){
@@ -1088,9 +1213,13 @@ function renderQueueView(){
   const paused = snap.paused_recipients || [];
   return '<h2 class="section-h">投递队列与重试</h2>' +
     '<p class="section-sub">控制回执投递与退避重试。「强推」立即注入目标窗格；「仅阅」标记为已消费不打断终端输入；「丢弃」撤销投递。</p>' +
-    (paused.length ? '<div class="box warn" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>免打扰暂停中的收件窗格：</b>' + paused.map(p => '<span class="tag mono">' + esc(p) + '</span>').join(' ') + '</div><div style="display:flex;gap:6px">' + paused.map(p => '<button class="btn sm" data-action="resumeRecipient" data-pane="' + esc(p) + '">恢复 ' + esc(p) + '</button>').join('') + '</div></div>' : '') +
+    (paused.length ? '<div class="box warn" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>免打扰暂停中的收件会话：</b>' + paused.map(p => { const pm = findPaneMeta(p); return '<span class="tag">' + esc(pm ? paneTitle(pm) : p) + '</span>'; }).join(' ') + '</div><div style="display:flex;gap:6px">' + paused.map(p => '<button class="btn sm" data-action="resumeRecipient" data-pane="' + esc(p) + '">恢复投递</button>').join('') + '</div></div>' : '') +
     '<div class="q-group"><div class="q-group-title">' + ic('keyboard','sm') + '候投回执队列 · ' + pending.length + '</div>' +
-    (pending.length ? pending.map(q => '<div class="q-card"><div class="q-left"><div class="q-icon warn">' + ic('keyboard') + '</div><div><div class="q-title">' + esc(q.worker || q.task) + ' → ' + esc(q.recipient?.label || q.recipient?.pane || '') + ' <span class="tag">' + esc(q.task) + '#' + esc(q.turn || 1) + '</span></div><div class="q-desc">' + esc(q.note || q.status || q.type) + '</div><div class="q-meta"><span>状态：' + esc(q.state) + '</span><span>入队 ' + esc(fmtClock(q.created)) + '</span></div></div></div><div class="q-right"><span class="pill warn">' + esc(q.state) + '</span><div class="q-btns"><button class="btn sm danger-ghost" data-action="dropQueue" data-id="' + esc(q.event_id) + '">' + ic('trash','sm') + '丢弃</button><button class="btn sm" data-action="consumeQueue" data-id="' + esc(q.event_id) + '">' + ic('eye','sm') + '仅阅</button><button class="btn sm primary" data-action="pushQueue" data-id="' + esc(q.event_id) + '">' + ic('zap','sm') + '强推</button></div></div></div>').join('') : '<div class="box" style="color:var(--text-3)">当前无候投回执</div>') +
+    (pending.length ? pending.map(q => {
+      const rp = q.recipient?.pane ? findPaneMeta(q.recipient.pane) : null;
+      const toLabel = rp ? (paneTitle(rp) + (paneLoc(rp) ? ' (' + paneLoc(rp) + ')' : '')) : (q.recipient?.label || '');
+      return '<div class="q-card"><div class="q-left"><div class="q-icon warn">' + ic('keyboard') + '</div><div><div class="q-title">' + esc(q.worker || q.task) + ' → ' + esc(toLabel) + ' <span class="tag">' + esc(q.task) + '#' + esc(q.turn || 1) + '</span></div><div class="q-desc">' + esc(q.note || q.status || q.type) + '</div><div class="q-meta"><span>状态：' + esc(q.state) + '</span><span>入队 ' + esc(fmtClock(q.created)) + '</span></div></div></div><div class="q-right"><span class="pill warn">' + esc(q.state) + '</span><div class="q-btns"><button class="btn sm danger-ghost" data-action="dropQueue" data-id="' + esc(q.event_id) + '">' + ic('trash','sm') + '丢弃</button><button class="btn sm" data-action="consumeQueue" data-id="' + esc(q.event_id) + '">' + ic('eye','sm') + '仅阅</button><button class="btn sm primary" data-action="pushQueue" data-id="' + esc(q.event_id) + '">' + ic('zap','sm') + '强推</button></div></div></div>';
+    }).join('') : '<div class="box" style="color:var(--text-3)">当前无候投回执</div>') +
     '</div>' +
     '<div class="q-group"><div class="q-group-title">' + ic('refresh','sm') + '定时重试与回退计划 · ' + retries.length + '</div>' +
     (retries.length ? retries.map(r => '<div class="q-card"><div class="q-left"><div class="q-icon retry">' + ic('clock') + '</div><div><div class="q-title">' + esc(r.task) + '</div><div class="q-desc">' + esc(r.reason || '按计划重试') + '</div><div class="q-meta"><span>预计 ' + esc(fmtEta(r.nextAt, snap.now)) + '</span><span>状态：' + esc(r.state) + '</span></div></div></div><div class="q-right"><span class="pill retry">' + esc(r.state) + '</span><div class="q-btns"><button class="btn sm danger-ghost" data-action="cancelRetry" data-id="' + esc(r.task) + '">' + ic('trash','sm') + '取消重试</button></div></div></div>').join('') : '<div class="box" style="color:var(--text-3)">当前无重试计划</div>') +
@@ -1121,15 +1250,20 @@ function findCtrlByNodeId(nodeId){
 function renderDrawer(){
   const scrim = document.getElementById('scrim'), drawer = document.getElementById('drawer');
   if (!state.drawer){ scrim.classList.remove('open'); drawer.classList.remove('open'); return; }
+  // Preserve user typing focus inside drawer input during live SSE updates
+  const activeEl = document.activeElement;
+  if (activeEl && drawer.contains(activeEl) && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+
   scrim.classList.add('open'); drawer.classList.add('open');
 
   if (state.drawer.kind === 'ctrl'){
     const c = findCtrlByNodeId(state.drawer.nodeId);
     if (!c){ state.drawer = null; return renderDrawer(); }
-    drawer.innerHTML = '<div class="dr-head"><div class="dr-top"><div><div class="dr-crumb">' + ic('folder','sm') + esc(projectName(c.projectId)) + ' · 主控会话</div><div class="dr-name">' + esc(c.name) + ' <span class="pill ' + (c.paused||c.typing?'warn':'ok') + '">' + (c.paused?'已暂停投递':c.typing?'正在输入':'投递就绪') + '</span></div><div class="dr-desc">' + esc(c.kind) + ' · <span class="mono">' + esc(c.paneId) + '</span></div></div><button class="btn icon ghost" data-action="closeDrawer">' + ic('x') + '</button></div><div class="dr-tabs"><button class="active">概览</button></div></div>' +
-      '<div class="dr-body"><div class="box"><div class="box-h">收件免打扰控制</div><p style="margin:0 0 12px;color:var(--text-2)">开启暂停后，所有发往该主控窗格的回执都会进入候投队列，不会自动注入终端。</p><div style="display:flex;gap:8px;flex-wrap:wrap">' +
+    drawer.innerHTML = '<div class="dr-head"><div class="dr-top"><div><div class="dr-crumb">' + ic('folder','sm') + esc(projectName(c.projectId)) + ' · 主控会话</div><div class="dr-name">' + esc(c.name) + ' <span class="pill ' + (c.paused||c.typing?'warn':'ok') + '">' + (c.paused?'已暂停投递':c.typing?'正在输入':'投递就绪') + '</span></div><div class="dr-desc">' + esc(harnessName(c.kind)) + (c.location ? ' · ' + esc(c.location) : '') + '</div></div><button class="btn icon ghost" data-action="closeDrawer" aria-label="关闭">' + ic('x') + '</button></div><div class="dr-tabs"><button class="active">概览</button></div></div>' +
+      '<div class="dr-body"><div class="box"><div class="box-h"><span>收件免打扰与窗格定位</span><button class="btn sm" data-action="focusPane" data-pane="' + esc(c.paneId) + '">' + ic('locate','sm') + '跳转 Herdr 窗格</button></div><p style="margin:0 0 12px;color:var(--text-2)">开启暂停后，所有发往该主控窗格的回执都会进入候投队列，不会自动注入终端。</p><div style="display:flex;gap:8px;flex-wrap:wrap">' +
       (c.paused ? '<button class="btn primary" data-action="resumeRecipient" data-pane="' + esc(c.paneId) + '">恢复自动投递</button>' : '<button class="btn" data-action="pauseRecipient" data-pane="' + esc(c.paneId) + '">开启免打扰暂停</button>') +
-      '<button class="btn" data-action="flushPane" data-pane="' + esc(c.paneId) + '">Flush 消费队列</button></div></div></div>';
+      '<button class="btn" data-action="flushPane" data-pane="' + esc(c.paneId) + '">Flush 消费队列</button></div></div>' +
+      '<div class="box"><div class="box-h">技术标识</div><button class="tech-id" data-action="copyText" data-text="' + esc(c.paneId) + '">' + ic('copy','sm') + 'Herdr ID: ' + esc(c.paneId) + '</button></div></div>';
     return;
   }
 
@@ -1138,7 +1272,7 @@ function renderDrawer(){
   const st = ST[w.status] || ST.idle;
   const tab = state.drawer.tab || 'overview';
   const task = w.task;
-  const targetForPerm = task?.task || w.paneId || w.name;
+  const targetForPerm = task?.task || w.paneId || w.rawRole || w.name;
   const permInfo = PERMS.find(p => p.id === w.perm) || PERMS[1];
 
   let bodyHtml = '';
@@ -1155,18 +1289,19 @@ function renderDrawer(){
           '<button class="btn" data-action="setPerm" data-target="' + esc(targetForPerm) + '" data-perm="auto-workspace">升为工作区自动并放行</button>' +
           '<button class="btn danger-ghost" data-action="denyTask" data-id="' + esc(task.task) + '">' + ic('x','sm') + '拒绝 (Esc)</button>' +
         '</div>' +
-        (w.paneId ? '<div class="keybar"><span style="font-size:12.5px;color:var(--text-3);margin-right:4px">直控按键 (' + esc(w.paneId) + '):</span>' +
+        (w.paneId ? '<div class="keybar"><span style="font-size:12.5px;color:var(--text-3);margin-right:4px">直控按键:</span>' +
           [['Enter','enter'],['Esc','esc'],['↑','up'],['↓','down'],['Tab','tab'],['Ctrl+C','ctrl+c']].map(([lbl,k]) => '<button class="keybtn" data-action="sendKey" data-target="' + esc(task.task) + '" data-key="' + k + '">' + lbl + '</button>').join('') +
         '</div><div class="term-input-row"><input id="term-text-input" placeholder="向终端发送文本并回车..."><button class="btn sm primary" data-action="sendTermText" data-target="' + esc(task.task) + '">发送</button></div>' : '') +
       '</div>';
     }
 
-    bodyHtml += '<div class="box"><div class="box-h"><span>会话绑定与热替换</span>' +
-      (w.role ? '<button class="btn sm primary" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('swap','sm') + '热替换会话 / 模型</button>' : '') +
-      '</div><div style="font-size:14px;color:var(--text-2);display:grid;gap:6px">' +
-      '<div>底层方式：<b>' + (w.bindingMode==='unbound'?'未绑定（待命）':w.bindingMode==='headless'?'无头执行器':'Herdr 交互窗格 ' + esc(w.paneId || '')) + '</b></div>' +
-      '<div>Harness / 模型：<b>' + esc(w.kind) + (w.model ? ' · ' + esc(w.model) : '') + '</b></div>' +
-      '<div style="font-size:13px;color:var(--text-3)">热替换底层会话后，现有任务线程（--task）与 .chflow/ 信箱历史无缝保留。</div>' +
+    bodyHtml += '<div class="box"><div class="box-h"><span>会话绑定与热替换</span><div style="display:flex;gap:6px">' +
+      (w.paneId && w.status !== 'offline' ? '<button class="btn sm" data-action="focusPane" data-pane="' + esc(w.paneId) + '">' + ic('locate','sm') + '跳转终端</button>' : '') +
+      (w.role ? '<button class="btn sm primary" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('swap','sm') + '热替换会话</button>' : '') +
+      '</div></div><div style="font-size:14px;color:var(--text-2);display:grid;gap:6px">' +
+      '<div>执行位置：<b>' + (w.bindingMode==='unbound'?'未绑定（待命）':w.bindingMode==='headless'?'无头执行器':esc(w.location || 'Herdr 交互窗格')) + '</b></div>' +
+      '<div>Harness / 模型：<b>' + esc(harnessName(w.kind)) + (w.model ? ' · ' + esc(w.model) : '') + '</b></div>' +
+      (w.paneId ? '<div style="margin-top:4px"><button class="tech-id" data-action="copyText" data-text="' + esc(w.paneId) + '">' + ic('copy','sm') + 'Herdr ID: ' + esc(w.paneId) + '</button></div>' : '') +
     '</div></div>';
 
     if (w.bindingMode !== 'unbound'){
@@ -1194,7 +1329,7 @@ function renderDrawer(){
       if (state.fileCache[oKey] === undefined) void loadTaskFile(task.task, 'out', curTurn);
       let btns = '';
       for (let i = 1; i <= maxTurn; i++) btns += '<button class="btn sm ' + (i===curTurn?'primary':'') + '" data-action="drawerTurn" data-turn="' + i + '">第 ' + i + ' 轮</button>';
-      bodyHtml = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' + btns + '</div>' +
+      bodyHtml = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap"><div style="display:flex;gap:6px;flex-wrap:wrap">' + btns + '</div><button class="btn sm ghost" data-action="refreshMail" data-task="' + esc(task.task) + '" data-turn="' + curTurn + '">' + ic('refresh','sm') + '刷新信箱</button></div>' +
         '<div class="box"><div class="box-h">任务书（t' + curTurn + '-brief.md）</div><div class="mail-pre">' + esc(state.fileCache[bKey] || '正在加载...') + '</div></div>' +
         '<div class="box"><div class="box-h">交付回执（t' + curTurn + '-reply.md）</div><div class="mail-pre">' + esc(state.fileCache[oKey] || '正在加载...') + '</div></div>';
     }
@@ -1205,17 +1340,24 @@ function renderDrawer(){
   }
 
   drawer.innerHTML = '<div class="dr-head"><div class="dr-top"><div>' +
-    '<div class="dr-crumb">' + ic('folder','sm') + esc(projectName(w.projectId)) + ' · ' + (w.role ? '项目角色' : '工位') + '</div>' +
+    '<div class="dr-crumb">' + ic('folder','sm') + esc(projectName(w.projectId)) + ' · ' + (w.role ? '项目角色' : '工位') + (w.location ? '<span class="loc-chip">' + esc(w.location) + '</span>' : '') + '</div>' +
     '<div class="dr-name">' + esc(w.name) + ' <span class="pill ' + st.c + '"><span class="dot ' + st.c + '"></span>' + st.label + '</span></div>' +
     '<div class="dr-desc">' + esc(w.desc) + '</div>' +
-    '</div><button class="btn icon ghost" data-action="closeDrawer">' + ic('x') + '</button></div>' +
+    '</div><button class="btn icon ghost" data-action="closeDrawer" aria-label="关闭">' + ic('x') + '</button></div>' +
     '<div class="dr-tabs"><button class="' + (tab==='overview'?'active':'') + '" data-action="drawerTab" data-tab="overview">概览</button><button class="' + (tab==='mail'?'active':'') + '" data-action="drawerTab" data-tab="mail">任务信箱</button><button class="' + (tab==='activity'?'active':'') + '" data-action="drawerTab" data-tab="activity">活动记录</button></div></div>' +
     '<div class="dr-body">' + bodyHtml + '</div>';
 }
 
-/* ==================== MODALS ==================== */
+/* ==================== MODALS (ZERO stopPropagation BUG!) ==================== */
 function openModal(title, bodyHtml, footerHtml){
-  document.getElementById('modal-root').innerHTML = '<div class="modal-back" data-action="closeModal"><div class="modal" onclick="event.stopPropagation()"><div class="modal-h"><span>' + title + '</span><button class="btn icon ghost" data-action="closeModal">' + ic('x') + '</button></div><div class="modal-b">' + bodyHtml + '</div><div class="modal-f">' + footerHtml + '</div></div></div>';
+  document.getElementById('modal-root').innerHTML =
+    '<div class="modal-back" data-backdrop="modal">' +
+      '<div class="modal" role="dialog" aria-modal="true">' +
+        '<div class="modal-h"><span>' + title + '</span><button class="btn icon ghost" data-action="closeModal" aria-label="关闭">' + ic('x') + '</button></div>' +
+        '<div class="modal-b">' + bodyHtml + '</div>' +
+        '<div class="modal-f">' + footerHtml + '</div>' +
+      '</div>' +
+    '</div>';
 }
 function closeModal(){ document.getElementById('modal-root').innerHTML = ''; }
 
@@ -1228,58 +1370,112 @@ function openStopModal(){
   );
 }
 
+function syncSwapModalFields(){
+  const mode = document.getElementById('sw-mode')?.value || 'spawn';
+  const paneField = document.getElementById('sw-pane-field');
+  const kindSel = document.getElementById('sw-kind');
+  const closeOldRow = document.getElementById('sw-close-old-row');
+  if (paneField) paneField.style.display = mode === 'pane' ? 'block' : 'none';
+  if (closeOldRow) closeOldRow.style.display = mode === 'spawn' || mode === 'pane' ? 'flex' : 'none';
+  if (kindSel){
+    const agyOpt = kindSel.querySelector('option[value="agy"]');
+    if (agyOpt) agyOpt.disabled = mode === 'headless';
+    if (mode === 'headless' && kindSel.value === 'agy') kindSel.value = 'codex';
+  }
+}
+
 function openSwapModal(role, projectId){
   const r = (getSnap().roles || []).find(x => x.role === role && x.project_id === projectId);
   const unm = getSnap().unmanaged_live_agents || [];
-  openModal('热替换角色会话 · ' + esc(role),
-    '<div class="field"><label>绑定方式</label><select id="sw-mode"><option value="spawn">新开 Herdr 交互窗格并绑定</option><option value="headless">切换至无头执行器 (Headless)</option>' + (unm.length ? '<option value="pane">绑定已有在线窗格</option>' : '') + '</select></div>' +
-    (unm.length ? '<div class="field"><label>已有在线窗格（仅“绑定已有窗格”生效）</label><select id="sw-pane">' + unm.map(a => '<option value="' + esc(a.pane_id) + '">' + esc(a.pane_id + ' · ' + a.kind + ' (' + shortPath(a.cwd) + ')') + '</option>').join('') + '</select></div>' : '') +
-    '<div class="field-row"><div class="field"><label>目标 Harness</label><select id="sw-kind">' + ['codex','claude','pi','agy'].map(k => '<option value="' + k + '" ' + ((r?.kind||r?.default_kind)===k?'selected':'') + '>' + k + '</option>').join('') + '</select></div>' +
-    '<div class="field"><label>模型（可选）</label><input id="sw-model" value="' + esc(r?.model || '') + '" placeholder="留空沿用默认"></div></div>' +
-    '<label class="check-row"><input type="checkbox" id="sw-close-old" checked> 替换完成后关闭旧的空闲窗格</label>',
+  openModal('热替换角色会话 · @' + esc(role),
+    '<div class="field"><label>绑定方式</label><select id="sw-mode"><option value="spawn">新开 Herdr 交互窗格并绑定</option><option value="headless">切换至无头执行器 (Headless)</option>' + (unm.length ? '<option value="pane">绑定已有在线会话</option>' : '') + '</select></div>' +
+    (unm.length ? '<div class="field" id="sw-pane-field" style="display:none"><label>选择在线会话</label><select id="sw-pane">' + unm.map(a => '<option value="' + esc(a.pane_id) + '">' + esc(paneTitle(a) + (paneLoc(a) ? ' (' + paneLoc(a) + ')' : '')) + '</option>').join('') + '</select></div>' : '') +
+    '<div class="field-row"><div class="field"><label>目标 Harness</label><select id="sw-kind">' + ['codex','claude','pi','agy'].map(k => '<option value="' + k + '" ' + ((r?.kind||r?.default_kind)===k?'selected':'') + '>' + harnessName(k) + '</option>').join('') + '</select></div>' +
+    '<div class="field"><label>模型（可选）</label><input id="sw-model" value="' + esc(r?.model || r?.default_model || '') + '" placeholder="留空沿用默认"></div></div>' +
+    '<label class="check-row" id="sw-close-old-row"><input type="checkbox" id="sw-close-old" checked> 替换完成后关闭旧的空闲窗格</label>',
     '<button class="btn" data-action="closeModal">取消</button><button class="btn primary" data-action="confirmSwap" data-role="' + esc(role) + '" data-proj="' + esc(projectId) + '">' + ic('swap','sm') + '确认热替换</button>'
   );
+  const swMode = document.getElementById('sw-mode');
+  if (swMode){ swMode.addEventListener('change', syncSwapModalFields); syncSwapModalFields(); }
 }
 
 function openNewRoleModal(){
-  const projs = getSnap().projects || [];
+  const snap = getSnap();
+  const projs = snap.projects || [];
+  const globals = snap.global_roles || [];
   const defProj = state.project !== 'all' ? state.project : (projs[0]?.project_id || '');
-  openModal('新建项目角色槽位',
-    '<div class="field"><label>所属项目</label><select id="nr-proj">' + (projs.length ? projs.map(p => '<option value="' + esc(p.project_id) + '" ' + (p.project_id===defProj?'selected':'') + '>' + esc(p.name) + '</option>').join('') : '<option value="">当前默认项目</option>') + '</select></div>' +
-    '<div class="field-row"><div class="field"><label>角色名（小写字母/数字/-）</label><input id="nr-name" placeholder="reviewer"></div><div class="field"><label>默认 Harness</label><select id="nr-kind"><option value="codex">codex</option><option value="claude">claude</option><option value="pi">pi</option><option value="agy">agy</option></select></div></div>' +
-    '<div class="field"><label>职责说明</label><input id="nr-desc" placeholder="异构代码与安全审查"></div>' +
-    '<div class="field-row"><div class="field"><label>默认权限档位</label><select id="nr-perm"><option value="ask">ask（逐项询问）</option><option value="readonly">readonly（只读）</option><option value="auto-workspace">auto-workspace（工作区自动）</option><option value="yolo">yolo（完全放行）</option></select></div><div class="field"><label>默认模型（可选）</label><input id="nr-model" placeholder="留空用默认"></div></div>' +
-    '<label class="check-row"><input type="checkbox" id="nr-wt"> 启动时默认启用独立 Git Worktree 隔离</label>',
-    '<button class="btn" data-action="closeModal">取消</button><button class="btn primary" data-action="confirmNewRole">创建角色</button>'
+  const tmplHtml = globals.length ? '<div class="tmpl-strip"><span style="font-size:12.5px;color:var(--text-3);display:inline-flex;align-items:center;gap:5px">' + ic('globe','sm') + '全局模板（点击填充）:</span>' +
+    globals.map(g => '<button type="button" class="tmpl-chip" data-action="fillGlobalTemplate" data-role="' + esc(g.role) + '">' + esc('@' + g.role) + ' <span style="color:var(--text-3)">' + esc(harnessName(g.default_kind || 'codex')) + '</span></button>').join('') + '</div>' : '';
+
+  openModal('新建角色 / 全局角色模板',
+    tmplHtml +
+    '<div class="field" id="nr-proj-field"><label>所属项目</label><select id="nr-proj">' + (projs.length ? projs.map(p => '<option value="' + esc(p.project_id) + '" ' + (p.project_id===defProj?'selected':'') + '>' + esc(p.name) + '</option>').join('') : '<option value="">当前默认项目</option>') + '</select></div>' +
+    '<div class="field-row"><div class="field"><label>角色名（小写字母/数字/-）</label><input id="nr-name" placeholder="implementer"></div><div class="field"><label>默认 Harness</label><select id="nr-kind"><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="pi">Pi</option><option value="agy">Antigravity</option></select></div></div>' +
+    '<div class="field"><label>职责说明</label><input id="nr-desc" placeholder="功能实现、重构与回归测试"></div>' +
+    '<div class="field-row"><div class="field"><label>默认权限档位</label><select id="nr-perm"><option value="auto-workspace">auto-workspace（工作区自动）</option><option value="readonly">readonly（只读）</option><option value="ask">ask（逐项询问）</option><option value="yolo">yolo（完全放行）</option></select></div><div class="field"><label>默认模型（可选）</label><input id="nr-model" placeholder="留空用默认"></div></div>' +
+    '<label class="check-row"><input type="checkbox" id="nr-wt" checked> Git 仓库下默认启用独立 Worktree 隔离</label>' +
+    '<label class="check-row"><input type="checkbox" id="nr-global"> 保存为全局角色模板（所有项目可按需实例化复用）</label>',
+    '<button class="btn" data-action="closeModal">取消</button><button class="btn primary" data-action="confirmNewRole">保存角色</button>'
   );
+  const gCheck = document.getElementById('nr-global');
+  const pField = document.getElementById('nr-proj-field');
+  if (gCheck && pField) gCheck.addEventListener('change', () => { pField.style.display = gCheck.checked ? 'none' : 'block'; });
 }
 
 function openDispatchModal(preTarget, preProj){
-  const roles = getSnap().roles || [];
-  const panes = getSnap().managed_panes || [];
-  const opts = [
-    ...roles.map(r => '<option value="role:' + esc(r.project_id) + ':' + esc(r.role) + '" ' + (preTarget===r.role&&(!preProj||preProj===r.project_id)?'selected':'') + '>角色 ' + esc(projectName(r.project_id) + ' / ' + r.role + ' (' + r.binding_mode + ')') + '</option>'),
-    ...panes.filter(p => !p.role).map(p => '<option value="pane:' + esc(p.project_id) + ':' + esc(p.pane_id) + '" ' + (preTarget===p.pane_id?'selected':'') + '>窗格 ' + esc((p.alias || p.pane_id) + ' (' + p.kind + ')') + '</option>')
-  ];
+  const snap = getSnap();
+  const roles = snap.roles || [];
+  const globals = snap.global_roles || [];
+  const panes = snap.managed_panes || [];
+  const unm = snap.unmanaged_live_agents || [];
+  const defProj = preProj || (state.project !== 'all' ? state.project : (snap.projects?.[0]?.project_id || ''));
+
+  const encOpt = obj => esc(JSON.stringify(obj));
+  const opts = [];
+  for (const r of roles){
+    const sel = preTarget === r.role && (!preProj || preProj === r.project_id) ? 'selected' : '';
+    opts.push('<option value="' + encOpt({ kind: 'role', project: r.project_id, target: r.role }) + '" ' + sel + '>项目角色 · ' + esc(projectName(r.project_id) + ' / @' + r.role + ' (' + (ST[r.agent_status]?.label || r.binding_mode) + ')') + '</option>');
+  }
+  const existingRoleNames = new Set(roles.filter(r => !defProj || r.project_id === defProj).map(r => r.role));
+  for (const g of globals){
+    if (existingRoleNames.has(g.role)) continue;
+    opts.push('<option value="' + encOpt({ kind: 'global_role', project: defProj, target: g.role }) + '">全局模板 · @' + esc(g.role + ' (' + harnessName(g.default_kind || 'codex') + ' · 自动启用)') + '</option>');
+  }
+  for (const p of panes.filter(x => !x.role)){
+    const sel = preTarget === p.pane_id ? 'selected' : '';
+    opts.push('<option value="' + encOpt({ kind: 'pane', project: p.project_id, target: p.pane_id }) + '" ' + sel + '>受管会话 · ' + esc(paneTitle(p) + (paneLoc(p) ? ' (' + paneLoc(p) + ')' : '')) + '</option>');
+  }
+  for (const a of unm){
+    const sel = preTarget === a.pane_id ? 'selected' : '';
+    opts.push('<option value="' + encOpt({ kind: 'unmanaged', project: a.project_id, target: a.pane_id }) + '" ' + sel + '>在线会话 · ' + esc(paneTitle(a) + (paneLoc(a) ? ' (' + paneLoc(a) + ')' : '') + ' · 自动纳管') + '</option>');
+  }
+
   openModal('派发任务',
-    '<div class="field"><label>目标角色或工位</label><select id="dp-target">' + (opts.length ? opts.join('') : '<option value="">请先创建角色或纳管窗格</option>') + '</select></div>' +
+    '<div class="field"><label>目标角色、全局模板或在线会话</label><select id="dp-target">' + (opts.length ? opts.join('') : '<option value="">请先创建角色或启动一个在线会话</option>') + '</select></div>' +
     '<div class="field"><label>任务书正文（将自动写入 .chflow/ 文件信箱）</label><textarea id="dp-brief" placeholder="清晰描述目标、验收标准与可写范围..."></textarea></div>' +
-    '<label class="check-row"><input type="checkbox" id="dp-spawn" checked> 若角色处于待命（unbound），自动按预设拉起并绑定</label>',
+    '<label class="check-row"><input type="checkbox" id="dp-spawn" checked> 若角色处于待命或来自全局模板，自动按预设拉起并绑定</label>',
     '<button class="btn" data-action="closeModal">取消</button><button class="btn primary" data-action="confirmDispatch">' + ic('send','sm') + '立即派发</button>'
   );
 }
 
 function openBindPaneModal(paneId, projectId){
+  const pm = findPaneMeta(paneId);
   const roles = (getSnap().roles || []).filter(r => !projectId || r.project_id === projectId);
-  openModal('绑定在线窗格 ' + esc(paneId) + ' 到角色',
-    roles.length
-      ? '<div class="field"><label>选择目标角色</label><select id="bp-role">' + roles.map(r => '<option value="' + esc(r.project_id) + '::' + esc(r.role) + '">' + esc(projectName(r.project_id) + ' / ' + r.role + ' (' + r.binding_mode + ')') + '</option>').join('') + '</select></div>'
-      : '<p style="margin:0;color:var(--text-2)">该项目暂无角色槽位，请先点击「新建角色」或直接「纳管」该窗格。</p>',
-    '<button class="btn" data-action="closeModal">取消</button>' + (roles.length ? '<button class="btn primary" data-action="confirmBindPane" data-pane="' + esc(paneId) + '">确认绑定</button>' : '')
+  const globals = getSnap().global_roles || [];
+  const existingNames = new Set(roles.map(r => r.role));
+  const choices = [
+    ...roles.map(r => '<option value="' + esc(JSON.stringify({ project: r.project_id, role: r.role })) + '">项目角色 · ' + esc(projectName(r.project_id) + ' / @' + r.role) + '</option>'),
+    ...globals.filter(g => !existingNames.has(g.role)).map(g => '<option value="' + esc(JSON.stringify({ project: projectId || '', role: g.role })) + '">全局模板 · @' + esc(g.role + ' (启用并绑定)') + '</option>')
+  ];
+  openModal('绑定会话「' + esc(pm ? paneTitle(pm) : paneId) + '」到角色',
+    choices.length
+      ? '<div class="field"><label>选择目标角色或全局模板</label><select id="bp-role">' + choices.join('') + '</select></div>'
+      : '<p style="margin:0;color:var(--text-2)">当前项目暂无角色或全局模板，请先点击「新建角色」或直接「纳管」该会话。</p>',
+    '<button class="btn" data-action="closeModal">取消</button>' + (choices.length ? '<button class="btn primary" data-action="confirmBindPane" data-pane="' + esc(paneId) + '">确认绑定</button>' : '')
   );
 }
 
-/* ==================== MAIN RENDER & DAG INTERACTIONS ==================== */
+/* ==================== MAIN RENDER & INCREMENTAL DAG DRAG ==================== */
 function render(){
   renderTopbar();
   renderFocus();
@@ -1290,7 +1486,7 @@ function render(){
     if (state.workMode === 'dag'){
       if (!state.dag.fitted){
         const shell = document.getElementById('dag-shell');
-        const layout = computeDagLayout();
+        const layout = state.lastLayout || computeDagLayout();
         const firstLane = layout.lanes[0];
         if (firstLane && shell){
           const sw = (shell.clientWidth || 1440) - 36, sh = (shell.clientHeight || 620) - 36;
@@ -1316,6 +1512,23 @@ function render(){
   renderDrawer();
 }
 
+function updateDraggedEdges(stage, layout){
+  const nodeMap = new Map(layout.nodes.map(n => [n.id, n]));
+  for (const e of layout.edges){
+    const a = nodeMap.get(e.from), b = nodeMap.get(e.to);
+    if (!a || !b) continue;
+    const g = buildEdgeGeometry(a, b);
+    const pathEl = stage.querySelector('[data-edge-id="' + CSS.escape(e.id) + '"]');
+    if (pathEl) pathEl.setAttribute('d', g.d);
+    const c1 = stage.querySelector('[data-edge-start="' + CSS.escape(e.id) + '"]');
+    if (c1){ c1.setAttribute('cx', String(g.x1)); c1.setAttribute('cy', String(g.y1)); }
+    const c2 = stage.querySelector('[data-edge-end="' + CSS.escape(e.id) + '"]');
+    if (c2){ c2.setAttribute('cx', String(g.x2)); c2.setAttribute('cy', String(g.y2)); }
+    const badge = stage.querySelector('[data-edge-badge="' + CSS.escape(e.id) + '"]');
+    if (badge){ badge.style.left = g.mx + 'px'; badge.style.top = g.my + 'px'; }
+  }
+}
+
 function bindDagInteractions(){
   const shell = document.getElementById('dag-shell'), stage = document.getElementById('dag-stage');
   if (!shell || !stage) return;
@@ -1336,15 +1549,27 @@ function bindDagInteractions(){
       const id = nodeEl.dataset.nodeId;
       const sx = ev.clientX, sy = ev.clientY;
       const orig = state.dag.offsets[id] || { dx: 0, dy: 0 };
+      const layout = state.lastLayout;
+      const nodeObj = layout?.nodes.find(n => n.id === id);
+      const baseX = nodeObj ? nodeObj.x - orig.dx : 0;
+      const baseY = nodeObj ? nodeObj.y - orig.dy : 0;
       let moved = false;
       const onMove = me => {
         const ddx = (me.clientX - sx) / state.dag.scale, ddy = (me.clientY - sy) / state.dag.scale;
         if (!moved && Math.hypot(ddx, ddy) > 4){ moved = true; nodeEl.classList.add('dragging'); }
-        if (moved){ state.dag.offsets[id] = { dx: orig.dx + ddx, dy: orig.dy + ddy }; render(); }
+        if (moved && nodeObj){
+          state.dag.offsets[id] = { dx: orig.dx + ddx, dy: orig.dy + ddy };
+          nodeObj.x = baseX + state.dag.offsets[id].dx;
+          nodeObj.y = baseY + state.dag.offsets[id].dy;
+          nodeEl.style.left = nodeObj.x + 'px';
+          nodeEl.style.top = nodeObj.y + 'px';
+          updateDraggedEdges(stage, layout);
+        }
       };
       const onUp = () => {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
+        nodeEl.classList.remove('dragging');
         if (!moved){
           const kind = nodeEl.dataset.nodeKind;
           if (kind === 'worker') { state.drawer = { kind: 'worker', nodeId: id, tab: 'overview' }; render(); }
@@ -1378,19 +1603,33 @@ function bindDagInteractions(){
     ev.preventDefault();
     const w = findWorkerByNodeId(nodeEl.dataset.nodeId);
     if (!w) return;
-    document.getElementById('ctx-root').innerHTML = '<div class="ctx-menu" style="left:' + Math.min(ev.clientX, window.innerWidth - 210) + 'px;top:' + Math.min(ev.clientY, window.innerHeight - 210) + 'px">' +
+    document.getElementById('ctx-root').innerHTML = '<div class="ctx-menu" style="left:' + Math.min(ev.clientX, window.innerWidth - 220) + 'px;top:' + Math.min(ev.clientY, window.innerHeight - 230) + 'px">' +
       '<button class="ctx-item" data-action="openWorker" data-id="' + esc(w.nodeId) + '">' + ic('eye','sm') + '查看详情</button>' +
+      (w.paneId && w.status !== 'offline' ? '<button class="ctx-item" data-action="focusPane" data-pane="' + esc(w.paneId) + '">' + ic('locate','sm') + '跳转 Herdr 窗格</button>' : '') +
       (w.status === 'blocked' && w.task ? '<button class="ctx-item" data-action="approveTask" data-id="' + esc(w.task.task) + '">' + ic('check','sm') + '一键批准放行</button>' : '') +
       (w.role ? '<button class="ctx-item" data-action="openSwap" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('swap','sm') + '热替换会话 / 模型</button>' : '') +
-      (w.bindingMode !== 'unbound' ? '<button class="ctx-item" data-action="setPerm" data-target="' + esc(w.task?.task || w.paneId || w.name) + '" data-perm="auto-workspace">' + ic('shield','sm') + '切为工作区自动</button>' : '') +
+      (w.bindingMode !== 'unbound' ? '<button class="ctx-item" data-action="setPerm" data-target="' + esc(w.task?.task || w.paneId || w.rawRole || w.name) + '" data-perm="auto-workspace">' + ic('shield','sm') + '切为工作区自动</button>' : '') +
       (w.role && w.bindingMode !== 'unbound' ? '<button class="ctx-item danger" data-action="unbindRole" data-role="' + esc(w.role.role) + '" data-proj="' + esc(w.role.project_id) + '">' + ic('x','sm') + '解绑当前会话</button>' : '') +
     '</div>';
   };
 }
 
+/* ==================== GLOBAL KEYBOARD & CLICK HANDLERS ==================== */
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  const ctxRoot = document.getElementById('ctx-root');
+  if (ctxRoot && ctxRoot.innerHTML){ ctxRoot.innerHTML = ''; return; }
+  const modalRoot = document.getElementById('modal-root');
+  if (modalRoot && modalRoot.innerHTML){ closeModal(); return; }
+  if (state.projMenuOpen){ state.projMenuOpen = false; renderTopbar(); return; }
+  if (state.drawer){ state.drawer = null; render(); return; }
+  if (state.dag.expanded){ state.dag.expanded = false; state.dag.fitted = false; render(); }
+});
+
 document.addEventListener('click', async ev => {
   if (!ev.target.closest('.ctx-menu')) document.getElementById('ctx-root').innerHTML = '';
   if (!ev.target.closest('.proj-wrap') && state.projMenuOpen){ state.projMenuOpen = false; renderTopbar(); }
+  if (ev.target && ev.target.dataset && ev.target.dataset.backdrop === 'modal'){ closeModal(); return; }
 
   const btn = ev.target.closest('[data-action]');
   if (!btn) return;
@@ -1412,6 +1651,16 @@ document.addEventListener('click', async ev => {
     else if (act === 'closeDrawer'){ state.drawer = null; render(); }
     else if (act === 'drawerTab'){ if (state.drawer){ state.drawer.tab = btn.dataset.tab; renderDrawer(); } }
     else if (act === 'drawerTurn'){ if (state.drawer){ state.drawer.turn = Number(btn.dataset.turn); renderDrawer(); } }
+    else if (act === 'refreshMail'){
+      const tId = btn.dataset.task, tr = Number(btn.dataset.turn || 1);
+      await Promise.all([loadTaskFile(tId, 'brief', tr, true), loadTaskFile(tId, 'out', tr, true)]);
+      toast('信箱内容已刷新');
+    }
+    else if (act === 'focusPane'){ await apiAction('focus_pane', btn.dataset.pane, {}); toast('已切换 Herdr 焦点至目标窗格'); }
+    else if (act === 'copyText'){
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(btn.dataset.text || '');
+      toast('已复制编号：' + (btn.dataset.text || ''));
+    }
     else if (act === 'approveTask'){ await apiAction('terminal_control', id, { keys: ['enter'] }); toast('已发送 Enter 放行 ' + id); }
     else if (act === 'denyTask'){ await apiAction('terminal_control', id, { keys: ['esc'] }); toast('已发送 Esc 拒绝 ' + id); }
     else if (act === 'sendKey'){ await apiAction('terminal_control', btn.dataset.target, { keys: [btn.dataset.key] }); toast('已发送按键 ' + btn.dataset.key); }
@@ -1425,23 +1674,23 @@ document.addEventListener('click', async ev => {
     else if (act === 'setPerm'){ await apiAction('set_perm', btn.dataset.target, { perm: btn.dataset.perm }); toast('权限已切换为 ' + btn.dataset.perm); }
     else if (act === 'finishTask'){ await apiAction('finish', id, { ok: true }); toast('任务 ' + id + ' 已验收结单'); }
     else if (act === 'cancelTask'){ await apiAction('cancel', id, {}); toast('已取消任务 ' + id); }
-    else if (act === 'unbindRole'){ await apiAction('role_unbind', btn.dataset.role, { project: btn.dataset.proj }); toast('已解绑角色 ' + btn.dataset.role); }
-    else if (act === 'removeRole'){ await apiAction('role_remove', btn.dataset.role, { project: btn.dataset.proj }); state.drawer = null; toast('已移除角色 ' + btn.dataset.role); }
+    else if (act === 'unbindRole'){ await apiAction('role_unbind', btn.dataset.role, { project: btn.dataset.proj }); toast('已解绑角色 @' + btn.dataset.role); }
+    else if (act === 'removeRole'){ await apiAction('role_remove', btn.dataset.role, { project: btn.dataset.proj }); state.drawer = null; toast('已移除角色 @' + btn.dataset.role); }
     else if (act === 'pushQueue'){ await apiAction('queue_deliver_now', undefined, { event_id: id }); toast('已立即强推回执'); }
     else if (act === 'consumeQueue'){ await apiAction('queue_consume', undefined, { event_id: id }); toast('已标记仅阅消费'); }
     else if (act === 'dropQueue'){ await apiAction('queue_drop', undefined, { event_id: id }); toast('已丢弃该回执'); }
     else if (act === 'cancelRetry'){ await apiAction('cancel_retry', id, {}); toast('已取消重试计划'); }
-    else if (act === 'pauseRecipient'){ await apiAction('queue_pause', btn.dataset.pane, {}); toast('已暂停向 ' + btn.dataset.pane + ' 自动投递'); }
-    else if (act === 'resumeRecipient'){ await apiAction('queue_resume', btn.dataset.pane, {}); toast('已恢复向 ' + btn.dataset.pane + ' 自动投递'); }
-    else if (act === 'flushPane'){ await apiAction('flush', btn.dataset.pane, {}); toast('已消费 ' + btn.dataset.pane + ' 队列'); }
-    else if (act === 'adoptPane'){ await apiAction('adopt', btn.dataset.pane, { project: btn.dataset.proj || undefined }); toast('已纳管窗格 ' + btn.dataset.pane); }
+    else if (act === 'pauseRecipient'){ await apiAction('queue_pause', btn.dataset.pane, {}); toast('已暂停自动投递'); }
+    else if (act === 'resumeRecipient'){ await apiAction('queue_resume', btn.dataset.pane, {}); toast('已恢复自动投递'); }
+    else if (act === 'flushPane'){ await apiAction('flush', btn.dataset.pane, {}); toast('已消费候投队列'); }
+    else if (act === 'adoptPane'){ await apiAction('adopt', btn.dataset.pane, { project: btn.dataset.proj || undefined }); toast('已纳管该会话'); }
     else if (act === 'openBindPane'){ openBindPaneModal(btn.dataset.pane, btn.dataset.proj); }
     else if (act === 'confirmBindPane'){
-      const val = document.getElementById('bp-role')?.value || '';
-      const [proj, role] = val.split('::');
-      if (!role) return;
-      await apiAction('role_bind', role, { project: proj, pane: btn.dataset.pane });
-      closeModal(); toast('已绑定至角色 ' + role);
+      const raw = document.getElementById('bp-role')?.value || '';
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      await apiAction('role_bind', parsed.role, { project: parsed.project || undefined, pane: btn.dataset.pane });
+      closeModal(); toast('已绑定至角色 @' + parsed.role);
     }
     else if (act === 'pruneNow'){ const res = await apiAction('prune', undefined, { tasks: true }); toast('清理完成：窗格 ' + (res?.pruned_panes || 0) + '，归档任务 ' + (res?.pruned_tasks || 0)); }
     else if (act === 'openStopModal'){ openStopModal(); }
@@ -1459,48 +1708,61 @@ document.addEventListener('click', async ev => {
     else if (act === 'openSwap'){ openSwapModal(btn.dataset.role, btn.dataset.proj); }
     else if (act === 'confirmSwap'){
       const mode = document.getElementById('sw-mode').value;
-      const opts = { project: btn.dataset.proj, kind: document.getElementById('sw-kind').value, close_old: document.getElementById('sw-close-old').checked };
+      const opts = { project: btn.dataset.proj, kind: document.getElementById('sw-kind').value };
+      const closeOldEl = document.getElementById('sw-close-old');
+      if (mode !== 'headless' && closeOldEl?.checked) opts.close_old = true;
       const m = document.getElementById('sw-model').value.trim();
       if (m) opts.model = m;
       if (mode === 'headless') opts.headless = true;
       else if (mode === 'pane') opts.pane = document.getElementById('sw-pane').value;
       else { opts.spawn = true; if (opts.kind === 'agy') opts.attended = true; }
       await apiAction('role_bind', btn.dataset.role, opts);
-      closeModal(); toast('角色 ' + btn.dataset.role + ' 热替换完成');
+      closeModal(); toast('角色 @' + btn.dataset.role + ' 热替换完成');
     }
     else if (act === 'openNewRole'){ openNewRoleModal(); }
+    else if (act === 'fillGlobalTemplate'){
+      const g = (getSnap().global_roles || []).find(x => x.role === btn.dataset.role);
+      if (g){
+        const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+        setVal('nr-name', g.role); setVal('nr-desc', g.description || '');
+        setVal('nr-kind', g.default_kind || 'codex'); setVal('nr-perm', g.default_perm || 'auto-workspace');
+        setVal('nr-model', g.default_model || '');
+        const wt = document.getElementById('nr-wt'); if (wt) wt.checked = !!g.worktree;
+      }
+    }
     else if (act === 'confirmNewRole'){
       const name = (document.getElementById('nr-name').value || '').trim();
       if (!name){ toast('请输入角色名', true); return; }
+      const isGlobal = !!document.getElementById('nr-global')?.checked;
       const opts = { kind: document.getElementById('nr-kind').value, perm: document.getElementById('nr-perm').value };
-      const proj = document.getElementById('nr-proj').value;
+      if (isGlobal) opts.global = true;
+      else { const proj = document.getElementById('nr-proj').value; if (proj) opts.project = proj; }
       const desc = document.getElementById('nr-desc').value.trim();
       const model = document.getElementById('nr-model').value.trim();
-      if (proj) opts.project = proj;
       if (desc) opts.desc = desc;
       if (model) opts.model = model;
       if (document.getElementById('nr-wt').checked) opts.worktree = true;
       await apiAction('role_set', name, opts);
-      closeModal(); toast('已创建角色 ' + name);
+      closeModal(); toast(isGlobal ? ('已保存全局角色模板 @' + name) : ('已创建项目角色 @' + name));
     }
     else if (act === 'openDispatch'){ openDispatchModal(btn.dataset.target, btn.dataset.proj); }
     else if (act === 'confirmDispatch'){
       const raw = document.getElementById('dp-target').value;
       const brief = (document.getElementById('dp-brief').value || '').trim();
       if (!raw || !brief){ toast('请选择目标并填写任务正文', true); return; }
-      const [kind, proj, target] = raw.split(':');
+      const sel = JSON.parse(raw);
       const opts = { brief };
-      if (proj) opts.project = proj;
-      if (kind === 'role' && document.getElementById('dp-spawn').checked) opts.spawn = true;
-      await apiAction('send', target, opts);
-      closeModal(); toast('任务已派发至 ' + target);
+      if (sel.project) opts.project = sel.project;
+      if ((sel.kind === 'role' || sel.kind === 'global_role') && document.getElementById('dp-spawn').checked) opts.spawn = true;
+      await apiAction('send', sel.target, opts);
+      closeModal(); toast('任务已派发');
     }
     else if (act === 'closeModal'){ closeModal(); }
     else if (act === 'dagExpand'){ state.dag.expanded = !state.dag.expanded; state.dag.fitted = false; render(); }
     else if (act === 'dagZoomIn'){ state.dag.scale = Math.min(1.5, state.dag.scale + 0.1); render(); }
     else if (act === 'dagZoomOut'){ state.dag.scale = Math.max(0.5, state.dag.scale - 0.1); render(); }
     else if (act === 'dagFit'){
-      const shell = document.getElementById('dag-shell'), layout = computeDagLayout();
+      const shell = document.getElementById('dag-shell'), layout = state.lastLayout || computeDagLayout();
       const sw = (shell?.clientWidth || 1440) - 36, sh = (shell?.clientHeight || 620) - 36;
       state.dag.scale = Math.min(1.05, Math.max(0.52, Math.min(sw / layout.totalW, sh / layout.totalH)));
       state.dag.tx = Math.max(16, Math.round((sw + 36 - layout.totalW * state.dag.scale) / 2));

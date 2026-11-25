@@ -37,12 +37,13 @@ const actionOptions=new Map<string,string[]>([
   ['queue_reroute',['event_id','to','to_session','to_machine']],
   ['cancel_retry',[]],
   ['assign_project',['project','machine','session']],
+  ['focus_pane',['machine','session']],
   ['prune',['tasks','project','machine','session']],
   ['daemon_stop',['force']],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,roleActionOptions(action)!.split(' ')] as [string,string[]]),
 ]);
 const operatorCommands=new Map([
-  ['assign_project','ui.assign_project'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
+  ['assign_project','ui.assign_project'],['focus_pane','ui.focus_pane'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,'ui.role.'+action] as const),
   ['set_perm','ui.set_perm'],['terminal_control','ui.terminal'],['inspect_screen','ui.screen'],['cancel_retry','ui.cancel_retry'],
   ...['queue_pause','queue_resume','queue_deliver_now','queue_consume','queue_drop','queue_reroute'].map(a=>[a,'ui.'+a] as const),

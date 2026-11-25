@@ -5,11 +5,11 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { approveKey, blacklist, classifyBlock, keyArg, signature } from './approval.js';
 import { channelMatrix, channels, compliance, fallbackSpecs, kindOf, launch, native, permission, resumeArgs } from './harnesses.js';
 import { headless, processStamp, stopGroup, transportFor } from './headless.js';
-import { closePane, controlDelays, get, herdr, idle, keys, literal, missing, prompt, route, same, screen, startPane, transient } from './herdr.js';
+import { closePane, controlDelays, focusAgent, get, herdr, idle, keys, literal, missing, prompt, route, same, screen, startPane, transient } from './herdr.js';
 import { readConfig } from './ipc.js';
 import { atomic, diagnostic, fileText, fileTextIf, mailbox } from './mailbox.js';
 import { dispatch, note } from './protocol.js';
-import { paneCwd, projectId, roleActive, roleDefaults, roleName, samePane } from './projects.js';
+import { globalRole, paneCwd, projectId, readGlobalRoles, removeGlobalRole, roleActive, roleDefaults, roleName, samePane, saveGlobalRole } from './projects.js';
 import { DeliveryQueue, sessionsEqual } from './queue.js';
 import { backoff, classify, recovery, schedule } from './retry.js';
 import { clean, input, redact } from './sensitive.js';
@@ -214,7 +214,8 @@ export class Engine {
       if(qualified&&explicit!==undefined&&requested[0]!==explicit)return invalid('Project and qualified role must agree.');
       const project=this.work.projects.resolve(inv.ctx.cwd,qualified?requested[0]:explicit??prev?.project_id);
       const name=qualified?roleName(requested[1]):safeTarget(inv.target);
-      const role=this.db.role(project.project_id,name);
+      let role=this.db.role(project.project_id,name);
+      if(!role&&/^[a-z][a-z0-9_-]{0,31}$/.test(name))role=this.instantiateGlobalRole(project,name);
       if(o.role!==undefined&&str(o,'role')!==name)return invalid('Role and target must agree.');
       if(qualified&&!role)throw new FlowError('role_not_found','Role not found in the requested project.');
       if(!role)return this.sendPane(inv,id,prev,route(inv),name,undefined,explicit===undefined?undefined:project);
@@ -612,6 +613,13 @@ export class Engine {
     this.save(t);
   }
   private roleKey(role:Pick<Role,'project_id'|'role'>){return 'role:'+role.project_id+'/'+role.role;}
+  private instantiateGlobalRole(project:Project,name:string):Role|undefined{
+    const tmpl=globalRole(name);
+    if(!tmpl)return undefined;
+    const created:Role={...tmpl,project_id:project.project_id,role:name,source:'manual',binding_mode:'unbound'};
+    this.db.saveRole(created);
+    return created;
+  }
   private resolvedProject(inv:Invocation,cwd=inv.ctx.cwd){
     return this.work.projects.resolve(cwd,str(inv.opts,'project'));
   }
@@ -692,25 +700,43 @@ export class Engine {
 
   private async roleCommand(action:string,inv:Invocation){
     const {opts:o,ctx}=inv;
+    if(o.global===true){
+      if(action==='list')return {scope:'global',global_roles:readGlobalRoles()};
+      const name=roleName(inv.target);
+      if(action==='set'){
+        const saved=saveGlobalRole(name,o,ctx.cwd);
+        this.onLiveChange();
+        return {scope:'global',...saved};
+      }
+      if(action==='remove'){
+        const removed=removeGlobalRole(name);
+        if(!removed)throw new FlowError('role_not_found','Global role template not found.');
+        this.onLiveChange();
+        return {scope:'global',role:name,removed:true};
+      }
+      return invalid('--global is supported with role list, set or remove.');
+    }
     const project=this.resolvedProject(inv);
     if(action==='list'){
       const r=route(inv),live=await this.refreshRoute(r);
-      return {project_filter:project.project_id,roles:this.roleViews(this.work.topologyView(r,live,ctx.cwd),r,this.db.tasks(),project.project_id)};
+      return {project_filter:project.project_id,roles:this.roleViews(this.work.topologyView(r,live,ctx.cwd),r,this.db.tasks(),project.project_id),global_roles:readGlobalRoles()};
     }
     const name=roleName(inv.target);
     return this.lock(this.roleKey({project_id:project.project_id,role:name}),async()=>{
-      const old=this.db.role(project.project_id,name);
+      let old=this.db.role(project.project_id,name);
       if(action==='set'){
-        const defaults=roleDefaults(o,ctx.cwd,old);
+        const base=old??globalRole(name);
+        const defaults=roleDefaults(o,ctx.cwd,base);
         const configOverrides=old?.source==='config'?{
           ...old.config_overrides,
-          ...Object.fromEntries(Object.entries(defaults).filter(([key,value])=>value!==old[key as keyof Role])),
+          ...Object.fromEntries(Object.entries(defaults).filter(([key,value])=>value!==old![key as keyof Role])),
         }:undefined;
         const role:Role={...(old??{project_id:project.project_id,role:name,source:'manual',binding_mode:'unbound'}),
           ...defaults,config_overrides:configOverrides};
         this.db.saveRole(role);
         return this.singleRoleView(role,inv);
       }
+      if(!old&&action==='bind')old=this.instantiateGlobalRole(project,name);
       if(!old)throw new FlowError('role_not_found','Role not found in the requested project.');
       if(action==='bind')return this.singleRoleView(await this.bindRole(inv,project,old),inv);
       this.roleFree(old);
@@ -816,7 +842,7 @@ export class Engine {
       if(this.stopping)return topology;
       this.work.sync(r,topology);
       const agents=[...topology.agents].sort((a,b)=>a.pane_id.localeCompare(b.pane_id));
-      const fingerprint=JSON.stringify({herdr:topology.herdr,agents});
+      const fingerprint=JSON.stringify({herdr:topology.herdr,agents,labels:topology.labels});
       state.current=topology;
       if(fingerprint!==state.fingerprint){
         state.fingerprint=fingerprint;
@@ -864,7 +890,7 @@ export class Engine {
     const duplicateNames=new Set(projects.filter((p,i)=>projects.findIndex(q=>q.name===p.name)<i).map(p=>p.name));
     for(const p of projects)if(duplicateNames.has(p.name))p.name=dirname(p.root)+' / '+p.name;
     const visibleRecipients=new Set([...projects.flatMap(p=>p.controllers),...managed_panes.map(p=>p.pane_id),...unmanaged_live_agents.map(p=>p.pane_id)]);
-    return {route:r,herdr:topology.herdr,managed_panes,unmanaged_live_agents,projects,roles,project_filter:filter,
+    return {route:r,herdr:topology.herdr,managed_panes,unmanaged_live_agents,projects,roles,global_roles:readGlobalRoles(),project_filter:filter,
       current_project:current.project_id,tasks:all?tasks:tasks.filter(t=>!terminal(t.state)),
       queue:this.db.events(all).filter(pending),scheduled_retries:this.db.plans(all).filter(pending),
       paused_recipients:this.db.pausedPanes(r).filter(p=>!filter||visibleRecipients.has(p)),
@@ -1187,6 +1213,12 @@ export class Engine {
         const project=str(o,'project');
         if(!project)return invalid('Select a destination project.');
         return success(await this.work.assignProject(inv,this.resolvedProject(inv)));
+      }
+      case 'ui.focus_pane': {
+        const r=route(inv), pane=safeTarget(inv.target);
+        await focusAgent(r,pane);
+        this.db.audit(null,'pane_focused',pane);
+        return success({pane_id:pane,focused:true});
       }
       case 'start':return success(await this.registerPane('start',inv));
       case 'switch':return success(await this.work.switch(inv));

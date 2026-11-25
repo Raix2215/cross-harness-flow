@@ -4,7 +4,7 @@
 
 [简体中文](./README.md) · English
 
-[![Version](https://img.shields.io/badge/version-3.6.0-111317.svg)](#installation)
+[![Version](https://img.shields.io/badge/version-3.6.1-111317.svg)](#installation)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.13.0-339933.svg)](#dependencies--herdr-coupling)
 [![Herdr](https://img.shields.io/badge/herdr-%3E%3D0.9.5-4b5563.svg)](#dependencies--herdr-coupling)
 [![License: MIT](https://img.shields.io/badge/license-MIT-4b5563.svg)](./LICENSE)
@@ -13,7 +13,7 @@
 
 ---
 
-`cross-harness-flow` is a reusable **Agent Skill + runtime (`chflow` v3.6.0)** fundamentally **designed around [Herdr](https://github.com/herdrdev/herdr)** for local multi-agent orchestration. Built on Herdr's multi-pane terminal control plane, it unifies **Pi, Codex, Claude Code, and Antigravity** across a 4-layer architecture (Intent Orchestration → Global/Project Roles → Hot-Swappable Sessions → Mailbox & Control Plane), enabling controller agents to derive roles and persistent sessions autonomously, hot-swap underlying Harnesses/models at any time, and keep five-tier permission governance, multi-turn history, pane navigation, and full visibility effortless in a pure monochrome Web/CLI console.
+`cross-harness-flow` is a reusable **Agent Skill + runtime (`chflow` v3.6.1)** fundamentally **designed around [Herdr](https://github.com/herdrdev/herdr)** for local multi-agent orchestration. Built on Herdr's multi-pane terminal control plane, it unifies **Pi, Codex, Claude Code, and Antigravity** across a 4-layer architecture (Intent Orchestration → Global/Project Roles → Hot-Swappable Sessions → Mailbox & Control Plane), enabling controller agents to derive roles and persistent sessions autonomously, hot-swap underlying Harnesses/models at any time, and keep five-tier permission governance, multi-turn history, pane navigation, and full visibility effortless in a pure monochrome Web/CLI console.
 
 ## Quick Start
 
@@ -67,6 +67,7 @@ Run `chflow` in an interactive terminal to inspect projects, role bindings, acti
 ## Key Features
 
 - **Five Permission Tiers & Selectable Workspace Native Base (`--workspace-mode`)**: Clearly distinguishes `readonly`, `ask`, **`auto` (Harness Native Auto — governed solely by the Harness with zero `chflow` keypresses)**, **`auto-workspace` (Workspace Auto + `chflow` permission guard with selectable native base per Harness)**, and `yolo` (filterless runtime passthrough skipping only user questions and 3-repeat loops). Command and path security stay owned natively by each Harness (no duplicate `chflow`-side command blacklist), and `activePromptText()` restricts prompt classification strictly to the active dialog.
+- **Resilient Native Permission Restart, Auto-Rollback, Auto-Restart & Force-Interrupt (v3.6.1)**: Uses Harness-native exit commands (`/quit` for `pi`, `/exit` for `codex`/`claude`/`agy`) after clearing stray input drafts, escalates cleanly (`Esc`/`Ctrl+U` → `Ctrl+C`×2 → `Ctrl+D`) if exit stalls, shields panes/roles from sync pruning while preserving session IDs, retries transient launch errors, and **automatically rolls back** to the previous permission and conversation if the new launch fails. Supports `--auto-restart` (queues automatic idle restart when busy) and `--force` (force-interrupts working/blocked panes before restarting).
 - **Two-Sample `stalled` Liveness Probe**: Routine monitoring stays strictly zero-screen-read. Before raising a `stalled` alert on a long-running active worker, the Daemon runs a two-sample liveness confirmation (`CHFLOW_STALL_CONFIRM_MS`, default `20000` ms) comparing bottom-20-line screen hashes plus `out`/local session file `mtime`, eliminating false stall alerts during active work.
 - **Pure Monochrome WebUI, Rich Controller Drawer & Multi-Turn Historical Mailbox**: Features the monochrome split-pane SVG brand mark and adaptive favicon, zero emojis, SVG role badges (no `@` prefix noise), rich controller cards with quick DND toggle and 3-tab drawer, plus historical task switching, flicker-free Turn `1..N` mailbox inspection, and one-click Turn `N+1` continuation.
 - **4-Layer Architecture & Two-Tier Roles (Global Templates + Project Instances)**: Persist reusable personal role presets (including `perm` and `workspace_mode`) in `~/.config/chflow/roles.yaml` (zero credentials) with `chflow role set <name> --global`. Global templates lazily instantiate into projects only on first `role bind` or `send --spawn`. Precedence: **per-dispatch flags > project role instance (incl. `.chflow/project.yaml`) > global role template > Skill scenario defaults**.
@@ -118,7 +119,7 @@ cross-harness-flow/
 │   ├── webui-preview-en.png               # Pure monochrome WebUI preview (English)
 │   ├── cli-dashboard.png                  # CLI live status dashboard preview (Chinese)
 │   └── cli-dashboard-en.png               # CLI live status dashboard preview (English)
-├── packages/chflow/                       # chflow v3.6.0 runtime source & black-box E2E suite
+├── packages/chflow/                       # chflow v3.6.1 runtime source & black-box E2E suite
 │   ├── LICENSE
 │   ├── README.md
 │   ├── package.json
@@ -152,17 +153,17 @@ Ensure `$HOME/.local/bin` is on `PATH`. With **pnpm (including pnpm 12+)** and a
 ```sh
 cd packages/chflow
 npm ci && npm run build && npm pack
-pnpm add -g --offline ./chflow-3.6.0.tgz
+pnpm add -g --offline ./chflow-3.6.1.tgz
 ```
 
-For cross-machine offline distribution, copy `chflow-3.6.0.tgz` to the target host and run:
+For cross-machine offline distribution, copy `chflow-3.6.1.tgz` to the target host and run:
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.1.tgz
 
 # Windows (PowerShell, with a user-writable npm prefix on PATH)
-npm install --offline -g .\chflow-3.6.0.tgz
+npm install --offline -g .\chflow-3.6.1.tgz
 ```
 
 ### 2. Install the Skill

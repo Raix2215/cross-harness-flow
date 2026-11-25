@@ -7,7 +7,7 @@ export const commandOptions:Record<string,string>={
   start:'kind name perm workspace_mode readonly resume place worktree base worktree_path trust_repository workspace direction label focus pane cwd model effort provider machine session attended unattended bg timeout matrix channel controller project role',
   adopt:'name perm workspace_mode readonly controller takeover machine session attended unattended bg matrix channel project role',
   handoff:'to to_machine to_session notify_old machine session',
-  switch:'model effort provider perm workspace_mode readonly restart allow_last machine session timeout attended unattended bg matrix channel',
+  switch:'model effort provider perm workspace_mode readonly restart force auto_restart allow_last machine session timeout attended unattended bg matrix channel',
   send:'task brief brief_file perm workspace_mode readonly watch wait cwd machine session attended unattended bg model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn',
   reply:'attempt ok fail question progress note body out file stdin',
   wait:'timeout machine session', watch:'',
@@ -31,27 +31,27 @@ const cliOptions=new Map([
   ['ui','port host open session machine allow_remote standalone'],
   ['open','port host session machine allow_remote standalone'],
   ['status','watch session machine project'],['top','session machine project'],
-  ['approve','key text submit_key'],['perm','perm workspace_mode'],
+  ['approve','key text submit_key'],['perm','perm workspace_mode restart auto_restart force'],
   ['queue','event to to_session to_machine'],['view','turn'],
 ]);
 export const optionsFor=(method:string)=>cliOptions.get(method)??
   (method.startsWith('role.')?roleOptions.get(method.slice(5)):
     Object.hasOwn(commandOptions,method)?commandOptions[method]:undefined);
 const operatorOptions=new Map([
-  ['respond',commandOptions.respond+' force'],['ui.set_perm','perm workspace_mode'],['ui.terminal','keys text submit_key prompt'],
+  ['respond',commandOptions.respond+' force'],['ui.set_perm','perm workspace_mode auto_restart'],['ui.terminal','keys text submit_key prompt'],
   ['ui.screen','lines'],['ui.queue_pause',''],['ui.queue_resume',''],['ui.queue_deliver_now','event_id'],
   ['ui.queue_consume','event_id'],['ui.queue_drop','event_id'],['ui.queue_reroute','event_id to to_session to_machine'],
   ['ui.cancel_retry',''],['ui.assign_project','project machine session'],['ui.focus_pane','machine session'],
-  ['ui.release_pane','machine session'],
+  ['ui.release_pane','machine session'],['ui.cancel_restart','machine session'],
   ['ui.prune',cliOptions.get('prune')!],
   ...[...roleOptions].filter(([action])=>action!=='list').map(([action,opts])=>['ui.role.'+action,opts] as const),
 ]);
-const operatorRequired=new Set(['ui.set_perm','ui.terminal','ui.screen','ui.cancel_retry','ui.assign_project','ui.focus_pane','ui.release_pane']);
+const operatorRequired=new Set(['ui.set_perm','ui.terminal','ui.screen','ui.cancel_retry','ui.assign_project','ui.focus_pane','ui.release_pane','ui.cancel_restart']);
 const operatorOptional=new Set([
   'ui.queue_pause','ui.queue_resume','ui.queue_deliver_now','ui.queue_consume','ui.queue_drop','ui.queue_reroute',
 ]);
 export const flag=(name:string,method?:string)=>booleanOptions.has(name)||name==='worktree'&&(method==='role'||!!method?.includes('role.'));
-const booleanOptions=new Set('readonly takeover notify_old restart allow_last watch wait attended unattended bg ok fail question progress stdin screen diag close_pane reconcile all panes enable_respond no_respond trust_repository focus open force allow_remote standalone spawn headless close_old tasks global'.split(' '));
+const booleanOptions=new Set('readonly takeover notify_old restart auto_restart allow_last watch wait attended unattended bg ok fail question progress stdin screen diag close_pane reconcile all panes enable_respond no_respond trust_repository focus open force allow_remote standalone spawn headless close_old tasks global'.split(' '));
 const repeatable=new Set(['key','keys']);
 const required=new Set('adopt handoff switch send reply wait watch respond inspect resume retry finish cancel'.split(' '));
 export const acceptsTarget=(method:string)=>required.has(method)||['start','health','inbox','flush'].includes(method);
@@ -144,6 +144,7 @@ export async function parse(method:string,args:string[],ctx:Context){
   if(method==='perm'){
     if(value!==undefined&&opts.perm!==undefined)return syntax('Provide one permission tier.');
     if(value!==undefined)opts.perm=value;
+    if(opts.restart||opts.force)return {method:'switch',inv:await invocation('switch',ctx,target,{...opts,restart:true},extra,true)};
     return {method:'ui.set_perm',inv:await invocation('ui.set_perm',ctx,target,opts,extra,true)};
   }
   if(method==='queue'){

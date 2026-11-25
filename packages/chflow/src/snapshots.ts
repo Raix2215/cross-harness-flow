@@ -21,6 +21,7 @@ export class SnapshotViews {
     const perm_mode=pane&&kind&&perm?effectivePermMode(kind,perm,native_perm,workspace_mode,native_workspace_mode):'native';
     return {...defaults,controller:pane?pane.controller:role.controller,kind:pane?.kind??l?.kind,model:pane?.model??l?.model,
       effort:pane?.effort??l?.effort,provider:pane?.provider??l?.provider,perm,native_perm,workspace_mode,native_workspace_mode,perm_mode,
+      pending_restart:pane?.pending_restart??null,restarting:pane?.restarting??false,last_restart_error:pane?.last_restart_error??null,
       live:role.binding_mode==='headless'||!!pane?.live,
       agent_status:role.binding_mode==='unbound'?'unbound':role.binding_mode==='headless'?
         (task?.state??'idle'):(pane?.agent_status??'offline'),active_task:task?.task};
@@ -57,6 +58,7 @@ export class SnapshotViews {
     const onlinePaneIds=new Set([
       ...topology.managed_panes.filter(p=>p.live).map(p=>p.pane_id),...topology.unmanaged_live_agents.map(p=>p.pane_id),
     ]);
+    const retainedPaneIds=new Set(topology.managed_panes.filter(p=>p.restarting||p.pending_restart).map(p=>p.pane_id));
     const taskProjects=new Map(list.map(t=>[t.task,this.work.projects.task(t).project_id]));
     const pendingQueueRecipients=new Map<string,Set<string>>();
     for(const event of this.db.events().filter(pending)){
@@ -69,7 +71,7 @@ export class SnapshotViews {
       pendingQueueRecipients.set(project,recipients);
     }
     const projectIds=new Set([
-      current.project_id,...managed_panes.filter(p=>p.live).map(p=>p.project_id),...unmanaged_live_agents.map(p=>p.project_id),
+      current.project_id,...managed_panes.filter(p=>p.live||p.restarting||p.pending_restart).map(p=>p.project_id),...unmanaged_live_agents.map(p=>p.project_id),
       ...roles.map(row=>row.project_id),...tasks.filter(t=>!terminal(t.state)).map(t=>t.project_id),...pendingQueueRecipients.keys(),
       ...this.db.projects().filter(p=>p.source==='override'||p.source==='config').map(p=>p.project_id),
     ]);
@@ -82,10 +84,10 @@ export class SnapshotViews {
       const workingControllers=new Set(work.filter(t=>t.controller&&same(t.controller.route,r)).map(t=>t.controller!.pane));
       const recipients=pendingQueueRecipients.get(project.project_id)??new Set<string>();
       const controllers=new Set([
-        ...panes.filter(p=>p.live&&p.controller&&same(p.controller.route,r)).map(p=>p.controller?.pane),
+        ...panes.filter(p=>(p.live||p.restarting||p.pending_restart)&&p.controller&&same(p.controller.route,r)).map(p=>p.controller?.pane),
         ...slots.filter(row=>row.binding_mode!=='unbound'&&row.controller&&same(row.controller.route,r)).map(row=>row.controller?.pane),
         ...workingControllers,...recipients,
-      ].filter((p):p is string=>p!==undefined&&(onlinePaneIds.has(p)||workingControllers.has(p)||recipients.has(p))));
+      ].filter((p):p is string=>p!==undefined&&(onlinePaneIds.has(p)||retainedPaneIds.has(p)||workingControllers.has(p)||recipients.has(p))));
       return {...project,controllers:[...controllers],roles_count:slots.length,live_panes:panes.filter(p=>p.live).length+external.length,
         active_tasks:work.length,blocked_count:work.filter(t=>t.state==='blocked').length};
     });
@@ -111,6 +113,7 @@ export class SnapshotViews {
         tab_label:metadata?.tab_label??null,cwd:metadata?.cwd,agent_status:online?.agent_status??'offline',
         managed:!!pane,perm:pane?.perm,native_perm:pane?.native_perm,workspace_mode:pane?.workspace_mode,
         native_workspace_mode:pane?.native_workspace_mode,perm_mode:pane?.perm_mode,
+        pending_restart:pane?.pending_restart??null,restarting:pane?.restarting??false,last_restart_error:pane?.last_restart_error??null,
         paused:this.db.isPaused(r,pane_id),typing:receipts.some(e=>e.state==='deferred_user_typing'),
         queued_count:receipts.filter(e=>pending(e)&&(!e.project_id||e.project_id===project.project_id)&&
           (!taskProjects.has(e.task)||taskProjects.get(e.task)===project.project_id)).length,

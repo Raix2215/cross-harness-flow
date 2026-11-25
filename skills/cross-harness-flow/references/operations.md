@@ -21,19 +21,19 @@ npm run build
 npm install -g --prefix "$HOME/.local" .
 ```
 
-将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.6.0.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
+将 `$HOME/.local/bin` 加入 `PATH`。使用 pnpm 且已配置用户级全局目录时，也可在构建后先运行 `npm pack`，再执行 `pnpm add -g --offline ./chflow-3.6.1.tgz`，并确认 pnpm 全局 bin 目录在 `PATH` 内。先征得用户同意再安装，整个过程使用用户权限。
 
-跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.6.0.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
+跨机离线分发：开发机先在 `packages/chflow/` 运行 `npm run build && npm pack`，将 `chflow-3.6.1.tgz` 复制到目标机。目标机已有 Node.js 时可直接安装，包无第三方运行时依赖：
 
 ```sh
 # Linux：任选一种用户级安装方式
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.0.tgz
-pnpm add -g --offline ./chflow-3.6.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.1.tgz
+pnpm add -g --offline ./chflow-3.6.1.tgz
 ```
 
 ```powershell
 # Windows：使用可写的用户 npm prefix，并让其位于 PATH
-npm install --offline -g .\chflow-3.6.0.tgz
+npm install --offline -g .\chflow-3.6.1.tgz
 ```
 
 安装完成后，在实际运行 CLI 或启动 MCP 的环境检查 `command -v chflow`（PowerShell：`Get-Command chflow`），再执行 `chflow health`。从 v2 切换时，将项目 MCP 入口改为 `chflow mcp`，在 v3 新建任务；历史 v2 工位和状态单独处理。
@@ -86,7 +86,7 @@ Herdr 路由只覆盖终端控制面。若缺共享挂载或回程，向用户�
 | `start [name] --kind codex\|claude\|pi\|agy` | 建交互工位；用 `--resume <id\|last>` 恢复已有会话，可选 `--role <role>` 与 `--project <id>`。用 `--place pane\|split\|tab\|workspace` 布局，`--worktree <branch>` 隔离变更（使用 `workspace` 布局），`--session <name>` 指定 Herdr session，`--machine <profile>` 跨机。按工位能力传 `--model`、`--effort`、Pi `--provider`、`--perm` 或 `--workspace-mode`。 |
 | `adopt <pane> [--name ALIAS] [--takeover]` | 纳管已在线工位，按需指定 `--role`、`--project`、`--perm`、`--workspace-mode` 或 `--controller <pane>`；显式接管会带走未投递回执。 |
 | `handoff <pane_or_task> --to <new_pane>` | 移交控制权及排队回执；可传 `--to-machine` / `--to-session` 和 `--notify-old`。 |
-| `switch <target>` | 切换工位模型、effort、provider、权限或工作区原生基底（`--workspace-mode`）；涉及原生启动参数变更时先核对现场，再按需用 `--restart`。 |
+| `switch <target>` | 切换工位模型、effort、provider、权限或工作区原生基底（`--workspace-mode`）；支持 `--restart`（按 Harness 发 `/quit` 或 `/exit` 并具备分级退出与启动失败自动回退）、`--auto-restart`（忙碌时预约空闲后自动重启）与 `--force`（强制中断当前回合并立即重启）。 |
 | `send <role\|target>` | 用 `--brief <text>` 或 `--brief-file <path>` 派发；优先按当前项目角色名解析，未绑定角色默认拦截（显式 `--spawn` 可按预设拉起）。`--task <id>` 追问，`--watch` 监看或 `--wait` 同步等待，`--perm` / `--workspace-mode` 显式覆盖权限。 |
 | `reply <task>` | Worker 用 `--attempt <id>` 和 `--ok` / `--fail` / `--question` / `--progress` 回执；`--note <text>` 为一句话摘要，正文用 `--out` 或 `--body`。 |
 | `wait <target_or_task> [--timeout S]` | 等待任务或工位推进。 |

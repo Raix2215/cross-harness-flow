@@ -186,7 +186,7 @@ function findCtrlByNodeId(nodeId){
 }
 
 function renderPermPanel(opts){
-  const { kind, perm, nativePerm, workspaceMode, nativeWorkspaceMode, permMode, target, paneId, isIdle, managed, adoptFirst, isHeadless } = opts;
+  const { kind, perm, nativePerm, workspaceMode, nativeWorkspaceMode, permMode, target, paneId, isIdle, managed, adoptFirst, isHeadless, pendingRestart, restarting, lastRestartError, hasActiveTask } = opts;
   const activePerm = perm || 'ask';
   const nat = isHeadless ? activePerm : (nativePerm || 'unknown');
   const wsMode = workspaceMode || defaultWorkspaceMode(kind);
@@ -199,20 +199,47 @@ function renderPermPanel(opts){
   const curLabel = !managed ? '未接入管控' : (activePerm === 'auto-workspace' && wsMode ? activePerm + ' · ' + wsMode : activePerm);
   const wsOpts = workspaceModeOptions(kind);
   const showWsBase = Boolean(managed && activePerm === 'auto-workspace' && wsOpts.length > 1);
-  const showRestart = Boolean(!isHeadless && paneId && managed && pm.needsRestart);
+  const showRestart = Boolean(!isHeadless && paneId && managed && (pm.needsRestart || pendingRestart || restarting));
+  const pendingLabel = pendingRestart ? (pendingRestart.perm + (pendingRestart.perm === 'auto-workspace' && pendingRestart.workspace_mode ? ' · ' + pendingRestart.workspace_mode : '')) : '';
+
+  let restartHtml = '';
+  if (showRestart){
+    if (restarting){
+      restartHtml = '<div class="perm-restart-bar"><span>正在安全重启会话并保留上下文（支持分级退出与失败自动回退）...</span><div class="perm-restart-actions"><button class="btn sm" disabled>' + ic('refresh','sm') + '重启中...</button></div></div>';
+    } else if (pendingRestart){
+      restartHtml = '<div class="perm-restart-bar warn"><span>已预约空闲后自动重启 → <b class="mono">' + esc(pendingLabel) + '</b>（窗格一进入空闲即自动执行，失败自动回退）。</span><div class="perm-restart-actions">' +
+        '<button class="btn sm" data-action="cancelRestart" data-pane="' + esc(paneId) + '">取消预约</button>' +
+        '<button class="btn sm danger-ghost" data-action="forceRestartApplyPerm" data-pane="' + esc(paneId) + '" data-perm="' + esc(pendingRestart.perm || activePerm) + '" data-kind="' + esc(kind) + '" data-ws-mode="' + esc(pendingRestart.workspace_mode || wsMode) + '"' + (hasActiveTask ? ' disabled title="该工位存在进行中任务，请先结单/取消或等待空闲后自动重启"' : '') + '>强制中断立即重启</button>' +
+      '</div></div>';
+    } else if (isIdle){
+      restartHtml = '<div class="perm-restart-bar ' + (pm.mode==='restart_required'?'warn':'') + '"><span>会话当前空闲，可保留上下文安全重启并安装原生权限（支持分级退出与失败自动回退）。</span><div class="perm-restart-actions">' +
+        '<button class="btn sm ' + (pm.mode==='restart_required'?'warn':'primary') + '" data-action="restartApplyPerm" data-pane="' + esc(paneId) + '" data-perm="' + esc(activePerm) + '" data-kind="' + esc(kind) + '" data-ws-mode="' + esc(wsMode) + '">' + ic('refresh','sm') + '保留上下文重启</button>' +
+        '<button class="btn sm ghost" data-action="forceRestartApplyPerm" data-pane="' + esc(paneId) + '" data-perm="' + esc(activePerm) + '" data-kind="' + esc(kind) + '" data-ws-mode="' + esc(wsMode) + '" title="若优雅退出卡住，可强制中断进程后重启">强制重启</button>' +
+      '</div></div>';
+    } else {
+      restartHtml = '<div class="perm-restart-bar ' + (pm.mode==='restart_required'?'warn':'') + '"><span>会话当前忙碌/阻塞，可预约空闲后自动重启，或强制中断当前回合并立即重启。</span><div class="perm-restart-actions">' +
+        '<button class="btn sm ' + (pm.mode==='restart_required'?'warn':'primary') + '" data-action="scheduleAutoRestart" data-pane="' + esc(paneId) + '" data-perm="' + esc(activePerm) + '" data-kind="' + esc(kind) + '" data-ws-mode="' + esc(wsMode) + '">' + ic('clock','sm') + '空闲后自动重启</button>' +
+        '<button class="btn sm danger-ghost" data-action="forceRestartApplyPerm" data-pane="' + esc(paneId) + '" data-perm="' + esc(activePerm) + '" data-kind="' + esc(kind) + '" data-ws-mode="' + esc(wsMode) + '"' + (hasActiveTask ? ' disabled title="该工位存在进行中任务，请先结单/取消或等待空闲后自动重启"' : '') + '>强制中断并重启</button>' +
+      '</div></div>';
+    }
+  }
 
   return '<div class="box">' +
-    '<div class="box-h"><span>权限策略</span><div style="display:flex;align-items:center;gap:6px"><span class="pill ' + pm.cls + '">' + esc(pm.label) + '</span></div></div>' +
+    '<div class="box-h"><span>权限策略</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+      (!isHeadless && paneId ? '<button class="perm-auto-toggle ' + (state.autoRestartPerm?'on':'') + '" data-action="toggleAutoRestartPerm" title="开启后，切换需要原生重启的权限档位时将自动重启（忙碌时自动预约空闲重启）">' + ic('refresh','sm') + '切权限自动重启：' + (state.autoRestartPerm?'开':'关') + '</button>' : '') +
+      '<span class="pill ' + pm.cls + '">' + esc(pm.label) + '</span>' +
+    '</div></div>' +
     '<div class="perm-meta-row"><span>原生启动权限：<b class="mono">' + esc(natLabel) + '</b></span><span>当前目标：<b class="mono">' + esc(curLabel) + '</b></span></div>' +
     '<div class="perm-grid">' +
-      PERMS.map(p => '<button class="perm-btn ' + (managed && activePerm===p.id?'active':'') + '" data-action="setPerm" data-target="' + esc(target) + '" data-perm="' + p.id + '" data-kind="' + esc(kind) + '" data-native="' + esc(nat) + '" data-cur-ws="' + esc(wsMode) + '" data-native-ws="' + esc(natWs || '') + '"' + (adoptFirst ? ' data-adopt-first="1"' : '') + '><span>' + p.zh + '</span><span class="perm-flag">' + esc(nativeFlagHint(kind, p.id, wsMode)) + '</span></button>').join('') +
+      PERMS.map(p => '<button class="perm-btn ' + (managed && activePerm===p.id?'active':'') + '" data-action="setPerm" data-target="' + esc(target) + '" data-pane="' + esc(paneId || '') + '" data-perm="' + p.id + '" data-kind="' + esc(kind) + '" data-native="' + esc(nat) + '" data-cur-ws="' + esc(wsMode) + '" data-native-ws="' + esc(natWs || '') + '"' + (adoptFirst ? ' data-adopt-first="1"' : '') + (isHeadless ? ' data-headless="1"' : '') + '><span>' + p.zh + '</span><span class="perm-flag">' + esc(nativeFlagHint(kind, p.id, wsMode)) + '</span></button>').join('') +
     '</div>' +
     (showWsBase ? '<div class="ws-base-row"><span>工作区原生底座：</span><div class="ws-base-opts">' +
-      wsOpts.map(o => '<button class="ws-base-btn ' + (wsMode===o.id?'active':'') + '" data-action="setWorkspaceMode" data-target="' + esc(target) + '" data-ws-mode="' + o.id + '" data-kind="' + esc(kind) + '" data-native="' + esc(nat) + '" data-native-ws="' + esc(natWs || '') + '">' + esc(o.label) + '</button>').join('') +
+      wsOpts.map(o => '<button class="ws-base-btn ' + (wsMode===o.id?'active':'') + '" data-action="setWorkspaceMode" data-target="' + esc(target) + '" data-pane="' + esc(paneId || '') + '" data-ws-mode="' + o.id + '" data-kind="' + esc(kind) + '" data-native="' + esc(nat) + '" data-native-ws="' + esc(natWs || '') + '"' + (isHeadless ? ' data-headless="1"' : '') + '>' + esc(o.label) + '</button>').join('') +
     '</div></div>' : '') +
     '<div style="font-size:13px;color:var(--text-2);margin-top:4px">' + esc(pm.note) + '</div>' +
     '<div style="font-size:12.5px;color:var(--text-3);margin-top:3px">' + esc(permInfo.desc) + '</div>' +
-    (showRestart ? '<div class="perm-restart-bar ' + (pm.mode==='restart_required'?'warn':'') + '"><span>' + (isIdle ? '会话当前空闲，可保留对话上下文重启并安装原生权限参数。' : '会话当前忙碌/阻塞，请等本轮空闲后点击重启应用原生权限。') + '</span><button class="btn sm ' + (pm.mode==='restart_required'?'warn':'primary') + '" data-action="restartApplyPerm" data-pane="' + esc(paneId) + '" data-perm="' + esc(activePerm) + '" data-kind="' + esc(kind) + '" data-ws-mode="' + esc(wsMode) + '"' + (!isIdle ? ' disabled title="请等会话空闲后再重启"' : '') + '>' + ic('refresh','sm') + '保留上下文重启并原生生效</button></div>' : '') +
+    (lastRestartError ? '<div class="perm-restart-err">上次重启异常（原会话已保留或自动回退）：' + esc(lastRestartError) + '</div>' : '') +
+    restartHtml +
   '</div>';
 }
 
@@ -254,7 +281,7 @@ function renderDrawer(){
         '<button class="btn sm" data-action="flushPane" data-pane="' + esc(c.paneId) + '">Flush 消费队列</button>' +
         (managedEntry && !hasCtrlWorkerTask ? '<button class="btn sm danger-ghost" data-action="releasePane" data-pane="' + esc(c.paneId) + '" title="移出受管工位登记，保留主控身份且不关闭终端">移出受管登记</button>' : '') +
       '</div></div>' +
-      (c.live ? renderPermPanel({ kind: c.kind, perm: c.perm || 'ask', nativePerm: c.nativePerm || 'unknown', workspaceMode: c.workspaceMode, nativeWorkspaceMode: c.nativeWorkspaceMode, permMode: c.permMode, target: c.paneId, paneId: c.paneId, isIdle: isCtrlIdle, managed: c.managed, adoptFirst: !c.managed }) : '');
+      (c.live ? renderPermPanel({ kind: c.kind, perm: c.perm || 'ask', nativePerm: c.nativePerm || 'unknown', workspaceMode: c.workspaceMode, nativeWorkspaceMode: c.nativeWorkspaceMode, permMode: c.permMode, target: c.paneId, paneId: c.paneId, isIdle: isCtrlIdle, managed: c.managed, adoptFirst: !c.managed, pendingRestart: c.pendingRestart, restarting: c.restarting, lastRestartError: c.lastRestartError, hasActiveTask: hasCtrlWorkerTask }) : '');
     } else if (tab === 'managed'){
       ctrlBody = subWorkers.length ? subWorkers.map(w => {
         const wst = ST[w.status] || ST.idle;
@@ -320,7 +347,8 @@ function renderDrawer(){
       bodyHtml += renderPermPanel({
         kind: w.kind, perm: w.perm, nativePerm: w.nativePerm, workspaceMode: w.workspaceMode, nativeWorkspaceMode: w.nativeWorkspaceMode, permMode: w.permMode,
         target: targetForPerm, paneId: w.bindingMode === 'pane' ? w.paneId : '',
-        isIdle: isWorkerIdle, managed: true, adoptFirst: false, isHeadless: w.bindingMode === 'headless'
+        isIdle: isWorkerIdle, managed: true, adoptFirst: false, isHeadless: w.bindingMode === 'headless',
+        pendingRestart: w.pendingRestart, restarting: w.restarting, lastRestartError: w.lastRestartError, hasActiveTask: Boolean(task)
       });
     }
 
@@ -384,6 +412,15 @@ function openModal(title, bodyHtml, footerHtml){
     '</div>';
 }
 function closeModal(){ document.getElementById('modal-root').innerHTML = ''; }
+
+function openForceRestartModal(paneId, permVal, kind, wsMode){
+  const targetLabel = permVal + (permVal === 'auto-workspace' && wsMode ? ' · ' + wsMode : '');
+  openModal('强制中断并重启会话',
+    '<div class="box warn" style="margin-bottom:14px"><b>将中断目标窗格当前回合，并通过分级退出（Esc / Ctrl+C / ' + (kind === 'pi' ? '/quit' : '/exit') + ' / Ctrl+D）返回 Shell 后以原生参数重启。</b><div style="font-size:13px;color:var(--text-2);margin-top:4px">若新权限启动失败，系统会自动回退并拉回原权限与原对话上下文。</div></div>' +
+    '<div style="font-size:13.5px;color:var(--text-2);display:grid;gap:6px"><div>目标窗格：<b class="mono">' + esc(paneId) + '</b>（' + esc(harnessName(kind)) + '）</div><div>目标原生权限：<b class="mono">' + esc(targetLabel) + '</b></div></div>',
+    '<button class="btn" data-action="closeModal">取消</button><button class="btn danger" data-action="confirmForceRestart" data-pane="' + esc(paneId) + '" data-perm="' + esc(permVal) + '" data-kind="' + esc(kind) + '" data-ws-mode="' + esc(wsMode || '') + '">' + ic('refresh','sm') + '确认强制中断并重启</button>'
+  );
+}
 
 function openStopModal(){
   const activeCount = (getSnap().tasks || []).filter(t => !TERMINAL_STATES.has(t.state)).length;

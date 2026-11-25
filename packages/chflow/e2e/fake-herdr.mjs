@@ -75,6 +75,7 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
   const workspaces = new Map([['w1', { workspace_id: 'w1', label: 'WORK' }]]);
   const tabs = new Map([['w1:t1', { tab_id: 'w1:t1', workspace_id: 'w1', label: 'main' }]]);
   const failures = new Map();
+  const restartOptions = new Map();
   const clients = new Set();
   const requests = [];
   const prompts = [];
@@ -114,9 +115,11 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
     return agent;
   }
 
-  function paneResult({ pane_id, terminal_id, cwd, focused, revision, agent_status }) {
-    return { pane_id, terminal_id, cwd, focused, revision, agent_status };
+  function paneResult({ pane_id, terminal_id, agent, cwd, focused, revision, agent_status }) {
+    return { pane_id, terminal_id, agent, cwd, focused, revision, agent_status };
   }
+  function configureRestart(pane, options) { restartOptions.set(pane, options); }
+  function exitAgent(pane) { setAgent(pane, { agent_status: 'exited' }); }
 
   function setAgent(pane, patch) {
     const current = agents.get(pane);
@@ -179,7 +182,11 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
         const extra = split === -1 ? [] : params.slice(split + 1);
         const kind = option(split === -1 ? params : params.slice(0, split), '--kind');
         starts.push({ ...record, name: target, kind, extra });
-        const worker = addAgent(pane, { name: target, agent: kind });
+        const config = restartOptions.get(pane) ?? {};
+        if (config.startDelayMs) await sleep(config.startDelayMs);
+        const worker = addAgent(pane, { name: target, agent: kind,
+          ...(config.omitSession ? { agent_session: null } : {}),
+          ...(config.trust ? { agent_status: 'blocked', screen: 'Do you trust the files in this folder?\n❯ 1. Yes, trust' } : {}) });
         return ok(id, { agent: agentResult(worker) });
       }
       case 'agent.prompt': {
@@ -187,17 +194,28 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
         const prompt = { ...record, text: params[1] };
         prompts.push(prompt);
         if (promptDelayMs) await sleep(promptDelayMs);
-        if (found.promptStatus) setAgent(pane, { agent_status: found.promptStatus });
+        const config = restartOptions.get(pane) ?? {};
+        if (prompt.text === (found.agent === 'pi' ? '/quit' : '/exit')) {
+          if (!config.exitOn || config.exitOn === 'graceful') exitAgent(pane);
+        } else if (found.promptStatus) setAgent(pane, { agent_status: found.promptStatus });
         prompt.completedAt = Date.now();
         return ok(id, {});
       }
       case 'agent.read':
         reads.push(record);
         return found ? { code: 0, stdout: found.screen } : errorResult('pane_not_found', `No agent at ${target}`);
+      case 'pane.send-keys': {
+        if (!panes.has(pane)) return errorResult('pane_not_found', pane);
+        keys.push({ ...record, keys: params.slice(1) });
+        const config = restartOptions.get(pane) ?? {};
+        if (found && config.exitOn && config.exitOn !== 'never' && params.slice(1).includes(config.exitOn)) exitAgent(pane);
+        return ok(id, {});
+      }
       case 'agent.send-keys':
         if (!found) return errorResult('pane_not_found', `No agent at ${target}`);
         keys.push({ ...record, keys: params.slice(1) });
-        if (found.unblockOnKey && found.agent_status === 'blocked') setAgent(pane, { agent_status: 'working' });
+        if (restartOptions.get(pane)?.trust && found.agent_status === 'blocked') setAgent(pane, { agent_status: 'idle', screen: '' });
+        else if (found.unblockOnKey && found.agent_status === 'blocked') setAgent(pane, { agent_status: 'working' });
         return ok(id, {});
       case 'agent.focus':
         if (!found) return errorResult('pane_not_found', `No agent at ${target}`);
@@ -247,7 +265,7 @@ function fakeHerdr(workspace, socketPath, promptDelayMs) {
   });
 
   return {
-    addAgent, setAgent, removeAgent, setWorkspace, setTab, failNext, agents, workspaces, tabs, requests, prompts, keys, reads, starts, focuses, notifications,
+    addAgent, setAgent, removeAgent, setWorkspace, setTab, failNext, configureRestart, agents, workspaces, tabs, requests, prompts, keys, reads, starts, focuses, notifications,
     async listen() {
       await new Promise((resolve, reject) => {
         server.once('error', reject);

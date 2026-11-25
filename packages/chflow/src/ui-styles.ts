@@ -243,8 +243,13 @@ body.daemon-off #focus,body.daemon-off #view,body.daemon-off #toolbar-row{opacit
 .sub-worker-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border-radius:11px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;margin-bottom:8px;transition:border-color .14s,background .14s}
 .sub-worker-row:hover{border-color:var(--accent);background:var(--surface)}
 .perm-meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px;color:var(--text-3)}
+.perm-auto-toggle{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:12px;font-weight:500;cursor:pointer;transition:all .14s}
+.perm-auto-toggle:hover{border-color:var(--border-strong);color:var(--text)}
+.perm-auto-toggle.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .perm-restart-bar{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px dashed var(--border-strong);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2)}
 .perm-restart-bar.warn{background:var(--warn-soft);border-color:var(--warn-border);color:var(--warn)}
+.perm-restart-actions{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.perm-restart-err{margin-top:8px;padding:7px 10px;border-radius:8px;background:var(--danger-soft);border:1px solid var(--danger-border);color:var(--danger);font-size:12px;line-height:1.45}
 .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
 .role-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s;min-height:172px}
 .role-card:hover{box-shadow:var(--shadow-hover);border-color:var(--border-strong)}

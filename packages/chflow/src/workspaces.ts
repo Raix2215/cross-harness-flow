@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { basename } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { channels, compliance, defaultWorkspaceMode, effectivePermMode, kindOf, launch, native, resumeArgs } from './harnesses.js';
-import { checkedAgent, closePane, get, herdr, idle, keys, listHerdrLabels, missing, prompt, route, same, screen, startIn, startPane, type HerdrLabels } from './herdr.js';
+import { checkedAgent, closePane, get, herdr, idle, keys, listHerdrLabels, missing, prompt, route, same, screen, paneKeys, startIn, startPane, type HerdrLabels } from './herdr.js';
 import { paneCwd, Projects, roleActive, samePane } from './projects.js';
 import { sessionsEqual } from './queue.js';
 import { clean } from './sensitive.js';
@@ -22,8 +22,8 @@ const sameRecipient=(a:Recipient,b:Recipient)=>same(a.route,b.route)&&a.pane===b
 export function matches(t:{terminal?:string; session?:Task['session'];launch:{kind:string}},a:Agent) {
   return t.terminal===a.terminal_id&&t.launch.kind===a.agent&&sessionsEqual(t.session,a.agent_session);
 }
-export function paneView(p:ManagedPane){
-  return {pane_id:p.agent.pane_id,kind:p.agent.agent,terminal_id:p.agent.terminal_id,name:p.agent.name,alias:p.alias,
+export function paneView(p:ManagedPane,restarting=false){
+  return {pending_restart:p.pending_restart??null,restarting,last_restart_error:p.last_restart_error??null,pane_id:p.agent.pane_id,kind:p.agent.agent,terminal_id:p.agent.terminal_id,name:p.agent.name,alias:p.alias,
     cwd:p.agent.foreground_cwd??p.agent.cwd,agent_session:p.agent.agent_session,state_change_seq:p.agent.state_change_seq,revision:p.agent.revision,
     controller:p.controller??null,perm:p.launch.perm,native_perm:p.native_perm,
     workspace_mode:p.launch.workspace_mode??defaultWorkspaceMode(p.launch.kind),native_workspace_mode:p.native_workspace_mode,
@@ -66,7 +66,7 @@ async function startWithTrust(inv:Invocation,r:Route,name:string,launch:Launch,f
 }
 
 const liveView=(a:Agent)=>({pane_id:a.pane_id,name:a.name,kind:a.agent,terminal_id:a.terminal_id,agent_status:a.agent_status,
-  cwd:a.foreground_cwd??a.cwd,state_change_seq:a.state_change_seq,agent_session:a.agent_session,workspace_id:a.workspace_id,tab_id:a.tab_id});
+  cwd:a.foreground_cwd??a.cwd,interactive_ready:a.interactive_ready,launch_pending:a.launch_pending,state_change_seq:a.state_change_seq,agent_session:a.agent_session,workspace_id:a.workspace_id,tab_id:a.tab_id});
 const isLiveStatus=(status:string)=>!['exited','stopped','closed','offline','dead'].includes(status.toLowerCase());
 const HARNESS_NAMES:Record<string,string>={agy:'Antigravity',claude:'Claude Code',codex:'Codex',pi:'Pi'};
 export const harnessLabel=(kind?:string)=>kind?HARNESS_NAMES[kind]??kind:'Agent';
@@ -100,6 +100,11 @@ const bindingIdentity=(r:Role)=>JSON.stringify([r.project_id,r.role,r.pane_id,r.
 
 export class Workspaces {
   private locks=new Set<string>();
+  private restarting=new Set<string>();
+  private restartEpoch=0;
+  isRestarting(r:Route,pane:string){return this.restarting.has(paneKey(r,pane));}
+  isLocked(r:Route,pane:string){return this.locks.has(paneKey(r,pane));}
+  hasRestarts(){return this.restarting.size>0;}
   private labelCache=new Map<string,{at:number;identities:string;labels:HerdrLabels}>();
   readonly projects:Projects;
   constructor(private db:Store){this.projects=new Projects(db);}
@@ -130,7 +135,7 @@ export class Workspaces {
       throw new FlowError('agent_not_running','The target agent session has exited.');
     kindOf(a.agent);
     const p=this.db.pane(r,a.pane_id);
-    if(p&&(p.agent.terminal_id!==a.terminal_id||p.agent.agent!==a.agent||!sessionsEqual(p.agent.agent_session,a.agent_session)))
+    if(p&&(p.agent.terminal_id!==a.terminal_id||p.agent.agent!==a.agent||!sessionsEqual(p.agent.agent_session,a.agent_session??p.agent.agent_session)))
       throw new FlowError('identity_changed','The tracked pane identity changed; explicitly adopt the verified pane to register it again.');
     return {agent:a,p};
   }
@@ -294,48 +299,175 @@ export class Workspaces {
       return {pane_id:target,task:task?.task,controller:newOwner,transferred:true};
     });
   }
-  async switch(inv:Invocation){
+  private async exitToShell(r:Route,pane:string,a:Agent,force:boolean,timeout:number){
+    const grace=seconds(process.env.CHFLOW_EXIT_GRACE_MS,5000,1,300000);
+    const step=seconds(process.env.CHFLOW_EXIT_STEP_MS,2500,1,300000);
+    const settle=seconds(process.env.CHFLOW_SHELL_SETTLE_MS,350,0,30000),end=Date.now()+timeout*1000;
+    const exited=async()=>{
+      const raw=(await herdr(r,['pane','get',pane])).pane;
+      if(!raw||raw.terminal_id!==a.terminal_id)throw new FlowError('identity_changed','Pane identity changed while restarting.');
+      return !raw.launch_pending&&(!raw.agent||typeof raw.agent_status==='string'&&!isLiveStatus(raw.agent_status));
+    };
+    const poll=async(ms:number)=>{
+      const until=Math.min(end,Date.now()+ms);
+      do{if(await exited())return true;if(Date.now()>=until)return false;await sleep(Math.min(100,Math.max(1,until-Date.now())));}while(true);
+    };
+    const pause=()=>sleep(Math.min(150,step/3));
+    const stable=async()=>{await sleep(settle);if(!await exited())throw new FlowError('identity_changed','An agent appeared while waiting for the shell.');};
+    const send=async(k:string[])=>{
+      try{await paneKeys(r,pane,k);}catch(e){if(!(e instanceof FlowError)||!/(?:busy|not_ready|agent_not_found|not_running)/.test(e.code))throw e;}
+    };
+    if(await poll(0)){await stable();return;}
+    if(force&&!idle(a)){
+      await send(['esc']);await pause();await send(['ctrl+c']);await pause();await send(['ctrl+c']);
+      if(await poll(step)){await stable();return;}
+    }
+    await send(['esc','ctrl+u']);
+    try{await prompt(r,pane,a.agent==='pi'?'/quit':'/exit');}
+    catch(e){if(!(e instanceof FlowError)||!/(?:busy|working|blocked|not_idle|not_ready|agent_not_found|not_running|timeout)/.test(e.code))throw e;}
+    if(await poll(grace)){await stable();return;}
+    await send(['esc','ctrl+u','ctrl+c']);await pause();await send(['ctrl+c']);
+    if(await poll(step)){await stable();return;}
+    await send(['ctrl+d']);
+    if(await poll(step)){await stable();return;}
+    if(Date.now()<end)await send(['ctrl+c','ctrl+c','ctrl+d']);
+    if(await poll(Math.max(0,end-Date.now()))){await stable();return;}
+    throw new FlowError('restart_timeout','Agent did not return to its shell prompt.',1,{stage:'exit',still_running:true,rolled_back:false});
+  }
+  private async startInSafe(r:Route,pane:string,a:Agent,name:string,l:Launch,flags:string[],timeout:number){
+    let current:Agent;
+    try{current=await startIn(r,pane,name,l.kind,flags,timeout);}
+    catch(e){
+      if(!(e instanceof FlowError)||e.code!=='agent_not_ready')throw e;
+      current=await get(r,pane);
+    }
+    const identity=(v:Agent)=>v.pane_id===pane&&v.terminal_id===a.terminal_id&&v.agent===l.kind&&v.name===name;
+    if(!identity(current))throw new FlowError('identity_changed','Restart launched an unexpected agent identity.');
+    if(idle(current))return current;
+    if(l.perm==='auto'||current.agent_status!=='blocked')throw new FlowError('agent_not_ready','The restarted Harness is not ready.');
+    const raw=await screen(r,pane,25),visible=raw.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g,'');
+    const selection=visible.split(/\r?\n/).filter(line=>/^\s*[›❯>]/.test(line));
+    if(!/trust this folder|do you trust the files in this folder|do you trust the contents of this project/i.test(visible)||
+      selection.length!==1||!/^\s*[›❯>]\s*(?:\d+[.)]\s*)?(?:yes|trust|continue|allow)\b/i.test(selection[0])||
+      /\b(?:without trusting|don't trust|do not trust)\b/i.test(selection[0]))
+      throw new FlowError('agent_not_ready','The restarted Harness is waiting for operator input.');
+    const fresh=await get(r,pane);
+    if(!identity(fresh)||fresh.agent_status!=='blocked'||fresh.state_change_seq!==current.state_change_seq||
+      fresh.revision!==current.revision||paneCwd(fresh)!==paneCwd(a))
+      throw new FlowError('identity_changed','The folder trust prompt changed while restarting.');
+    await keys(r,pane,['enter']);
+    const end=Date.now()+timeout*1000;
+    do{
+      current=await get(r,pane);
+      if(!identity(current))throw new FlowError('identity_changed','Agent identity changed during folder trust.');
+      if(idle(current))return current;
+      await sleep(100);
+    }while(Date.now()<end);
+    throw new FlowError('agent_not_ready','The folder trust prompt did not settle.');
+  }
+  async switch(inv:Invocation,expectedRestart?:number){
     const r=route(inv),o=inv.opts,target=safeTarget(inv.target);
-    const initial=await this.target(r,target);
-    const pane=initial.agent.pane_id;
+    const initial=await this.target(r,target),pane=initial.agent.pane_id;
     return this.lock(r,pane,async()=>{
-      const {agent:a,p}=await this.target(r,pane), k=kindOf(a.agent), c=await this.caller(inv.ctx);
-      await this.owns(p?.controller,c,false,inv.ctx.operator);this.assertFree(undefined,r,pane);
-      if(!idle(a)) throw new FlowError('pane_not_ready','Wait for the agent to settle before switching.',a.agent_status==='blocked'?2:1);
-      const l=launch(k,inv.ctx.operator?{attended:true,...o}:o,p?.launch);
-      compliance(l,r,o,inv.ctx,false,channels(str(o,'matrix')));
+      const {agent:a,p}=await this.target(r,pane),k=kindOf(a.agent),c=await this.caller(inv.ctx);
+      if(expectedRestart!==undefined&&p?.pending_restart?.requested_at!==expectedRestart)
+        throw new FlowError('restart_superseded','The scheduled restart was replaced or cancelled.');
+      await this.owns(p?.controller,c,false,inv.ctx.operator);
+      const l=launch(k,inv.ctx.operator?{attended:true,...o}:o,p?.launch),matrix=channels(str(o,'matrix'));
+      compliance(l,r,o,inv.ctx,false,matrix);
+      const flags=native(l,inv.extra),session=a.agent_session??p?.agent.agent_session??undefined;
       const changePerm=(o.perm!==undefined||o.readonly)&&l.perm!==p?.native_perm||
         o.workspace_mode!==undefined&&l.workspace_mode!==p?.native_workspace_mode;
-      if(!o.restart && (k!=='claude'||changePerm||o.provider))
-        return {pane_id:pane,suggested_restart:true,perm:l.perm,workspace_mode:l.workspace_mode};
-      let updated=a;
-      if(o.restart){
-        const n=native(l,inv.extra),rs=resumeArgs(l,a.agent_session??undefined,!!o.allow_last);
-        const timeout=seconds(o.timeout,30,4,300);
-        await prompt(r,pane,'/exit');
-        const end=Date.now()+timeout*1000;
-        while(true){
-          const raw=(await herdr(r,['pane','get',pane])).pane;
-          if(!raw||raw.terminal_id!==a.terminal_id) throw new FlowError('identity_changed','Pane identity changed while restarting.');
-          if(!raw.agent) break;
-          if(Date.now()>=end) throw new FlowError('restart_timeout','Agent did not return to its shell prompt.');
-          await sleep(150);
-        }
-        updated=await startIn(r,pane,a.name??k+'-'+randomUUID().slice(0,6),k,[...rs,...n],timeout);
-      }else{
-        if(o.model) await prompt(r,pane,'/model '+l.model);
-        if(o.effort) await prompt(r,pane,'/effort '+(l.effort==='xhigh'?'max':['off','minimal'].includes(l.effort??'')?'low':l.effort));
+      if(!o.auto_restart){
+        this.assertFree(undefined,r,pane);
+        if(!idle(a)&&!o.force)throw new FlowError('pane_not_ready','Wait for the agent to settle or use --force.',1);
       }
+      if(!o.restart&&!o.auto_restart&&!o.force&&(k!=='claude'||changePerm||o.provider))
+        return {pane_id:pane,suggested_restart:true,perm:l.perm,workspace_mode:l.workspace_mode};
+      const restart=!!(o.restart||o.auto_restart||o.force),binding=p&&this.binding(p);
+      const prevLaunch:Launch={...(p?.launch??l),perm:p?.native_perm&&p.native_perm!=='unknown'?p.native_perm:'ask',
+        workspace_mode:p?.native_workspace_mode};
+      const rs=restart?resumeArgs(l,session,!!o.allow_last):[];
+      const rollbackFlags=restart?native(prevLaunch):[],rollbackRs=restart?resumeArgs(prevLaunch,session,!!o.allow_last):[];
+      if(restart)compliance(prevLaunch,r,o,inv.ctx,false,matrix);
+      if(o.auto_restart&&inv.extra?.length)return invalid('Use an immediate restart for extra native arguments.');
       const controller=inv.ctx.operator===true?p?.controller??c:c??p?.controller;
-      const entry:ManagedPane={route:r,agent:updated,launch:l,alias:p?.alias??a.name??pane,controller,adopted:p?.adopted??false,
-        adopted_sent:p?.adopted_sent,native_perm:o.restart?l.perm:p?.native_perm??'unknown',
-        native_workspace_mode:o.restart?(l.perm==='auto-workspace'?l.workspace_mode??defaultWorkspaceMode(k):undefined):p?.native_workspace_mode,
-        auto_guard:o.restart?l.perm==='auto-workspace'||l.perm==='yolo':l.perm==='auto'?false:p?.auto_guard,
-        project_id:p?.project_id,pre_role_alias:p?.pre_role_alias};
-      const binding=p&&this.binding(p);
-      if(binding)this.attach(entry,binding);
-      else this.db.savePane(entry);
-      return {...paneView(entry),role:binding?.role,restarted:!!o.restart};
+      const base:ManagedPane=p??{route:r,agent:a,launch:l,alias:a.name??pane,controller,adopted:true,native_perm:'unknown'};
+      if(o.auto_restart&&(!idle(a)||this.conflict(undefined,r,pane))){
+        const pending_restart={perm:l.perm,workspace_mode:l.workspace_mode,model:l.model,effort:l.effort,provider:l.provider,
+          allow_last:!!o.allow_last,attended:l.attended,requested_at:Date.now()};
+        const saved={...base,launch:{...base.launch,perm:l.perm,workspace_mode:l.workspace_mode},pending_restart,last_restart_error:undefined};
+        this.db.savePane(saved);this.db.audit(null,'pane_restart_scheduled',pane);
+        return {...paneView(saved),scheduled_restart:true};
+      }
+      this.assertFree(undefined,r,pane);
+      if(!idle(a)&&!o.force)throw new FlowError('pane_not_ready','Wait for the agent to settle or use --force.',1);
+      let updated=a;
+      if(restart){
+        const key=paneKey(r,pane),timeout=seconds(o.timeout,30,4,300),name=a.name??k+'-'+randomUUID().slice(0,6);
+        const errorCode=(e:unknown)=>e instanceof FlowError?e.code:'restart_error';
+        const save=(agent:Agent,targetLaunch:Launch,rollback=false,error?:string)=>{
+          const entry:ManagedPane={...base,agent:{...agent,agent_session:agent.agent_session??session??null},launch:targetLaunch,controller,
+            native_perm:rollback?base.native_perm:targetLaunch.perm,
+            native_workspace_mode:rollback?base.native_workspace_mode:targetLaunch.perm==='auto-workspace'?targetLaunch.workspace_mode??defaultWorkspaceMode(k):undefined,
+            auto_guard:rollback?(['auto-workspace','yolo'].includes(targetLaunch.perm)?base.auto_guard:false):targetLaunch.perm==='auto-workspace'||targetLaunch.perm==='yolo',
+            pending_restart:undefined,last_restart_error:error};
+          if(binding)this.attach(entry,binding);else this.db.savePane(entry);
+          return entry;
+        };
+        const cleanup=async()=>{
+          const current=await get(r,pane).catch(e=>{if(e instanceof FlowError&&missing.test(e.code))return a;throw e;});
+          if(current.terminal_id!==a.terminal_id)throw new FlowError('identity_changed','Pane identity changed during restart cleanup.');
+          await this.exitToShell(r,pane,current,true,timeout);
+        };
+        this.restarting.add(key);this.restartEpoch++;
+        try{
+          try{await this.exitToShell(r,pane,a,!!o.force,timeout);}
+          catch(e){
+            this.db.savePane({...base,pending_restart:undefined,last_restart_error:errorCode(e)});
+            this.db.audit(null,'pane_restart_aborted',pane+' '+errorCode(e));throw e;
+          }
+          let cause:unknown;
+          for(let attempt=0;attempt<2;attempt++){
+            try{
+              updated=await this.startInSafe(r,pane,a,name,l,[...rs,...flags],timeout);
+              const entry=save(updated,l);
+              this.db.audit(null,'pane_restarted',pane);
+              return {...paneView(entry),role:binding?.role,restarted:true};
+            }catch(e){
+              cause=e;
+              if(e instanceof FlowError&&(e.code==='identity_changed'||e.code==='pane_not_found'))throw e;
+              try{await cleanup();}catch(cleanupError){cause=cleanupError;break;}
+              if(attempt===0)await sleep(Math.min(150,seconds(process.env.CHFLOW_SHELL_SETTLE_MS,350,0,30000)));
+            }
+          }
+          if(cause instanceof FlowError&&(cause.code==='identity_changed'||cause.code==='pane_not_found'))throw cause;
+          try{
+            await cleanup();
+            const recovered=await this.startInSafe(r,pane,a,name,prevLaunch,[...rollbackRs,...rollbackFlags],timeout);
+            save(recovered,prevLaunch,true,errorCode(cause));
+          }catch(rollbackError){
+            this.db.savePane({...base,pending_restart:undefined,last_restart_error:errorCode(cause)+'; rollback='+errorCode(rollbackError)});
+            this.db.audit(null,'pane_restart_rollback_failed',pane+' '+errorCode(rollbackError));
+            throw new FlowError('restart_failed','Restart and rollback failed.',1,{pane_id:pane,rolled_back:false,cause:errorCode(cause),rollback_error:errorCode(rollbackError)});
+          }
+          this.db.audit(null,'pane_restart_rolled_back',pane);
+          throw new FlowError('restart_rolled_back','Restart failed; automatically rolled back to previous session.',1,
+            {pane_id:pane,rolled_back:true,restored_perm:prevLaunch.perm,restored_workspace_mode:prevLaunch.workspace_mode,cause:errorCode(cause)});
+        }catch(e){
+          const current=this.db.pane(r,pane);
+          if(current)this.db.savePane({...current,pending_restart:undefined,last_restart_error:current.last_restart_error??errorCode(e)});
+          throw e;
+        }finally{
+          this.restarting.delete(key);this.restartEpoch++;
+        }
+      }
+      if(o.model)await prompt(r,pane,'/model '+l.model);
+      if(o.effort)await prompt(r,pane,'/effort '+(l.effort==='xhigh'?'max':['off','minimal'].includes(l.effort??'')?'low':l.effort));
+      const entry:ManagedPane={...base,agent:updated,launch:l,controller,pending_restart:undefined,
+        auto_guard:l.perm==='auto'?false:base.auto_guard};
+      if(binding)this.attach(entry,binding);else this.db.savePane(entry);
+      return {...paneView(entry),role:binding?.role,restarted:false};
     });
   }
   binding(p:ManagedPane){
@@ -440,6 +572,7 @@ export class Workspaces {
   }
 
   async liveTopology(r:Route):Promise<LiveTopology>{
+    const epoch=this.restartEpoch;
     const checkedPanes=new Set(this.db.panes().filter(p=>same(p.route,r)).map(p=>paneIdentity(p.agent.pane_id,p.agent.terminal_id)));
     const checkedRoles=new Set(this.db.roles().filter(role=>role.route&&same(role.route,r)).map(bindingIdentity));
     try{
@@ -453,7 +586,7 @@ export class Workspaces {
       const needsRefresh=!cached||Date.now()-cached.at>3000||cached.identities!==identities;
       const labels=needsRefresh?await listHerdrLabels(r):cached.labels;
       if(needsRefresh)this.labelCache.set(rk,{at:Date.now(),identities,labels});
-      return {agents,herdr:'reachable',labels,checkedPanes,checkedRoles};
+      return {agents,herdr:'reachable',labels,checkedPanes:epoch===this.restartEpoch?checkedPanes:new Set<string>(),checkedRoles:epoch===this.restartEpoch?checkedRoles:new Set<string>()};
     }catch(e){return {agents:[],herdr:e instanceof FlowError?e.code:'unreachable'};}
   }
 
@@ -466,7 +599,7 @@ export class Workspaces {
       for(const role of this.db.roles()){
         if(role.binding_mode==='pane'&&role.route&&same(role.route,r)&&role.pane_id&&
            checkedRoles?.has(bindingIdentity(role))&&online.get(role.pane_id)!==role.terminal_id&&
-           !this.locks.has(paneKey(r,role.pane_id))&&(!project||role.project_id===project)&&!roleActive(role,tasks)){
+           !this.locks.has(paneKey(r,role.pane_id))&&!this.isRestarting(r,role.pane_id)&&!this.db.pane(r,role.pane_id)?.last_restart_error&&(!project||role.project_id===project)&&!roleActive(role,tasks)){
           this.detach(role);
           this.db.audit(null,'role_offline',role.project_id+'/'+role.role);
         }
@@ -474,7 +607,7 @@ export class Workspaces {
       for(const p of this.db.panes()){
         const {pane_id:id,terminal_id:terminalId}=p.agent;
         if(!same(p.route,r)||!checkedPanes?.has(paneIdentity(id,terminalId))||online.get(id)===terminalId||
-           this.locks.has(paneKey(r,id))||this.binding(p)||tasks.some(t=>t.pane===id&&same(t.route,r))||
+           this.locks.has(paneKey(r,id))||this.isRestarting(r,id)||p.last_restart_error||this.binding(p)||tasks.some(t=>t.pane===id&&same(t.route,r))||
            project&&this.projects.pane(r,p.agent,paneCwd(p.agent)??'.',undefined,p).project_id!==project)continue;
         this.db.removePane(p);
         this.db.audit(null,'pane_pruned',id);
@@ -496,7 +629,7 @@ export class Workspaces {
       const wsId=current.workspace_id??null, tabId=current.tab_id??null;
       const wsLabel=wsId?wsMap[wsId]:undefined, tabLabel=tabId?tabMap[tabId]:undefined;
       const role=this.binding(p)?.role;
-      return {...paneView(p),kind:live?a.kind:p.agent.agent,name:current.name,cwd:resolvedCwd,live,agent_status:live?a.agent_status:'offline',
+      return {...paneView(p,this.isRestarting(p.route,p.agent.pane_id)),kind:live?a.kind:p.agent.agent,name:current.name,cwd:resolvedCwd,live,agent_status:live?a.agent_status:'offline',
         perm_mode:effectivePermMode(live?a.kind:p.agent.agent,p.launch.perm,p.native_perm,p.launch.workspace_mode,p.native_workspace_mode),
         state_change_seq:current.state_change_seq,workspace_id:wsId,tab_id:tabId,
         workspace_label:wsLabel??null,tab_label:tabLabel??null,

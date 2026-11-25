@@ -1,4 +1,4 @@
-# chflow v3.6.0
+# chflow v3.6.1
 
 `chflow` coordinates Pi, Codex, Claude Code, and Antigravity sessions across multiple projects and stable roles. It requires Node.js **22.13.0+** and has **zero third-party runtime dependencies**.
 
@@ -19,19 +19,19 @@ Put `$HOME/.local/bin` on `PATH`. With pnpm (including pnpm 12+), pack first and
 
 ```sh
 npm pack
-pnpm add -g --offline ./chflow-3.6.0.tgz
+pnpm add -g --offline ./chflow-3.6.1.tgz
 ```
 
-For cross-machine offline distribution, copy `chflow-3.6.0.tgz` and run:
+For cross-machine offline distribution, copy `chflow-3.6.1.tgz` and run:
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.1.tgz
 ```
 
 ```powershell
 # Windows (with a user-writable npm prefix on PATH)
-npm install --offline -g .\chflow-3.6.0.tgz
+npm install --offline -g .\chflow-3.6.1.tgz
 ```
 
 ## Quick Start
@@ -62,6 +62,7 @@ Global role templates live in `$XDG_CONFIG_HOME/chflow/roles.yaml` (override via
 - `auto`: **Harness Native Auto** (`agy --mode auto`, `claude --permission-mode auto`, `codex --approve-for-me`, `pi` default). `chflow` never presses keys on `auto` (`auto_guard: false`); switching an existing pane into `auto` without matching native flags reports `restart_required`.
 - `auto-workspace`: **Workspace Auto + `chflow` permission guard**, with selectable native base (`--workspace-mode`): `agy`/`claude` (`accept-edits` default, or `auto`), `codex` (`workspace-write` default, or `approve-for-me`). Command/path safety stays governed natively by each Harness (no duplicate `chflow`-side command blacklist); `chflow` only inspects the active prompt region (`activePromptText()`) to distinguish permission dialogs from user questions.
 - `yolo`: native skip-permissions flags plus filterless runtime passthrough (skipping only user questions, unsafe selections, and 3-repeat approval loops). Explicit authorization or external isolation required.
+- **Resilient Native Restart, Rollback, Auto-Restart & Force-Interrupt (`--restart` / `--auto-restart` / `--force`)**: Switching native permissions clears stray input drafts, uses Harness-native exit commands (`/quit` for `pi`, `/exit` for `codex`/`claude`/`agy`), escalates cleanly (`Esc`/`Ctrl+U` → `Ctrl+C`×2 → `Ctrl+D`) if exit stalls, protects panes/roles from pruning during restart, preserves session IDs, retries transient launch failures, and **automatically rolls back** to the previous permission and session if the new launch fails. Supports `--auto-restart` (queues idle auto-restart when busy) and `--force` (force-interrupts working/blocked panes before restarting).
 
 ### Live Sync, Stall Liveness Probe & Lifecycle
 

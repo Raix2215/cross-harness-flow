@@ -17,10 +17,11 @@ const actionOptions=new Map<string,string[]>([
   ['start','kind name perm workspace_mode readonly resume place worktree base worktree_path trust_repository workspace direction label focus pane cwd model effort provider machine session attended timeout matrix channel controller project role'.split(' ')],
   ['send','task brief perm workspace_mode readonly cwd machine session attended model effort provider timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller project role spawn'.split(' ')],
   ['run','kind task transport perm workspace_mode readonly bg brief cwd model effort provider attended timeout matrix channel max_retries retry_backoff retry_at retry_after fallback controller'.split(' ')],
-  ['switch','model effort provider perm workspace_mode readonly restart allow_last machine session timeout attended matrix channel'.split(' ')],
+  ['switch','model effort provider perm workspace_mode readonly restart force auto_restart allow_last machine session timeout attended matrix channel'.split(' ')],
   ['adopt','name perm workspace_mode readonly controller takeover machine session attended matrix channel project role'.split(' ')],
   ['handoff',['to','to_session','to_machine','notify_old','machine','session']],
-  ['set_perm',['perm','workspace_mode']],
+  ['set_perm',['perm','workspace_mode','auto_restart']],
+  ['cancel_restart',['machine','session']],
   ['terminal_control',['keys','text','submit_key','prompt']],
   ['respond',['expect_visible','key','text','submit_key','force']],
   ['resume',['brief','attended']],
@@ -46,12 +47,12 @@ const actionOptions=new Map<string,string[]>([
 const operatorCommands=new Map([
   ['assign_project','ui.assign_project'],['focus_pane','ui.focus_pane'],['release_pane','ui.release_pane'],['prune','ui.prune'],['daemon_stop','daemon.stop'],
   ...['set','bind','unbind','remove'].map(action=>['role_'+action,'ui.role.'+action] as const),
-  ['set_perm','ui.set_perm'],['terminal_control','ui.terminal'],['inspect_screen','ui.screen'],['cancel_retry','ui.cancel_retry'],
+  ['cancel_restart','ui.cancel_restart'],['set_perm','ui.set_perm'],['terminal_control','ui.terminal'],['inspect_screen','ui.screen'],['cancel_retry','ui.cancel_retry'],
   ...['queue_pause','queue_resume','queue_deliver_now','queue_consume','queue_drop','queue_reroute'].map(a=>[a,'ui.'+a] as const),
 ]);
 const conflicts=new Set(['active_tasks','attempt_mismatch','block_changed','close_in_progress','delivery_in_flight',
   'expectation_mismatch','identity_changed','no_pane','not_managed','pane_busy','pane_not_ready',
-  'missing_session_id','task_busy','task_inactive','task_terminal','role_busy','role_unbound']);
+  'restart_rolled_back','missing_session_id','task_busy','task_inactive','task_terminal','role_busy','role_unbound']);
 const record=(o:unknown):o is Record<string,unknown>=>!!o&&typeof o==='object'&&!Array.isArray(o);
 
 function status(reply:Reply){

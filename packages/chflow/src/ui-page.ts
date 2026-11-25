@@ -18,7 +18,7 @@ const FAVICON_LINK = `<link rel="icon" type="image/svg+xml" href="data:image/svg
 const APP_CORE_TOP = String.raw`
 (function(){
 'use strict';
-const BOOT = window.__CHFLOW_BOOT__ || { mode: 'preview', version: '3.6.0' };
+const BOOT = window.__CHFLOW_BOOT__ || { mode: 'preview', version: '3.6.1' };
 const ic = (name, cls='') => '<svg class="ic ' + cls + '"><use href="#i-' + name + '"/></svg>';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const TERMINAL_STATES = new Set(['succeeded','failed','cancelled']);
@@ -196,6 +196,10 @@ function fmtClock(ts){
 
 const THEME_KEY = 'chflow-theme';
 const DAG_STORAGE_KEY = 'chflow-dag-layout-v1';
+const AUTO_RESTART_KEY = 'chflow-auto-restart-perm';
+function getSavedAutoRestart(){
+  try { return localStorage.getItem(AUTO_RESTART_KEY) === '1'; } catch { return false; }
+}
 
 function getSavedTheme(){
   try {
@@ -260,6 +264,7 @@ const state = {
   workMode: 'dag',
   projMenuOpen: false,
   focusCollapsed: false,
+  autoRestartPerm: getSavedAutoRestart(),
   drawer: null,
   fileCache: {},
   fileInFlight: {},
@@ -486,6 +491,9 @@ function buildProjectWorkers(projectId){
       workspaceMode: wWsMode,
       nativeWorkspaceMode: wNativeWs,
       permMode: r.perm_mode || pm?.perm_mode || effectivePermMode(wKind, wPerm, wNative, wWsMode, wNativeWs),
+      pendingRestart: r.pending_restart || pm?.pending_restart || null,
+      restarting: Boolean(r.restarting || pm?.restarting),
+      lastRestartError: r.last_restart_error || pm?.last_restart_error || null,
       kind: wKind,
       model: r.model || r.default_model || '',
       bindingMode: r.binding_mode,
@@ -519,6 +527,9 @@ function buildProjectWorkers(projectId){
       workspaceMode: pWsMode,
       nativeWorkspaceMode: pNativeWs,
       permMode: p.perm_mode || effectivePermMode(pKind, pPerm, pNative, pWsMode, pNativeWs),
+      pendingRestart: p.pending_restart || null,
+      restarting: Boolean(p.restarting),
+      lastRestartError: p.last_restart_error || null,
       kind: pKind,
       model: p.model || '',
       bindingMode: 'pane',
@@ -604,6 +615,9 @@ function buildProjectControllers(project, workers){
       location: cv?.location_label || (info ? paneLoc(info) : ''),
       status: live ? (cv?.agent_status || info?.agent_status || 'idle') : 'offline',
       managed, perm, nativePerm, workspaceMode, nativeWorkspaceMode, permMode,
+      pendingRestart: cv?.pending_restart || managedEntry?.pending_restart || null,
+      restarting: Boolean(cv?.restarting || managedEntry?.restarting),
+      lastRestartError: cv?.last_restart_error || managedEntry?.last_restart_error || null,
       typing, paused, queuedCount,
       managedRolesCount: ownedRolesCount,
       managedWorkersCount: ownedTempCount,
@@ -726,28 +740,71 @@ document.addEventListener('click', async ev => {
       await apiAction('terminal_control', btn.dataset.target, { text: txt, submit_key: 'enter' });
       input.value = ''; toast('已向终端发送文本');
     }
+    else if (act === 'toggleAutoRestartPerm'){
+      state.autoRestartPerm = !state.autoRestartPerm;
+      try { localStorage.setItem(AUTO_RESTART_KEY, state.autoRestartPerm ? '1' : '0'); } catch {}
+      renderDrawer();
+      toast(state.autoRestartPerm ? '已开启：切权限时若需原生重启将自动执行或预约空闲重启' : '已关闭：切权限后改为手动点击重启');
+    }
     else if (act === 'setPerm'){
       const pTarget = btn.dataset.target, permVal = btn.dataset.perm, pKind = btn.dataset.kind || '', pNative = btn.dataset.native || 'unknown';
       const wsMode = btn.dataset.wsMode || (permVal === 'auto-workspace' ? (btn.dataset.curWs || defaultWorkspaceMode(pKind)) : undefined);
       const nativeWs = btn.dataset.nativeWs || undefined;
+      const isHeadless = btn.dataset.headless === '1';
       if (btn.dataset.adoptFirst === '1'){
         await apiAction('adopt', pTarget, { perm: permVal, ...(wsMode ? { workspace_mode: wsMode } : {}), ...(pKind === 'agy' ? { attended: true } : {}) });
       }
-      await apiAction('set_perm', pTarget, { perm: permVal, ...(wsMode ? { workspace_mode: wsMode } : {}) });
       const pm = permModeMeta(pKind, permVal, pNative, undefined, wsMode, nativeWs);
-      toast(pm.mode === 'proxy' ? ('已启用代理放行 (' + permVal + ')；原生参数需重启生效') : pm.mode === 'restart_required' ? ('已记录目标权限 (' + permVal + ')，请点击重启以应用原生模式') : ('权限已切换为 ' + permVal + (wsMode ? ' (' + wsMode + ')' : '')));
+      const wantAuto = Boolean(state.autoRestartPerm && !isHeadless && pm.needsRestart);
+      const res = await apiAction('set_perm', pTarget, { perm: permVal, ...(wsMode ? { workspace_mode: wsMode } : {}), ...(wantAuto ? { auto_restart: true } : {}) });
+      if (wantAuto && res?.scheduled_restart) toast('已记录目标权限 (' + permVal + ')，已预约空闲后自动重启');
+      else if (wantAuto) toast('正在自动保留上下文重启以应用原生权限 (' + permVal + ')...');
+      else toast(pm.mode === 'proxy' ? ('已启用代理放行 (' + permVal + ')；原生参数需重启生效') : pm.mode === 'restart_required' ? ('已记录目标权限 (' + permVal + ')，请点击重启或预约空闲自动重启') : ('权限已切换为 ' + permVal + (wsMode ? ' (' + wsMode + ')' : '')));
     }
     else if (act === 'setWorkspaceMode'){
       const pTarget = btn.dataset.target, wsMode = btn.dataset.wsMode, pKind = btn.dataset.kind || '', pNative = btn.dataset.native || 'unknown', nativeWs = btn.dataset.nativeWs || undefined;
-      await apiAction('set_perm', pTarget, { perm: 'auto-workspace', workspace_mode: wsMode });
+      const isHeadless = btn.dataset.headless === '1';
       const pm = permModeMeta(pKind, 'auto-workspace', pNative, undefined, wsMode, nativeWs);
-      toast(pm.mode === 'native' ? ('工作区原生底座已对齐：' + wsMode) : ('已设定工作区原生底座为 ' + wsMode + '（重启后生效）'));
+      const wantAuto = Boolean(state.autoRestartPerm && !isHeadless && pm.needsRestart);
+      const res = await apiAction('set_perm', pTarget, { perm: 'auto-workspace', workspace_mode: wsMode, ...(wantAuto ? { auto_restart: true } : {}) });
+      if (wantAuto && res?.scheduled_restart) toast('已设定工作区底座 ' + wsMode + '，已预约空闲后自动重启');
+      else if (wantAuto) toast('正在自动重启以应用工作区原生底座 ' + wsMode + '...');
+      else toast(pm.mode === 'native' ? ('工作区原生底座已对齐：' + wsMode) : ('已设定工作区原生底座为 ' + wsMode + '（重启后生效）'));
     }
     else if (act === 'restartApplyPerm'){
       const paneId = btn.dataset.pane, permVal = btn.dataset.perm, pKind = btn.dataset.kind || '', wsMode = btn.dataset.wsMode || undefined;
-      toast('正在保留上下文重启会话并应用原生权限 ' + permVal + '...');
-      await apiAction('switch', paneId, { perm: permVal, ...(wsMode && permVal === 'auto-workspace' ? { workspace_mode: wsMode } : {}), restart: true, allow_last: true, ...(pKind === 'agy' ? { attended: true } : {}) });
-      toast('已保留上下文重启并原生生效：' + permVal + (wsMode && permVal === 'auto-workspace' ? ' (' + wsMode + ')' : ''));
+      toast('正在保留上下文安全重启并应用原生权限 ' + permVal + '...');
+      try {
+        await apiAction('switch', paneId, { perm: permVal, ...(wsMode && permVal === 'auto-workspace' ? { workspace_mode: wsMode } : {}), restart: true, allow_last: true, ...(pKind === 'agy' ? { attended: true } : {}) });
+        toast('已保留上下文重启并原生生效：' + permVal + (wsMode && permVal === 'auto-workspace' ? ' (' + wsMode + ')' : ''));
+      } catch (e) {
+        if (e && e.code === 'restart_rolled_back') toast('新权限启动失败，已自动回退恢复原会话', true);
+        else throw e;
+      }
+    }
+    else if (act === 'scheduleAutoRestart'){
+      const paneId = btn.dataset.pane, permVal = btn.dataset.perm, pKind = btn.dataset.kind || '', wsMode = btn.dataset.wsMode || undefined;
+      const res = await apiAction('switch', paneId, { perm: permVal, ...(wsMode && permVal === 'auto-workspace' ? { workspace_mode: wsMode } : {}), restart: true, auto_restart: true, allow_last: true, ...(pKind === 'agy' ? { attended: true } : {}) });
+      toast(res?.scheduled_restart ? ('已预约空闲后自动重启 → ' + permVal) : ('已保留上下文重启并原生生效：' + permVal));
+    }
+    else if (act === 'cancelRestart'){
+      await apiAction('cancel_restart', btn.dataset.pane, {});
+      toast('已取消空闲自动重启预约');
+    }
+    else if (act === 'forceRestartApplyPerm'){
+      openForceRestartModal(btn.dataset.pane, btn.dataset.perm, btn.dataset.kind || '', btn.dataset.wsMode || '');
+    }
+    else if (act === 'confirmForceRestart'){
+      const paneId = btn.dataset.pane, permVal = btn.dataset.perm, pKind = btn.dataset.kind || '', wsMode = btn.dataset.wsMode || undefined;
+      closeModal();
+      toast('正在强制中断并重启会话以应用原生权限 ' + permVal + '...');
+      try {
+        await apiAction('switch', paneId, { perm: permVal, ...(wsMode && permVal === 'auto-workspace' ? { workspace_mode: wsMode } : {}), restart: true, force: true, allow_last: true, ...(pKind === 'agy' ? { attended: true } : {}) });
+        toast('强制中断重启成功，已原生生效：' + permVal + (wsMode && permVal === 'auto-workspace' ? ' (' + wsMode + ')' : ''));
+      } catch (e) {
+        if (e && e.code === 'restart_rolled_back') toast('强制重启后新权限启动失败，已自动回退原会话', true);
+        else throw e;
+      }
     }
     else if (act === 'finishTask'){ await apiAction('finish', id, { ok: true }); toast('任务 ' + id + ' 已验收结单'); }
     else if (act === 'cancelTask'){ await apiAction('cancel', id, {}); toast('已取消任务 ' + id); }

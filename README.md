@@ -4,7 +4,7 @@
 
 简体中文 · [English](./README.en.md)
 
-[![Version](https://img.shields.io/badge/version-3.6.0-111317.svg)](#安装)
+[![Version](https://img.shields.io/badge/version-3.6.1-111317.svg)](#安装)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.13.0-339933.svg)](#依赖与-herdr-耦合说明)
 [![Herdr](https://img.shields.io/badge/herdr-%3E%3D0.9.5-4b5563.svg)](#依赖与-herdr-耦合说明)
 [![License: MIT](https://img.shields.io/badge/license-MIT-4b5563.svg)](./LICENSE)
@@ -13,7 +13,7 @@
 
 ---
 
-`cross-harness-flow` 是一套**以 [Herdr](https://github.com/herdrdev/herdr) 为核心构建**的本地多 Agent 协同 **通用 Skill 与运行时（`chflow` v3.6.0）**。它依托 Herdr 的多窗格终端控制面，将 **Pi、Codex、Claude Code、Antigravity** 统一到四层协同体系中（意图编排 → 全局/项目角色 → 可热替换会话 → 信箱与控制面），让主控 Agent 能按场景自动建立角色与持久会话、随时热替换底层 Harness/模型，同时通过纯黑白极简实时 Web/CLI 控制台将五档权限治理、窗格定位、多轮历史信箱与全局观测权留给人类。
+`cross-harness-flow` 是一套**以 [Herdr](https://github.com/herdrdev/herdr) 为核心构建**的本地多 Agent 协同 **通用 Skill 与运行时（`chflow` v3.6.1）**。它依托 Herdr 的多窗格终端控制面，将 **Pi、Codex、Claude Code、Antigravity** 统一到四层协同体系中（意图编排 → 全局/项目角色 → 可热替换会话 → 信箱与控制面），让主控 Agent 能按场景自动建立角色与持久会话、随时热替换底层 Harness/模型，同时通过纯黑白极简实时 Web/CLI 控制台将五档权限治理、窗格定位、多轮历史信箱与全局观测权留给人类。
 
 ## 快速上手
 
@@ -67,6 +67,7 @@ chflow finish <task-id> --ok --note "审查与回归全部通过" && chflow prun
 ## 核心特性
 
 - **五档权限模型与可选工作区原生基底（`--workspace-mode`）**：显式区分 `readonly` / `ask` / **`auto`（Harness 原生 Auto，由目标 Harness 自身判断，`chflow` 严格零代按）** / **`auto-workspace`（工作区自动 + `chflow` 弹窗代审，支持按 Harness 选择原生启动基底）** / `yolo`（无过滤透传，仅跳过用户问答与 3 次循环）。命令与路径安全回归各 Harness 原生策略，彻底移除 `chflow` 侧冗余命令黑名单，并通过 `activePromptText()` 精准聚焦当前活跃弹窗区。
+- **鲁棒权限切换重启、失败自动回退与自动/强制重启（v3.6.1）**：原生权限重启按 Harness 适配退出命令（`pi` 用 `/quit`、`codex`/`claude`/`agy` 用 `/exit`），先清残留草稿并在卡顿时自动分级退出（`Esc`/`Ctrl+U` → `Ctrl+C`×2 → `Ctrl+D`），重启窗口全程锁定保护防误清理与会话丢失；新配置启动失败时自动重试并**回退恢复原权限与原会话**；支持「切权限自动重启 / 空闲后自动重启（`--auto-restart`）」与「强制中断重启（`--force`）」。
 - **双采样 `stalled` 活体复核（消除长耗时误报）**：常规监看保持零读屏；当 `working` 工位达到静默阈值时，在触发 `stalled` 告警前自动执行两阶段活体复核（`CHFLOW_STALL_CONFIRM_MS`，默认 20 秒），比对末 20 行屏幕哈希与产物/本地会话文件活跃时间戳，彻底消除长耗时活跃任务的假僵死误报。
 - **纯黑白极简 WebUI、丰富主控抽屉与多轮历史信箱**：采用全新黑白极简矢量徽标与自适应深浅色主题，全部图标统一线性 SVG（零 Emoji，角色名不再混入 `@` 文本前缀）；支持丰富主控卡片、三标签主控抽屉与一键勿扰；角色抽屉支持切换全部历史任务、`第 1..N 轮` 无闪烁预览与「续写第 N+1 轮」。
 - **四层协同与两级角色模型（全局模板 + 项目实例）**：通过 `chflow role set <name> --global` 将通用角色预设（含 `perm` 与 `workspace_mode`）沉淀到 `~/.config/chflow/roles.yaml`（零凭据）；全局模板按需懒实例化，覆盖遵循四级优先级：**单次派发参数 > 项目角色实例（含 `.chflow/project.yaml`）> 全局角色模板 > Skill 场景默认值**。
@@ -118,7 +119,7 @@ cross-harness-flow/
 │   ├── webui-preview-en.png               # 纯黑白极简 Web 控制台预览（英文）
 │   ├── cli-dashboard.png                  # CLI 实时状态看板预览（中文）
 │   └── cli-dashboard-en.png               # CLI 实时状态看板预览（英文）
-├── packages/chflow/                       # chflow v3.6.0 运行时源码与黑盒 E2E 套件
+├── packages/chflow/                       # chflow v3.6.1 运行时源码与黑盒 E2E 套件
 │   ├── LICENSE
 │   ├── README.md
 │   ├── package.json
@@ -152,17 +153,17 @@ npm install -g --prefix "$HOME/.local" .
 ```sh
 cd packages/chflow
 npm ci && npm run build && npm pack
-pnpm add -g --offline ./chflow-3.6.0.tgz
+pnpm add -g --offline ./chflow-3.6.1.tgz
 ```
 
-跨机离线分发只需复制 `chflow-3.6.0.tgz` 到目标机并执行：
+跨机离线分发只需复制 `chflow-3.6.1.tgz` 到目标机并执行：
 
 ```sh
 # Linux / Unix
-npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.0.tgz
+npm install --offline -g --prefix "$HOME/.local" ./chflow-3.6.1.tgz
 
 # Windows（PowerShell，确保用户级 npm prefix 位于 PATH）
-npm install --offline -g .\chflow-3.6.0.tgz
+npm install --offline -g .\chflow-3.6.1.tgz
 ```
 
 ### 2. 安装 Skill 文档

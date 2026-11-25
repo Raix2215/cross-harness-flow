@@ -129,5 +129,6 @@ export async function openPeer(start=true) {
 }
 export function requestTimeout(method:string,opts:Record<string,unknown>={}){
   const s=Number(opts.timeout??(method==='run'?300:method==='wait'?180:30));
-  return ['start','switch','wait','run','send','role.bind','ui.role.bind'].includes(method)&&Number.isFinite(s)&&s>0?Math.max(45000,(s+30)*1000):45000;
+  if(method==='switch'&&Number.isFinite(s)&&s>0)return Math.max(45000,(Math.max(4,Math.min(300,s))*9+45)*1000);
+  return ['start','wait','run','send','role.bind','ui.role.bind'].includes(method)&&Number.isFinite(s)&&s>0?Math.max(45000,(s+30)*1000):45000;
 }

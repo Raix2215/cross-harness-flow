@@ -39,7 +39,7 @@ export function renderHelp(
       '',
       `${c.bold('人类快捷接管（仅交互终端，不暴露给 MCP）')}`,
       `  ${c.cyan('chflow approve')} [task]      一键放行阻塞工位（单阻塞可省 ID，免填 expect-visible）`,
-      `  ${c.cyan('chflow perm')} <target> <tier> 热切目标权限（readonly|ask|auto|auto-workspace|yolo）`,
+      `  ${c.cyan('chflow perm')} <target> <tier> 切换权限（readonly|ask|auto|auto-workspace|yolo）[--restart|--auto-restart|--force]`,
       `  ${c.cyan('chflow queue')} <action>      操控投递队列（pause|resume|push|drop|consume|reroute）`,
       `  ${c.cyan('chflow view')} <task> [kind]  查看信箱文件（brief|reply|out|diag，支持 --turn N）`,
       '',
@@ -88,7 +88,7 @@ export function renderHelp(
   } else if (method === 'approve') {
     lines.push('Interactive TTY only. Defaults to sending Enter; auto-targets when exactly one task is blocked.');
   } else if (method === 'perm') {
-    lines.push('Interactive TTY only. Updates target permission tier; native changes may require switch --restart. auto delegates approvals to the Harness; auto-workspace adds the permission guard. --workspace-mode selects its native base.');
+    lines.push('Interactive TTY only. --restart applies native settings, --auto-restart waits for idle, --force interrupts an unmanaged turn before restarting. auto delegates approvals to the Harness; auto-workspace adds the permission guard. --workspace-mode selects its native base.');
   } else if (method === 'queue') {
     lines.push('Interactive TTY only. Examples: chflow queue pause w1:p1 | chflow queue push --event <id> | chflow queue resume');
   } else if (method === 'view') {

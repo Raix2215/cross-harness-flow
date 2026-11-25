@@ -3,7 +3,7 @@ function makePreviewSnapshot(){
   const now = Date.now(), min = 60000;
   return {
     seq: 42, now, herdr: 'reachable',
-    daemon: { pid: 48213, version: BOOT.version || '3.6.0', started_at: new Date(now - (3*60+12)*min).toISOString(), ui_url: 'http://127.0.0.1:4317', running: true },
+    daemon: { pid: 48213, version: BOOT.version || '3.6.1', started_at: new Date(now - (3*60+12)*min).toISOString(), ui_url: 'http://127.0.0.1:4317', running: true },
     global_roles: [
       { role: 'implementer', description: '通用功能实现与单元测试', default_kind: 'codex', default_perm: 'auto-workspace', worktree: true },
       { role: 'reviewer', description: '异构代码与安全审阅', default_kind: 'claude', default_perm: 'readonly', worktree: false },
@@ -107,16 +107,40 @@ function handlePreviewAction(action, target, opts){
     if (p){ p.perm = opts.perm; if (ws) p.workspace_mode = ws; p.perm_mode = effectivePermMode(p.kind, opts.perm, p.native_perm, p.workspace_mode, p.native_workspace_mode); if (p.agent_status === 'blocked' && (opts.perm === 'auto-workspace' || opts.perm === 'yolo')) p.agent_status = 'working'; }
     if (r){ r.perm = opts.perm; if (ws) r.workspace_mode = ws; r.perm_mode = effectivePermMode(r.kind || r.default_kind, opts.perm, r.native_perm || p?.native_perm, r.workspace_mode || p?.workspace_mode, r.native_workspace_mode || p?.native_workspace_mode); if (r.agent_status === 'blocked' && (opts.perm === 'auto-workspace' || opts.perm === 'yolo')) r.agent_status = 'working'; }
     if (cv){ cv.managed = true; cv.perm = opts.perm; if (ws) cv.workspace_mode = ws; cv.perm_mode = effectivePermMode(cv.kind, opts.perm, cv.native_perm, cv.workspace_mode, cv.native_workspace_mode); }
+    const holder = p || cv;
+    if (opts.auto_restart && holder && holder.perm_mode !== 'native'){
+      const isIdle = holder.agent_status === 'idle' || holder.agent_status === 'done';
+      if (isIdle){
+        const nws = opts.perm === 'auto-workspace' ? (ws || defaultWorkspaceMode(holder.kind)) : undefined;
+        for (const x of [p, r, cv].filter(Boolean)){ x.native_perm = opts.perm; x.workspace_mode = nws; x.native_workspace_mode = nws; x.perm_mode = 'native'; x.pending_restart = null; }
+      } else {
+        const pr = { perm: opts.perm, workspace_mode: ws, allow_last: true, requested_at: Date.now() };
+        for (const x of [p, r, cv].filter(Boolean)) x.pending_restart = pr;
+        render(); return { ok: true, scheduled_restart: true, pending_restart: pr };
+      }
+    } else if (holder && holder.perm_mode === 'native'){
+      for (const x of [p, r, cv].filter(Boolean)) x.pending_restart = null;
+    }
   } else if (action === 'switch'){
     const p = snap.managed_panes.find(x => x.pane_id === target || x.alias === target);
     const r = snap.roles.find(x => x.pane_id === target || x.role === target);
     const cv = (snap.controller_views || []).find(x => x.pane_id === target);
     if (opts.perm && opts.restart){
-      const ws = opts.perm === 'auto-workspace' ? (opts.workspace_mode || defaultWorkspaceMode(p?.kind || r?.kind || cv?.kind)) : undefined;
-      if (p){ p.perm = opts.perm; p.native_perm = opts.perm; p.workspace_mode = ws; p.native_workspace_mode = ws; p.perm_mode = 'native'; }
-      if (r){ r.perm = opts.perm; r.native_perm = opts.perm; r.workspace_mode = ws; r.native_workspace_mode = ws; r.perm_mode = 'native'; }
-      if (cv){ cv.perm = opts.perm; cv.native_perm = opts.perm; cv.workspace_mode = ws; cv.native_workspace_mode = ws; cv.perm_mode = 'native'; }
+      const holder = p || cv || r;
+      const isIdle = !holder || holder.agent_status === 'idle' || holder.agent_status === 'done';
+      const ws = opts.perm === 'auto-workspace' ? (opts.workspace_mode || defaultWorkspaceMode(holder?.kind)) : undefined;
+      if (opts.auto_restart && !opts.force && !isIdle){
+        const pr = { perm: opts.perm, workspace_mode: ws, allow_last: true, requested_at: Date.now() };
+        for (const x of [p, r, cv].filter(Boolean)){ x.perm = opts.perm; if (ws) x.workspace_mode = ws; x.pending_restart = pr; }
+        render(); return { ok: true, scheduled_restart: true, pending_restart: pr };
+      }
+      for (const x of [p, r, cv].filter(Boolean)){ x.perm = opts.perm; x.native_perm = opts.perm; x.workspace_mode = ws; x.native_workspace_mode = ws; x.perm_mode = 'native'; x.pending_restart = null; x.last_restart_error = null; if (opts.force && x.agent_status === 'blocked') x.agent_status = 'idle'; }
     }
+  } else if (action === 'cancel_restart'){
+    const p = snap.managed_panes.find(x => x.pane_id === target || x.alias === target);
+    const r = snap.roles.find(x => x.pane_id === target || x.role === target);
+    const cv = (snap.controller_views || []).find(x => x.pane_id === target);
+    for (const x of [p, r, cv].filter(Boolean)) x.pending_restart = null;
   } else if (action === 'queue_deliver_now' || action === 'queue_consume' || action === 'queue_drop'){
     snap.queue = snap.queue.filter(q => q.event_id !== opts.event_id);
   } else if (action === 'queue_pause'){

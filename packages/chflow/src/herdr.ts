@@ -4,7 +4,7 @@ import { FlowError, json, routeKey, type Agent, type Context, type Invocation, t
 import { clean, redact } from './sensitive.js';
 export const transient = /^(?:timeout|cli_timeout|.*(?:connect|transport|socket|ssh|unreachable|temporar|broken_pipe|econn|eof|reset|offline).*)$/i;
 export const missing = /(?:pane|agent|target)_(?:not_found|missing|gone|not_running)|not_found/;
-export const idle = (a:Agent) => ['idle','done'].includes(a.agent_status) && a.interactive_ready!==false && !a.launch_pending;
+export const idle = (a:Pick<Agent,'agent_status'|'interactive_ready'|'launch_pending'>) => ['idle','done'].includes(a.agent_status) && a.interactive_ready!==false && !a.launch_pending;
 export function route(inv:Invocation):Route {
   const machine=str(inv.opts,'machine'), session=str(inv.opts,'session');
   if (machine&&session) return invalid('Choose --machine or --session.');
@@ -142,6 +142,9 @@ export async function startPane(inv:Invocation,r:Route,name:string,kind:string,n
   if(!pane) throw new FlowError('invalid_layout','Herdr did not return a target pane ID.');
   const agent=await startIn(r,pane,name,kind,native,timeout);
   return {agent,place,worktree_path:layout.worktree?.path as string|undefined};
+}
+export async function paneKeys(r:Route,pane:string,k:string[]){
+  await herdr(r,['pane','send-keys',pane,...k],{mutate:true});
 }
 export async function startIn(r:Route,pane:string,name:string,kind:string,native:string[],timeout=30){
   const res=await herdr(r,['agent','start',name,'--kind',kind,'--pane',pane,'--timeout',String(Math.round(timeout*1000)),...(native.length?['--',...native]:[])],{mutate:true,timeout:timeout*1000+5000});

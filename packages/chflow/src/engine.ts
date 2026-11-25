@@ -3,7 +3,7 @@ import { lstatSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { approveKey, classifyBlock, keyArg, signature } from './approval.js';
-import { channelMatrix, channels, compliance, defaultWorkspaceMode, fallbackSpecs, kindOf, launch, native, permission, resumeArgs, workspaceMode } from './harnesses.js';
+import { channelMatrix, channels, compliance, defaultWorkspaceMode, effectivePermMode, fallbackSpecs, kindOf, launch, native, permission, resumeArgs, workspaceMode } from './harnesses.js';
 import { headless, processStamp, stopGroup, transportFor } from './headless.js';
 import { closePane, controlDelays, focusAgent, get, herdr, idle, keys, literal, missing, prompt, route, same, screen, startPane, transient } from './herdr.js';
 import { readConfig } from './ipc.js';
@@ -49,6 +49,7 @@ export class Engine {
   private uiRoutes=new Map<string,UiRoute>();
   private paneGuardState=new Map<string,{terminal:string;lastSeq:number;signature?:string;count:number}>();
   private paneGuardPending=new Set<string>();
+  private pendingRestartInFlight=new Set<string>();
   constructor(private db:Store,private root:string,private onLiveChange:()=>void){
     this.work=new Workspaces(db);
     this.views=new SnapshotViews(db,this.work,r=>this.uiRoutes.get(routeKey(r))?.current);
@@ -70,7 +71,7 @@ export class Engine {
       }
     }
   }
-  isBusy(){return !!this.running.size||!!this.pending.size||this.db.tasks().some(active)||!!this.db.events().length||!!this.db.plans().length;}
+  isBusy(){return this.work.hasRestarts()||!!this.running.size||!!this.pending.size||this.db.tasks().some(active)||!!this.db.events().length||!!this.db.plans().length;}
   activeTaskCount(){return this.db.tasks().filter(active).length;}
   hasLiveSessions(){
     for(const state of this.uiRoutes.values()){
@@ -823,9 +824,10 @@ export class Engine {
       const agents=[...topology.agents].sort((a,b)=>a.pane_id.localeCompare(b.pane_id));
       const fingerprint=JSON.stringify({herdr:topology.herdr,agents,labels:topology.labels});
       state.current=topology;
-      for(const p of this.db.panes().filter(p=>same(p.route,r)&&p.auto_guard)){
+      for(const p of this.db.panes().filter(p=>same(p.route,r))){
         const a=agents.find(a=>a.pane_id===p.agent.pane_id&&a.terminal_id===p.agent.terminal_id);
-        if(a?.agent_status==='blocked')this.schedulePaneGuard(p,a);
+        if(a&&p.pending_restart)this.schedulePendingRestart(p,a);
+        if(a?.agent_status==='blocked'&&p.auto_guard&&!p.pending_restart)this.schedulePaneGuard(p,a);
       }
       if(fingerprint!==state.fingerprint){
         state.fingerprint=fingerprint;
@@ -896,6 +898,42 @@ export class Engine {
       this.onLiveChange();
     });
   }
+  private schedulePendingRestart(p:ManagedPane,a:Pick<Agent,'pane_id'|'terminal_id'|'agent_status'|'interactive_ready'|'launch_pending'>){
+    const key=paneKey(p.route,p.agent.pane_id);
+    if(this.stopping||!p.pending_restart||a.terminal_id!==p.agent.terminal_id||!idle(a)||this.work.isLocked(p.route,p.agent.pane_id)||
+      this.pendingRestartInFlight.has(key)||this.db.tasks().some(t=>t.pane===p.agent.pane_id&&same(t.route,p.route)&&!terminal(t.state)))return;
+    this.pendingRestartInFlight.add(key);
+    this.track(this.runPendingRestart(p).finally(()=>this.pendingRestartInFlight.delete(key)));
+  }
+  private async runPendingRestart(p:ManagedPane){
+    const pending=p.pending_restart!,pane=p.agent.pane_id;
+    const {requested_at,...opts}=pending;
+    try{
+      await this.work.switch({target:pane,ctx:{cwd:p.agent.foreground_cwd??p.agent.cwd??process.cwd(),route:p.route,operator:true},
+        opts:{...opts,restart:true,allow_last:true}},requested_at);
+      this.db.audit(null,'pane_auto_restarted',pane);
+    }catch(e){
+      if(errcode(e)==='restart_superseded')return;
+      const current=this.db.pane(p.route,pane);
+      if(current&&(!current.pending_restart||current.pending_restart.requested_at===requested_at))
+        this.db.savePane({...current,last_restart_error:current.last_restart_error??errcode(e)});
+      this.db.audit(null,'pane_auto_restart_failed',pane+' '+errcode(e));
+    }finally{
+      const current=this.db.pane(p.route,pane);
+      if(current?.pending_restart?.requested_at===requested_at)this.db.savePane({...current,pending_restart:undefined});
+      this.onLiveChange();
+    }
+  }
+  private async cancelRestart(inv:Invocation){
+    const r=route(inv),target=safeTarget(inv.target),p=this.db.panes().find(p=>same(p.route,r)&&(p.agent.pane_id===target||p.alias===target));
+    if(!p)throw new FlowError('not_managed','Select a managed pane.');
+    return this.work.lock(r,p.agent.pane_id,async()=>{
+      const current=this.db.pane(r,p.agent.pane_id)!;
+      this.db.savePane({...current,pending_restart:undefined});
+      this.db.audit(null,'pane_restart_cancelled',p.agent.pane_id);
+      this.onLiveChange();return success({pane_id:p.agent.pane_id,cancelled:true});
+    });
+  }
   private uiSetPerm(inv:Invocation){
     const target=safeTarget(inv.target),requested=str(inv.opts,'perm'),rawWs=str(inv.opts,'workspace_mode');
     if(requested===undefined)return invalid('Provide a permission tier.');
@@ -911,7 +949,14 @@ export class Engine {
       const base=p?.launch??running?.launch??selected!.launch;
       const workspace_mode=rawWs!==undefined?workspaceMode(base.kind,rawWs):base.workspace_mode;
       this.db.transaction(()=>{
-        if(p)this.db.savePane({...p,launch:{...p.launch,perm,workspace_mode},auto_guard:perm==='auto-workspace'||perm==='yolo'});
+        if(p){
+          const aligned=effectivePermMode(base.kind,perm,p.native_perm,workspace_mode,p.native_workspace_mode)==='native';
+          const pending_restart=inv.opts.auto_restart&&!aligned?{perm,workspace_mode,model:base.model,effort:base.effort,provider:base.provider,
+            allow_last:true,attended:true,requested_at:Date.now()}:undefined;
+          this.db.savePane({...p,launch:{...p.launch,perm,workspace_mode},auto_guard:perm==='auto-workspace'||perm==='yolo',pending_restart});
+          if(pending_restart)this.db.audit(null,'pane_restart_scheduled',p.agent.pane_id);
+          else if(p.pending_restart)this.db.audit(null,'pane_restart_cancelled',p.agent.pane_id);
+        }
         for(const id of ids){
           const t=this.task(id);
           const mode=rawWs!==undefined?workspaceMode(t.launch.kind,rawWs):t.launch.workspace_mode;
@@ -931,10 +976,11 @@ export class Engine {
       }
       if(p){
         this.paneGuardState.delete(paneKey(r,p.agent.pane_id));
-        if(!running&&(perm==='auto-workspace'||perm==='yolo')){
+        if(!running&&(inv.opts.auto_restart||perm==='auto-workspace'||perm==='yolo')){
           this.track(get(r,p.agent.pane_id).then(a=>{
             const current=this.db.pane(r,p.agent.pane_id);
-            if(current&&a.agent_status==='blocked')this.schedulePaneGuard(current,a);
+            if(current?.pending_restart)this.schedulePendingRestart(current,a);
+            else if(current&&a.agent_status==='blocked')this.schedulePaneGuard(current,a);
           }));
         }
       }
@@ -1192,6 +1238,7 @@ export class Engine {
       case 'approve':return this.approve(inv);
       case 'ui.file':return this.uiFile(inv);
       case 'ui.set_perm':return this.uiSetPerm(inv);
+      case 'ui.cancel_restart':return this.cancelRestart(inv);
       case 'ui.terminal':return this.uiTerminal(inv);
       case 'ui.screen':return this.uiScreen(inv);
       case 'ui.queue_pause':case 'ui.queue_resume':case 'ui.queue_deliver_now':
